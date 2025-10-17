@@ -1,11 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UpdateCheckerService {
   final Dio _dio = Dio();
   static const String _versionUrl = 'https://yessfish.com/downloads/beta/version.json';
+
+  // Download progress callback
+  Function(int received, int total)? onDownloadProgress;
 
   /// Check if a new version is available
   Future<UpdateInfo?> checkForUpdates() async {
@@ -47,36 +54,88 @@ class UpdateCheckerService {
     }
   }
 
-  /// Download and install update
-  Future<bool> downloadUpdate(String downloadUrl) async {
+  /// Download and install APK update
+  Future<bool> downloadAndInstallUpdate(String downloadUrl) async {
+    try {
+      print('🚀 Starting APK download from: $downloadUrl');
+
+      // Request storage permissions for older Android versions
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (status.isDenied) {
+          print('⚠️ Storage permission denied');
+        }
+      }
+
+      // Get download directory
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      if (directory == null) {
+        throw Exception('Could not get download directory');
+      }
+
+      // Create file path for APK
+      final fileName = 'yessfish-update.apk';
+      final savePath = '${directory.path}/$fileName';
+
+      print('📁 Saving APK to: $savePath');
+
+      // Download APK with progress tracking
+      await _dio.download(
+        downloadUrl,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('📥 Download progress: $progress%');
+            onDownloadProgress?.call(received, total);
+          }
+        },
+      );
+
+      print('✅ APK downloaded successfully');
+
+      // Verify file exists
+      final file = File(savePath);
+      if (!await file.exists()) {
+        throw Exception('Downloaded file not found');
+      }
+
+      print('📦 APK file size: ${await file.length()} bytes');
+
+      // Open APK for installation
+      print('🔧 Opening APK for installation...');
+      final result = await OpenFilex.open(savePath);
+
+      print('📱 Installation result: ${result.type} - ${result.message}');
+
+      if (result.type == ResultType.done || result.type == ResultType.noAppToOpen) {
+        return true;
+      } else {
+        throw Exception('Failed to open APK: ${result.message}');
+      }
+    } catch (e) {
+      print('❌ Update download/install failed: $e');
+      return false;
+    }
+  }
+
+  /// Legacy method for fallback - opens URL in browser
+  Future<bool> openDownloadInBrowser(String downloadUrl) async {
     try {
       final uri = Uri.parse(downloadUrl);
-      print('🚀 Attempting to launch download URL: $downloadUrl');
-
-      // Try external application first (opens in browser)
-      bool launched = await launchUrl(
+      final launched = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
-
-      if (!launched) {
-        print('❌ External application launch failed, trying platform default...');
-        // Fallback to platform default
-        launched = await launchUrl(
-          uri,
-          mode: LaunchMode.platformDefault,
-        );
-      }
-
-      if (!launched) {
-        print('❌ Platform default launch failed');
-        throw Exception('Could not launch download URL');
-      }
-
-      print('✅ Download URL launched successfully');
-      return true;
+      return launched;
     } catch (e) {
-      print('❌ Failed to launch download: $e');
+      print('❌ Failed to open browser: $e');
       return false;
     }
   }
