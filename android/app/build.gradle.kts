@@ -5,13 +5,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Load key.properties
-val keystorePropertiesFile = rootProject.file("key.properties")
-val keystoreProperties = java.util.Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(keystorePropertiesFile.inputStream())
-}
-
 android {
     namespace = "nl.sbuilder.yessfish_flutter_app"
     compileSdk = flutter.compileSdkVersion
@@ -30,10 +23,10 @@ android {
     // Signing configurations
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = "yessfish"
+            keyPassword = "YessFish2025!"
+            storeFile = file("yessfish-release.jks")
+            storePassword = "YessFish2025!"
         }
     }
 
