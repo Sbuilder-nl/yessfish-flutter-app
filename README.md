@@ -72,3 +72,14 @@ flutter run
 ---
 
 **Made with ❤️ by SBuilder.nl**
+
+
+## 🚀 CI/CD Pipeline Active
+
+✅ Automated builds enabled via GitHub webhook  
+✅ Build server: Worldstream (185.177.126.21:8081)  
+✅ Download page: https://yessfish.com/beta  
+✅ Current version: v1.0.0
+
+**Build time:** ~120 seconds per build  
+**Last updated:** 2025-10-17 18:20:08
