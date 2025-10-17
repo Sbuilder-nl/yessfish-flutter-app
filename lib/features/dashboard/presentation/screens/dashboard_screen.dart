@@ -25,7 +25,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Icon(Icons.waves, color: theme.colorScheme.primary),
+            Image.asset(
+              'assets/images/logo.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 8),
             Text(
               'YessFish',
