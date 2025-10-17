@@ -105,6 +105,30 @@ class UpdateDialog extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
           ],
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Na klikken op "Update Nu" opent de download. Installeer de APK om te updaten.',
+                    style: TextStyle(
+                      color: Colors.blue.shade900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (updateInfo.forceUpdate) ...[
             const SizedBox(height: 16),
             Container(

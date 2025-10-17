@@ -51,11 +51,14 @@ class UpdateCheckerService {
   Future<void> downloadUpdate(String downloadUrl) async {
     try {
       final uri = Uri.parse(downloadUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+      // Open download URL in external browser for APK download
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        throw Exception('Could not launch download URL');
       }
     } catch (e) {
       print('Failed to launch download: $e');
