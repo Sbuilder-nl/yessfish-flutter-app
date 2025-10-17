@@ -48,21 +48,36 @@ class UpdateCheckerService {
   }
 
   /// Download and install update
-  Future<void> downloadUpdate(String downloadUrl) async {
+  Future<bool> downloadUpdate(String downloadUrl) async {
     try {
       final uri = Uri.parse(downloadUrl);
-      // Open download URL in external browser for APK download
-      final launched = await launchUrl(
+      print('🚀 Attempting to launch download URL: $downloadUrl');
+
+      // Try external application first (opens in browser)
+      bool launched = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
 
       if (!launched) {
+        print('❌ External application launch failed, trying platform default...');
+        // Fallback to platform default
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.platformDefault,
+        );
+      }
+
+      if (!launched) {
+        print('❌ Platform default launch failed');
         throw Exception('Could not launch download URL');
       }
+
+      print('✅ Download URL launched successfully');
+      return true;
     } catch (e) {
-      print('Failed to launch download: $e');
-      rethrow;
+      print('❌ Failed to launch download: $e');
+      return false;
     }
   }
 }

@@ -183,9 +183,60 @@ class UpdateDialog extends StatelessWidget {
       barrierDismissible: !updateInfo.forceUpdate,
       builder: (context) => UpdateDialog(
         updateInfo: updateInfo,
-        onUpdate: () {
+        onUpdate: () async {
           Navigator.of(context).pop();
-          updateService.downloadUpdate(updateInfo.downloadUrl);
+
+          // Show loading indicator
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Text('Download starten...'),
+                ],
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Try to launch download
+          final success = await updateService.downloadUpdate(updateInfo.downloadUrl);
+
+          if (!success && context.mounted) {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.white),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Download kon niet worden gestart. Probeer handmatig te downloaden via de browser.',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red.shade700,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Browser',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    updateService.downloadUpdate(updateInfo.downloadUrl);
+                  },
+                ),
+              ),
+            );
+          }
         },
         onLater: updateInfo.forceUpdate
             ? null
