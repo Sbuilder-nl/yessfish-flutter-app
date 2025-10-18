@@ -193,6 +193,14 @@ class UpdateCheckerService {
       );
 
       _isDownloading = false;
+
+      // 🚀 AUTO-START INSTALLATION!
+      try {
+        await OpenFilex.open(savePath);
+      } catch (e) {
+        print('⚠️ Auto-install failed: $e');
+      }
+
       return true;
 
     } catch (e) {
