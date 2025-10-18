@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../fishing_spots/presentation/screens/fishing_spots_screen.dart';
+import '../../../feed/presentation/screens/feed_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -105,41 +107,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 }
 
 // Feed Tab
-class _FeedTab extends StatelessWidget {
-  const _FeedTab();
-
-  @override
-  Widget build(BuildContext context) {
-    // Demo posts
-    final posts = List.generate(
-      10,
-      (index) => _DemoPost(
-        username: 'visser${index + 1}',
-        timeAgo: '${index + 1}u geleden',
-        content: index % 3 == 0
-            ? 'Mooie snoek gevangen van 85cm! 🎣'
-            : index % 3 == 1
-                ? 'Perfecte dag voor karpervissen. Wie gaat er mee?'
-                : 'Net een prachtige karper van 12kg gevangen! 💪',
-        likes: (index + 1) * 5,
-        comments: (index + 1) * 2,
-        hasImage: index % 2 == 0,
-      ),
-    );
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        // TODO: Implement refresh
-        await Future.delayed(const Duration(seconds: 1));
-      },
-      child: ListView.builder(
-        itemCount: posts.length,
-        itemBuilder: (context, index) => _PostCard(post: posts[index]),
-      ),
-    );
-  }
-}
-
 // Catches Tab
 class _CatchesTab extends StatelessWidget {
   const _CatchesTab();
@@ -168,37 +135,6 @@ class _CatchesTab extends StatelessWidget {
 }
 
 // Spots Tab
-class _SpotsTab extends StatelessWidget {
-  const _SpotsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.location_on, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Visplekken',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Ontdek de beste visplekken',
-            style: TextStyle(color: Colors.grey),
-          ),
-          SizedBox(height: 16),
-          Chip(
-            avatar: Icon(Icons.star, size: 16),
-            label: Text('Premium Viskaart binnenkort beschikbaar!'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // Profile Tab
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab();
