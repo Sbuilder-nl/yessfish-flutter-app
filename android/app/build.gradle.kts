@@ -37,7 +37,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // Only build for modern devices (arm64-v8a)
+        // Only build for modern devices (arm64-v8a) - saves ~40% size
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
@@ -46,14 +46,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            // Enable code shrinking, obfuscation, and optimization
-            isMinifyEnabled = true
-            // Enable resource shrinking
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            // Disable minification for smaller build (ProGuard was making it larger)
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
