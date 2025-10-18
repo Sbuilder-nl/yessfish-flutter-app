@@ -3,11 +3,22 @@ import '../../domain/models/post.dart';
 import '../../../../core/api/dio_client.dart';
 
 class PostsService {
-  final Dio _dio = DioClient().dio;
+  late final Dio _dio;
+
+  PostsService() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final client = await DioClient.getInstance();
+    _dio = client.dio;
+  }
 
   /// Fetch feed posts
   Future<List<Post>> getFeedPosts({int limit = 20, int offset = 0}) async {
     try {
+      await _init(); // Ensure dio is initialized
+      
       final response = await _dio.get(
         '/posts.php',
         queryParameters: {
@@ -36,6 +47,8 @@ class PostsService {
     String? location,
   }) async {
     try {
+      await _init();
+      
       final response = await _dio.post(
         '/posts.php',
         data: {
@@ -58,6 +71,8 @@ class PostsService {
   /// Like a post
   Future<void> likePost(String postId) async {
     try {
+      await _init();
+      
       final response = await _dio.post(
         '/likes.php?action=like',
         data: {'post_id': postId},
@@ -74,8 +89,10 @@ class PostsService {
   /// Unlike a post
   Future<void> unlikePost(String postId) async {
     try {
-      final response = await _dio.delete(
-        '/likes.php?action=like',
+      await _init();
+      
+      final response = await _dio.post(
+        '/likes.php?action=unlike',
         data: {'post_id': postId},
       );
 
@@ -87,14 +104,16 @@ class PostsService {
     }
   }
 
-  /// Add comment to post
-  Future<void> addComment(String postId, String content) async {
+  /// Add a comment to a post
+  Future<void> addComment(String postId, String comment) async {
     try {
+      await _init();
+      
       final response = await _dio.post(
         '/comments.php',
         data: {
           'post_id': postId,
-          'content': content,
+          'comment': comment,
         },
       );
 

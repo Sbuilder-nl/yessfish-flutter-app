@@ -1,5 +1,5 @@
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
 import '../api/dio_client.dart';
 
 class GoogleAuthService {
@@ -8,26 +8,32 @@ class GoogleAuthService {
       'email',
       'profile',
     ],
-    // Web client ID from Google Cloud Console
-    // Used for server-side authentication
     serverClientId: '722347151371-ht0f8ekdrb3e5p2k61ugb6jck8d42upm.apps.googleusercontent.com',
   );
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final DioClient _dioClient = DioClient();
+  late final Dio _dio;
+
+  GoogleAuthService() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final client = await DioClient.getInstance();
+    _dio = client.dio;
+  }
 
   /// Sign in with Google and exchange token with backend
   Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
+      await _init();
+      
       // Trigger Google Sign-In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        // User canceled the sign-in
         return null;
       }
 
-      // Get Google authentication
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final idToken = googleAuth.idToken;
@@ -37,8 +43,8 @@ class GoogleAuthService {
         throw Exception('Failed to get Google ID token');
       }
 
-      // Send Google token to your backend for verification
-      final response = await _dioClient.dio.post(
+      // Send Google token to backend for verification
+      final response = await _dio.post(
         '/auth/google.php',
         data: {
           'id_token': idToken,
@@ -51,11 +57,6 @@ class GoogleAuthService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-
-        // Store JWT token from backend
-        if (data['token'] != null) {
-          await _storage.write(key: 'auth_token', value: data['token']);
-        }
 
         return {
           'user': data['user'],
@@ -79,7 +80,8 @@ class GoogleAuthService {
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
-      await _storage.delete(key: 'auth_token');
+      final client = await DioClient.getInstance();
+      await client.clearCookies();
     } catch (e) {
       print('Google Sign-Out error: $e');
     }

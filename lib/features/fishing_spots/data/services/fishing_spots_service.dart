@@ -3,11 +3,22 @@ import '../../domain/models/fishing_spot.dart';
 import '../../../../core/api/dio_client.dart';
 
 class FishingSpotsService {
-  final Dio _dio = DioClient().dio;
+  late final Dio _dio;
+
+  FishingSpotsService() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final client = await DioClient.getInstance();
+    _dio = client.dio;
+  }
 
   /// Fetch all fishing spots
   Future<List<FishingSpot>> getFishingSpots() async {
     try {
+      await _init();
+      
       final response = await _dio.get('/fishing-spots.php');
       
       if (response.data['success'] == true) {
