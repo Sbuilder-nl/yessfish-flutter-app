@@ -3,7 +3,7 @@ import '../../domain/models/post.dart';
 import '../../../../core/api/dio_client.dart';
 
 class PostsService {
-  final Dio _dio = DioClient.instance;
+  final Dio _dio = DioClient().dio;
 
   /// Fetch feed posts
   Future<List<Post>> getFeedPosts({int limit = 20, int offset = 0}) async {

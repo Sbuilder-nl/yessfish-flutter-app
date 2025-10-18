@@ -3,7 +3,7 @@ import '../../domain/models/fishing_spot.dart';
 import '../../../../core/api/dio_client.dart';
 
 class FishingSpotsService {
-  final Dio _dio = DioClient.instance;
+  final Dio _dio = DioClient().dio;
 
   /// Fetch all fishing spots
   Future<List<FishingSpot>> getFishingSpots() async {

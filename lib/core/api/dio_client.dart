@@ -3,6 +3,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_constants.dart';
 
 class DioClient {
+  static final DioClient _instance = DioClient._internal();
+  factory DioClient() => _instance;
+  
+  DioClient._internal() {
+    _initDio();
+  }
+  
+  void _initDio() {
   late final Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -44,6 +52,7 @@ class DioClient {
   }
 
   Dio get dio => _dio;
+  static Dio get instance => _instance.dio;
 
   /// Request interceptor - Add auth token
   Future<void> _onRequest(

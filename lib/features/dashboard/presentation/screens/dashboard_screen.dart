@@ -61,9 +61,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: const [
-          _FeedTab(),
+          const FeedScreen(),
           _CatchesTab(),
-          _SpotsTab(),
+          const FishingSpotsScreen(),
           _ProfileTab(),
         ],
       ),
