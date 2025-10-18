@@ -26,9 +26,11 @@ class _YessFishAppState extends State<YessFishApp> {
   @override
   void initState() {
     super.initState();
-    // Check for updates after app starts
+    // Delay update check by 5 seconds to not block login screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForUpdates();
+      Future.delayed(const Duration(seconds: 5), () {
+        _checkForUpdates();
+      });
     });
   }
 
