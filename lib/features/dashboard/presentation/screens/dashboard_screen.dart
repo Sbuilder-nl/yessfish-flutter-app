@@ -64,9 +64,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         index: _selectedIndex,
         children: const [
           const FeedScreen(),
-          _CatchesTab(),
+          const CatchesScreen(),
           const FishingSpotsScreen(),
-          _ProfileTab(),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
