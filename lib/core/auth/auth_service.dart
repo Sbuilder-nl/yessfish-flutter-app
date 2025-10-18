@@ -3,14 +3,16 @@ import '../api/dio_client.dart';
 
 class AuthService {
   late final Dio _dio;
+  bool _initialized = false;
 
-  AuthService() {
-    _init();
-  }
+  AuthService();
 
   Future<void> _init() async {
+    if (_initialized) return;
+    
     final client = await DioClient.getInstance();
     _dio = client.dio;
+    _initialized = true;
   }
 
   /// Login with email and password
@@ -19,6 +21,8 @@ class AuthService {
     required String password,
   }) async {
     try {
+      await _init();
+      
       final response = await _dio.post(
         '/auth/login.php',
         data: {
@@ -54,6 +58,8 @@ class AuthService {
     String? name,
   }) async {
     try {
+      await _init();
+      
       final response = await _dio.post(
         '/auth/register.php',
         data: {

@@ -12,14 +12,16 @@ class GoogleAuthService {
   );
 
   late final Dio _dio;
+  bool _initialized = false;
 
-  GoogleAuthService() {
-    _init();
-  }
+  GoogleAuthService();
 
   Future<void> _init() async {
+    if (_initialized) return;
+    
     final client = await DioClient.getInstance();
     _dio = client.dio;
+    _initialized = true;
   }
 
   /// Sign in with Google and exchange token with backend

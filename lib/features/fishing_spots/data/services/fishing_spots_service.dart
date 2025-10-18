@@ -4,14 +4,16 @@ import '../../../../core/api/dio_client.dart';
 
 class FishingSpotsService {
   late final Dio _dio;
+  bool _initialized = false;
 
-  FishingSpotsService() {
-    _init();
-  }
+  FishingSpotsService();
 
   Future<void> _init() async {
+    if (_initialized) return;
+    
     final client = await DioClient.getInstance();
     _dio = client.dio;
+    _initialized = true;
   }
 
   /// Fetch all fishing spots

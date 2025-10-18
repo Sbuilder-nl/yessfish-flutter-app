@@ -4,20 +4,22 @@ import '../../../../core/api/dio_client.dart';
 
 class PostsService {
   late final Dio _dio;
+  bool _initialized = false;
 
-  PostsService() {
-    _init();
-  }
+  PostsService();
 
   Future<void> _init() async {
+    if (_initialized) return; // Already initialized
+    
     final client = await DioClient.getInstance();
     _dio = client.dio;
+    _initialized = true;
   }
 
   /// Fetch feed posts
   Future<List<Post>> getFeedPosts({int limit = 20, int offset = 0}) async {
     try {
-      await _init(); // Ensure dio is initialized
+      await _init();
       
       final response = await _dio.get(
         '/posts.php',
