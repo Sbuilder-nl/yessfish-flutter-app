@@ -12,6 +12,8 @@ class DioClient {
         baseUrl: ApiConstants.baseUrl,
         connectTimeout: ApiConstants.connectTimeout,
         receiveTimeout: ApiConstants.receiveTimeout,
+        followRedirects: true,
+        maxRedirects: 5,
         headers: {
           ApiConstants.headerContentType: ApiConstants.contentTypeJson,
           ApiConstants.headerAccept: ApiConstants.contentTypeJson,

@@ -39,7 +39,7 @@ class GoogleAuthService {
 
       // Send Google token to your backend for verification
       final response = await _dioClient.dio.post(
-        '/auth/google',
+        '/auth/google.php',
         data: {
           'id_token': idToken,
           'access_token': accessToken,
