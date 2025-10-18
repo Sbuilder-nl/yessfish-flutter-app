@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/auth_service.dart';
 import '../../../../core/auth/google_auth_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,6 +15,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   final _googleAuthService = GoogleAuthService();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
@@ -31,13 +33,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement actual login logic with API
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // REAL LOGIN API CALL!
+      final result = await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      // Navigate to dashboard
-      context.go('/dashboard');
+      if (mounted && result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Welkom terug! 🎣'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -48,10 +69,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final result = await _googleAuthService.signInWithGoogle();
 
       if (result != null && mounted) {
-        // Success - navigate to dashboard
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welkom ${result['google_user']['name']}!'),
+            content: Text('Welkom ${result['google_user']['name']}! 🎣'),
             backgroundColor: Colors.green,
           ),
         );
@@ -95,6 +115,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     width: 120,
                     height: 120,
                     fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.waves, size: 120, color: Colors.blue);
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -206,7 +229,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text(
                             'Inloggen',
@@ -281,15 +307,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       'Account aanmaken',
                       style: TextStyle(fontSize: 16),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Skip to demo
-                  TextButton(
-                    onPressed: () {
-                      context.go('/dashboard');
-                    },
-                    child: const Text('Demo bekijken →'),
                   ),
                 ],
               ),

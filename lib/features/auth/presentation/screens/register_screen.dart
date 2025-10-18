@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/auth_service.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -14,42 +15,53 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _passwordConfirmController = TextEditingController();
+  final _authService = AuthService();
   bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
+  bool _isPasswordConfirmVisible = false;
   bool _isLoading = false;
-  bool _acceptTerms = false;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _passwordConfirmController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Je moet de gebruikersvoorwaarden accepteren'),
-        ),
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
-    // TODO: Implement actual registration logic with API
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // REAL REGISTER API CALL!
+      final result = await _authService.register(
+        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      // Navigate to dashboard
-      context.go('/dashboard');
+      if (mounted && result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Account aangemaakt! 🎣'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go('/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -60,10 +72,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/login'),
-        ),
+        title: const Text('Account aanmaken'),
       ),
       body: SafeArea(
         child: Center(
@@ -72,34 +81,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo
-                  Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.contain,
-                    ),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.waves, size: 100, color: Colors.blue);
+                    },
                   ),
                   const SizedBox(height: 16),
 
-                  // Title
                   Text(
-                    'Account aanmaken',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: colorScheme.onSurface,
+                    'Word lid van YessFish',
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    'Word lid van de YessFish community',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
 
@@ -109,7 +111,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: 'Gebruikersnaam',
-                      hintText: 'bijv. viskoning123',
+                      hintText: 'jan_visser',
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -120,7 +122,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return 'Vul een gebruikersnaam in';
                       }
                       if (value.length < 3) {
-                        return 'Gebruikersnaam moet minimaal 3 tekens zijn';
+                        return 'Minimaal 3 tekens';
+                      }
+                      if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                        return 'Alleen letters, cijfers en underscore';
                       }
                       return null;
                     },
@@ -181,18 +186,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Vul een wachtwoord in';
                       }
-                      if (value.length < 8) {
-                        return 'Wachtwoord moet minimaal 8 tekens zijn';
+                      if (value.length < 6) {
+                        return 'Minimaal 6 tekens';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
 
-                  // Confirm password field
+                  // Password confirm field
                   TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: !_isConfirmPasswordVisible,
+                    controller: _passwordConfirmController,
+                    obscureText: !_isPasswordConfirmVisible,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleRegister(),
                     decoration: InputDecoration(
@@ -201,14 +206,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isConfirmPasswordVisible
+                          _isPasswordConfirmVisible
                               ? Icons.visibility_off
                               : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {
-                            _isConfirmPasswordVisible =
-                                !_isConfirmPasswordVisible;
+                            _isPasswordConfirmVisible = !_isPasswordConfirmVisible;
                           });
                         },
                       ),
@@ -226,43 +230,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
-
-                  // Terms checkbox
-                  CheckboxListTile(
-                    value: _acceptTerms,
-                    onChanged: (value) {
-                      setState(() {
-                        _acceptTerms = value ?? false;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text.rich(
-                      TextSpan(
-                        text: 'Ik ga akkoord met de ',
-                        style: theme.textTheme.bodyMedium,
-                        children: [
-                          TextSpan(
-                            text: 'gebruikersvoorwaarden',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const TextSpan(text: ' en '),
-                          TextSpan(
-                            text: 'privacybeleid',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
                   // Register button
                   FilledButton(
@@ -277,25 +245,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text(
                             'Account aanmaken',
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Login link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Heb je al een account? ',
-                        style: theme.textTheme.bodyMedium,
-                      ),
+                      const Text('Heb je al een account?'),
                       TextButton(
-                        onPressed: () => context.go('/login'),
+                        onPressed: () {
+                          context.go('/login');
+                        },
                         child: const Text('Inloggen'),
                       ),
                     ],

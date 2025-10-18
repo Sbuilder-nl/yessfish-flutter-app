@@ -1,12 +1,30 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path_provider/path_provider.dart';
 import 'api_constants.dart';
 
 class DioClient {
   late final Dio _dio;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  late final CookieJar _cookieJar;
+  static DioClient? _instance;
 
-  DioClient() {
+  DioClient._internal();
+
+  static Future<DioClient> getInstance() async {
+    if (_instance == null) {
+      _instance = DioClient._internal();
+      await _instance!._init();
+    }
+    return _instance!;
+  }
+
+  Future<void> _init() async {
+    // Initialize persistent cookie jar
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final cookiePath = '${appDocDir.path}/.cookies/';
+    _cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
+
     _dio = Dio(
       BaseOptions(
         baseUrl: ApiConstants.baseUrl,
@@ -18,8 +36,13 @@ class DioClient {
           ApiConstants.headerContentType: ApiConstants.contentTypeJson,
           ApiConstants.headerAccept: ApiConstants.contentTypeJson,
         },
+        // CRITICAL: Include credentials (cookies) in requests
+        extra: {'withCredentials': true},
       ),
     );
+
+    // Add cookie manager - THIS IS THE KEY FIX!
+    _dio.interceptors.add(CookieManager(_cookieJar));
 
     // Add interceptors
     _dio.interceptors.add(
@@ -44,19 +67,15 @@ class DioClient {
   }
 
   Dio get dio => _dio;
+  CookieJar get cookieJar => _cookieJar;
 
-  /// Request interceptor - Add auth token
+  /// Request interceptor - Cookies are automatically added by CookieManager
   Future<void> _onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Get token from secure storage
-    final token = await _storage.read(key: 'auth_token');
-
-    if (token != null) {
-      options.headers[ApiConstants.headerAuthorization] = 'Bearer $token';
-    }
-
+    // Cookies are handled automatically by CookieManager
+    // No need to manually add auth headers
     handler.next(options);
   }
 
@@ -74,71 +93,28 @@ class DioClient {
     ErrorInterceptorHandler handler,
   ) async {
     if (error.response?.statusCode == 401) {
-      // Token expired - try to refresh
-      try {
-        await _refreshToken();
-        // Retry the request
-        final response = await _dio.request(
-          error.requestOptions.path,
-          options: Options(
-            method: error.requestOptions.method,
-            headers: error.requestOptions.headers,
-          ),
-          data: error.requestOptions.data,
-          queryParameters: error.requestOptions.queryParameters,
-        );
-        return handler.resolve(response);
-      } catch (e) {
-        // Refresh failed - logout user
-        await _storage.delete(key: 'auth_token');
-        await _storage.delete(key: 'refresh_token');
-      }
+      // Session expired - user needs to log in again
+      print('❌ Session expired - user needs to log in');
+      // Could emit event here to force logout
     }
 
     handler.next(error);
   }
 
-  /// Refresh access token
-  Future<void> _refreshToken() async {
-    final refreshToken = await _storage.read(key: 'refresh_token');
+  /// Clear all cookies (logout)
+  Future<void> clearCookies() async {
+    await _cookieJar.deleteAll();
+  }
 
-    if (refreshToken == null) {
-      throw Exception('No refresh token available');
-    }
-
+  /// Check if user has valid session
+  Future<bool> hasValidSession() async {
     try {
-      final response = await _dio.post(
-        ApiConstants.refreshToken,
-        data: {'refresh_token': refreshToken},
+      final cookies = await _cookieJar.loadForRequest(
+        Uri.parse(ApiConstants.baseUrl),
       );
-
-      final newToken = response.data['access_token'];
-      final newRefreshToken = response.data['refresh_token'];
-
-      await _storage.write(key: 'auth_token', value: newToken);
-      await _storage.write(key: 'refresh_token', value: newRefreshToken);
+      return cookies.any((cookie) => cookie.name == 'PHPSESSID');
     } catch (e) {
-      throw Exception('Failed to refresh token');
+      return false;
     }
-  }
-
-  /// Store auth tokens
-  Future<void> saveAuthTokens({
-    required String accessToken,
-    required String refreshToken,
-  }) async {
-    await _storage.write(key: 'auth_token', value: accessToken);
-    await _storage.write(key: 'refresh_token', value: refreshToken);
-  }
-
-  /// Clear auth tokens
-  Future<void> clearAuthTokens() async {
-    await _storage.delete(key: 'auth_token');
-    await _storage.delete(key: 'refresh_token');
-  }
-
-  /// Get current auth token
-  Future<String?> getAuthToken() async {
-    return await _storage.read(key: 'auth_token');
   }
 }

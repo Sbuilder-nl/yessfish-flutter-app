@@ -42,12 +42,15 @@ dependencies:
 
   # API & Networking
   dio: ^5.7.0
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.1.1
   retrofit: ^4.4.1
   json_annotation: ^4.9.0
 
   # Storage
   shared_preferences: ^2.3.3
   flutter_secure_storage: ^9.2.2
+  path_provider: ^2.1.5
 
   # Authentication
   google_sign_in: ^6.2.2
