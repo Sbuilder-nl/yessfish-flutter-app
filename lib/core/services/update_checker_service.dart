@@ -143,17 +143,22 @@ class UpdateCheckerService {
         onReceiveProgress: (received, total) {
           if (total != -1) {
             final progress = ((received / total) * 100).round();
-            print('📥 Download progress: $progress%');
             
-            // Update notification with progress
-            _showNotification(
-              id: 1,
-              title: 'YessFish Update',
-              body: 'Downloading v$version... $progress%',
-              ongoing: true,
-              showProgress: true,
-              progress: progress,
-            );
+            // Only update every 10% to prevent notification spam and battery drain
+            // Also update at 99% to show "almost done"
+            if (progress % 10 == 0 || progress == 99) {
+              print('📥 Download progress: $progress%');
+              
+              _showNotification(
+                id: 1,
+                title: 'YessFish Update',
+                body: 'Downloading v$version... $progress%',
+                ongoing: true,
+                showProgress: true,
+                progress: progress,
+                silent: true, // SILENT! No vibration/sound during download
+              );
+            }
 
             onDownloadProgress?.call(received, total);
           }
@@ -239,13 +244,16 @@ class UpdateCheckerService {
     bool ongoing = false,
     bool showProgress = false,
     int progress = 0,
+    bool silent = false,
   }) async {
     final androidDetails = AndroidNotificationDetails(
       'yessfish_updates',
       'App Updates',
       channelDescription: 'Notifications for app updates',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: silent ? Importance.low : Importance.high,
+      priority: silent ? Priority.low : Priority.high,
+      playSound: !silent,
+      enableVibration: !silent,
       ongoing: ongoing,
       showProgress: showProgress,
       maxProgress: 100,
