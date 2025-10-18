@@ -96,12 +96,6 @@ class UpdateCheckerService {
             onDownloadProgress?.call(received, total);
           }
         },
-        options: Options(
-          receiveTimeout: const Duration(minutes: 10), // 10 minutes for large APK
-          sendTimeout: const Duration(minutes: 10),
-          followRedirects: true,
-          validateStatus: (status) => status! < 500,
-        ),
       );
 
       print('✅ APK downloaded successfully');
