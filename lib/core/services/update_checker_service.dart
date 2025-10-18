@@ -101,6 +101,14 @@ class UpdateCheckerService {
       print('🚀 Starting background APK download from: $downloadUrl');
 
       // Show download started notification
+      await _showNotification(
+        id: 1,
+        title: 'YessFish Update',
+        body: 'Downloading v$version op de achtergrond...',
+        ongoing: true,
+        showProgress: true,
+        progress: 0,
+      );
 
       // Request storage permissions for older Android versions
       if (Platform.isAndroid) {
@@ -140,16 +148,29 @@ class UpdateCheckerService {
             // Also update at 99% to show "almost done"
             if (progress % 10 == 0 || progress == 99) {
               print('📥 Download progress: $progress%');
-        onReceiveProgress: (received, total) {
-          if (total != -1) {
-            final progress = ((received / total) * 100).round();
-            // Alleen console logging - GEEN notifications tijdens downloaden!
-            if (progress % 10 == 0) {
-              print('📥 Download progress: $progress%');
+              
+              _showNotification(
+                id: 1,
+                title: 'YessFish Update',
+                body: 'Downloading v$version... $progress%',
+                ongoing: true,
+                showProgress: true,
+                progress: progress,
+                silent: true, // SILENT! No vibration/sound during download
+              );
             }
+
             onDownloadProgress?.call(received, total);
           }
         },
+        options: Options(
+          receiveTimeout: const Duration(minutes: 10),
+          sendTimeout: const Duration(minutes: 10),
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
       print('✅ APK downloaded successfully');
 
       // Verify file exists
@@ -163,6 +184,13 @@ class UpdateCheckerService {
       _downloadedApkPath = savePath;
 
       // Show completion notification
+      await _showNotification(
+        id: 1,
+        title: 'Update Klaar! 🎣',
+        body: 'YessFish v$version is gedownload. Tik om te installeren.',
+        ongoing: false,
+        showProgress: false,
+      );
 
       _isDownloading = false;
       return true;
@@ -171,6 +199,13 @@ class UpdateCheckerService {
       print('❌ Background download failed: $e');
       
       // Show error notification
+      await _showNotification(
+        id: 1,
+        title: 'Download Mislukt',
+        body: 'Update kon niet worden gedownload. Probeer het opnieuw.',
+        ongoing: false,
+        showProgress: false,
+      );
 
       _isDownloading = false;
       return false;
