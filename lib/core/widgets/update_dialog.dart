@@ -100,28 +100,33 @@ class UpdateDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              updateInfo.changelog,
-              style: theme.textTheme.bodyMedium,
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(
+                child: Text(
+                  updateInfo.changelog,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
             ),
           ],
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: Colors.green.shade50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: Colors.green.shade200),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                Icon(Icons.cloud_download, color: Colors.green.shade700, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Na klikken op "Update Nu" opent de download. Installeer de APK om te updaten.',
+                    'Download gebeurt op de achtergrond. Je krijgt een melding wanneer de update klaar is om te installeren.',
                     style: TextStyle(
-                      color: Colors.blue.shade900,
+                      color: Colors.green.shade900,
                       fontSize: 13,
                     ),
                   ),
@@ -166,13 +171,13 @@ class UpdateDialog extends StatelessWidget {
         FilledButton.icon(
           onPressed: onUpdate,
           icon: const Icon(Icons.download),
-          label: const Text('Update Nu'),
+          label: const Text('Download Update'),
         ),
       ],
     );
   }
 
-  /// Show update dialog
+  /// Show update dialog with background download
   static Future<void> show(
     BuildContext context,
     UpdateInfo updateInfo,
@@ -186,8 +191,64 @@ class UpdateDialog extends StatelessWidget {
         onUpdate: () async {
           Navigator.of(context).pop();
 
-          // Show progress dialog
-          _showDownloadProgress(context, updateInfo, updateService);
+          // Show snackbar that download started
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Update wordt gedownload op de achtergrond... Je krijgt een melding wanneer het klaar is.',
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.blue.shade700,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'OK',
+                  textColor: Colors.white,
+                  onPressed: () {},
+                ),
+              ),
+            );
+          }
+
+          // Start background download
+          final success = await updateService.downloadUpdateInBackground(
+            updateInfo.downloadUrl,
+            updateInfo.latestVersion,
+          );
+
+          if (!success && context.mounted) {
+            // If background download failed, offer browser download
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Achtergrond download mislukt. Download via browser?',
+                ),
+                backgroundColor: Colors.red.shade700,
+                duration: const Duration(seconds: 7),
+                action: SnackBarAction(
+                  label: 'Browser',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    updateService.openDownloadInBrowser(updateInfo.downloadUrl);
+                  },
+                ),
+              ),
+            );
+          }
         },
         onLater: updateInfo.forceUpdate
             ? null
@@ -195,120 +256,6 @@ class UpdateDialog extends StatelessWidget {
                 Navigator.of(context).pop();
               },
       ),
-    );
-  }
-
-  /// Show download progress dialog
-  static void _showDownloadProgress(
-    BuildContext context,
-    UpdateInfo updateInfo,
-    UpdateCheckerService updateService,
-  ) {
-    int downloadProgress = 0;
-
-    // Set up progress callback
-    updateService.onDownloadProgress = (received, total) {
-      if (total != -1) {
-        downloadProgress = ((received / total) * 100).round();
-      }
-    };
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            // Start download
-            updateService.downloadAndInstallUpdate(updateInfo.downloadUrl).then((success) {
-              if (dialogContext.mounted) {
-                Navigator.of(dialogContext).pop();
-
-                if (success) {
-                  // Show success message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              'Update gedownload! Installeer de APK om bij te werken.',
-                            ),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: Colors.green.shade700,
-                      duration: const Duration(seconds: 5),
-                    ),
-                  );
-                } else {
-                  // Show error with retry option
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.white),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              'Download mislukt. Probeer opnieuw of download via browser.',
-                            ),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: Colors.red.shade700,
-                      duration: const Duration(seconds: 7),
-                      action: SnackBarAction(
-                        label: 'Browser',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          updateService.openDownloadInBrowser(updateInfo.downloadUrl);
-                        },
-                      ),
-                    ),
-                  );
-                }
-              }
-            });
-
-            // Update progress periodically
-            updateService.onDownloadProgress = (received, total) {
-              if (total != -1) {
-                setState(() {
-                  downloadProgress = ((received / total) * 100).round();
-                });
-              }
-            };
-
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.download, color: Colors.blue),
-                  SizedBox(width: 12),
-                  Text('Update downloaden'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('De update wordt gedownload...'),
-                  const SizedBox(height: 20),
-                  LinearProgressIndicator(
-                    value: downloadProgress > 0 ? downloadProgress / 100 : null,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    downloadProgress > 0 ? '$downloadProgress%' : 'Voorbereiden...',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

@@ -6,13 +6,45 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class UpdateCheckerService {
   final Dio _dio = Dio();
   static const String _versionUrl = 'https://yessfish.com/downloads/beta/version.json';
 
+  // Notifications
+  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  bool _notificationsInitialized = false;
+
   // Download progress callback
   Function(int received, int total)? onDownloadProgress;
+  
+  // Background download state
+  bool _isDownloading = false;
+  String? _downloadedApkPath;
+
+  bool get isDownloading => _isDownloading;
+  String? get downloadedApkPath => _downloadedApkPath;
+
+  /// Initialize notifications
+  Future<void> initializeNotifications() async {
+    if (_notificationsInitialized) return;
+
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidSettings);
+
+    await _notificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) {
+        // Handle notification tap - install APK
+        if (_downloadedApkPath != null) {
+          installDownloadedUpdate();
+        }
+      },
+    );
+
+    _notificationsInitialized = true;
+  }
 
   /// Check if a new version is available
   Future<UpdateInfo?> checkForUpdates() async {
@@ -54,10 +86,29 @@ class UpdateCheckerService {
     }
   }
 
-  /// Download and install APK update
-  Future<bool> downloadAndInstallUpdate(String downloadUrl) async {
+  /// Download update in background with notifications
+  Future<bool> downloadUpdateInBackground(String downloadUrl, String version) async {
+    if (_isDownloading) {
+      print('⚠️ Download already in progress');
+      return false;
+    }
+
+    _isDownloading = true;
+
     try {
-      print('🚀 Starting APK download from: $downloadUrl');
+      await initializeNotifications();
+
+      print('🚀 Starting background APK download from: $downloadUrl');
+
+      // Show download started notification
+      await _showNotification(
+        id: 1,
+        title: 'YessFish Update',
+        body: 'Downloading v$version op de achtergrond...',
+        ongoing: true,
+        showProgress: true,
+        progress: 0,
+      );
 
       // Request storage permissions for older Android versions
       if (Platform.isAndroid) {
@@ -91,13 +142,24 @@ class UpdateCheckerService {
         savePath,
         onReceiveProgress: (received, total) {
           if (total != -1) {
-            final progress = (received / total * 100).toStringAsFixed(0);
+            final progress = ((received / total) * 100).round();
             print('📥 Download progress: $progress%');
+            
+            // Update notification with progress
+            _showNotification(
+              id: 1,
+              title: 'YessFish Update',
+              body: 'Downloading v$version... $progress%',
+              ongoing: true,
+              showProgress: true,
+              progress: progress,
+            );
+
             onDownloadProgress?.call(received, total);
           }
         },
         options: Options(
-          receiveTimeout: const Duration(minutes: 10), // 10 minutes for large APK
+          receiveTimeout: const Duration(minutes: 10),
           sendTimeout: const Duration(minutes: 10),
           followRedirects: true,
           validateStatus: (status) => status! < 500,
@@ -107,6 +169,146 @@ class UpdateCheckerService {
       print('✅ APK downloaded successfully');
 
       // Verify file exists
+      final file = File(savePath);
+      if (!await file.exists()) {
+        throw Exception('Downloaded file not found');
+      }
+
+      print('📦 APK file size: ${await file.length()} bytes');
+
+      _downloadedApkPath = savePath;
+
+      // Show completion notification
+      await _showNotification(
+        id: 1,
+        title: 'Update Klaar! 🎣',
+        body: 'YessFish v$version is gedownload. Tik om te installeren.',
+        ongoing: false,
+        showProgress: false,
+      );
+
+      _isDownloading = false;
+      return true;
+
+    } catch (e) {
+      print('❌ Background download failed: $e');
+      
+      // Show error notification
+      await _showNotification(
+        id: 1,
+        title: 'Download Mislukt',
+        body: 'Update kon niet worden gedownload. Probeer het opnieuw.',
+        ongoing: false,
+        showProgress: false,
+      );
+
+      _isDownloading = false;
+      return false;
+    }
+  }
+
+  /// Install previously downloaded update
+  Future<bool> installDownloadedUpdate() async {
+    if (_downloadedApkPath == null) {
+      print('⚠️ No downloaded APK to install');
+      return false;
+    }
+
+    try {
+      print('🔧 Opening APK for installation: $_downloadedApkPath');
+      final result = await OpenFilex.open(_downloadedApkPath!);
+
+      print('📱 Installation result: ${result.type} - ${result.message}');
+
+      if (result.type == ResultType.done || result.type == ResultType.noAppToOpen) {
+        return true;
+      } else {
+        throw Exception('Failed to open APK: ${result.message}');
+      }
+    } catch (e) {
+      print('❌ Installation failed: $e');
+      return false;
+    }
+  }
+
+  /// Show notification (helper method)
+  Future<void> _showNotification({
+    required int id,
+    required String title,
+    required String body,
+    bool ongoing = false,
+    bool showProgress = false,
+    int progress = 0,
+  }) async {
+    final androidDetails = AndroidNotificationDetails(
+      'yessfish_updates',
+      'App Updates',
+      channelDescription: 'Notifications for app updates',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: ongoing,
+      showProgress: showProgress,
+      maxProgress: 100,
+      progress: progress,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    final details = NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(id, title, body, details);
+  }
+
+  /// Download and install APK update (legacy method - now shows dialog)
+  Future<bool> downloadAndInstallUpdate(String downloadUrl) async {
+    try {
+      print('🚀 Starting APK download from: $downloadUrl');
+
+      // Request storage permissions
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (status.isDenied) {
+          print('⚠️ Storage permission denied');
+        }
+      }
+
+      // Get download directory
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      if (directory == null) {
+        throw Exception('Could not get download directory');
+      }
+
+      final fileName = 'yessfish-update.apk';
+      final savePath = '${directory.path}/$fileName';
+
+      print('📁 Saving APK to: $savePath');
+
+      // Download APK
+      await _dio.download(
+        downloadUrl,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('📥 Download progress: $progress%');
+            onDownloadProgress?.call(received, total);
+          }
+        },
+        options: Options(
+          receiveTimeout: const Duration(minutes: 10),
+          sendTimeout: const Duration(minutes: 10),
+          followRedirects: true,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      print('✅ APK downloaded successfully');
+
       final file = File(savePath);
       if (!await file.exists()) {
         throw Exception('Downloaded file not found');
