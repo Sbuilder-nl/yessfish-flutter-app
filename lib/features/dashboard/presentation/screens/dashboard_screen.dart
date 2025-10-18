@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../fishing_spots/presentation/screens/fishing_spots_screen.dart';
 import '../../../feed/presentation/screens/feed_screen.dart';
+import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../catches/presentation/screens/catches_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -108,148 +110,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
 // Feed Tab
 // Catches Tab
-class _CatchesTab extends StatelessWidget {
-  const _CatchesTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.phishing, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Je vangsten',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Hier komen al je vangsten te staan',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // Spots Tab
 // Profile Tab
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Profile header
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    Icons.person,
-                    size: 48,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Demo Gebruiker',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '@demo_user',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _StatColumn(label: 'Vangsten', value: '0'),
-                    _StatColumn(label: 'Volgers', value: '0'),
-                    _StatColumn(label: 'Volgend', value: '0'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Settings
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: const Text('Profiel bewerken'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // TODO: Navigate to edit profile
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Instellingen'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // TODO: Navigate to settings
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: Icon(
-                  Icons.workspace_premium,
-                  color: theme.colorScheme.primary,
-                ),
-                title: const Text('Premium Upgrade'),
-                subtitle: const Text('Ontgrendel alle features'),
-                trailing: Chip(
-                  label: const Text('PRO'),
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                ),
-                onTap: () {
-                  // TODO: Navigate to premium
-                },
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Logout
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Uitloggen',
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: () {
-              // TODO: Implement logout
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // Stat Column Widget
 class _StatColumn extends StatelessWidget {
   final String label;
