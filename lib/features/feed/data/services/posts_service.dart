@@ -28,4 +28,81 @@ class PostsService {
       throw Exception('Network error: ${e.message}');
     }
   }
+
+  /// Create a new post
+  Future<Post> createPost({
+    required String content,
+    String? imageUrl,
+    String? location,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/posts.php',
+        data: {
+          'content': content,
+          'image_url': imageUrl,
+          'location': location,
+        },
+      );
+
+      if (response.data['success'] == true) {
+        return Post.fromJson(response.data['post']);
+      } else {
+        throw Exception(response.data['error'] ?? 'Failed to create post');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
+  /// Like a post
+  Future<void> likePost(String postId) async {
+    try {
+      final response = await _dio.post(
+        '/likes.php?action=like',
+        data: {'post_id': postId},
+      );
+
+      if (response.data['success'] != true) {
+        throw Exception(response.data['error'] ?? 'Failed to like post');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
+  /// Unlike a post
+  Future<void> unlikePost(String postId) async {
+    try {
+      final response = await _dio.delete(
+        '/likes.php?action=like',
+        data: {'post_id': postId},
+      );
+
+      if (response.data['success'] != true) {
+        throw Exception(response.data['error'] ?? 'Failed to unlike post');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
+  /// Add comment to post
+  Future<void> addComment(String postId, String content) async {
+    try {
+      final response = await _dio.post(
+        '/comments.php',
+        data: {
+          'post_id': postId,
+          'content': content,
+        },
+      );
+
+      if (response.data['success'] != true) {
+        throw Exception(response.data['error'] ?? 'Failed to add comment');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
 }

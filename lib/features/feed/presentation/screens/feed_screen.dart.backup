@@ -42,66 +42,6 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  Future<void> _handleLike(String postId, int index) async {
-    try {
-      await _postsService.likePost(postId);
-      // Reload feed to get updated counts
-      await _loadPosts();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij liken: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleComment(String postId) async {
-    final controller = TextEditingController();
-    
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reageren'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Schrijf een reactie...'),
-          maxLines: 3,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ANNULEREN'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
-                try {
-                  await _postsService.addComment(postId, controller.text.trim());
-                  Navigator.pop(context);
-                  await _loadPosts();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Reactie geplaatst!')),
-                    );
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Fout: ${e.toString()}')),
-                    );
-                  }
-                }
-              }
-            },
-            child: const Text('PLAATSEN'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _posts.isEmpty) {
@@ -152,11 +92,7 @@ class _FeedScreenState extends State<FeedScreen> {
         itemCount: _posts.length,
         itemBuilder: (context, index) {
           final post = _posts[index];
-          return _PostCard(
-            post: post,
-            onLike: () => _handleLike(post.id, index),
-            onComment: () => _handleComment(post.id),
-          );
+          return _PostCard(post: post);
         },
       ),
     );
@@ -165,27 +101,22 @@ class _FeedScreenState extends State<FeedScreen> {
 
 class _PostCard extends StatelessWidget {
   final Post post;
-  final VoidCallback onLike;
-  final VoidCallback onComment;
 
-  const _PostCard({
-    required this.post,
-    required this.onLike,
-    required this.onComment,
-  });
+  const _PostCard({required this.post});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
           ListTile(
             leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primaryContainer,
               backgroundImage: post.profilePhoto != null
                   ? NetworkImage(post.profilePhoto!)
                   : null,
@@ -214,6 +145,12 @@ class _PostCard extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: () {
+                // TODO: Show post options
+              },
             ),
           ),
 
@@ -256,22 +193,31 @@ class _PostCard extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.favorite_border),
-                  onPressed: onLike,
+                  onPressed: () {
+                    // TODO: Like post
+                  },
                 ),
                 Text('${post.likesCount}'),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.comment_outlined),
-                  onPressed: onComment,
+                  onPressed: () {
+                    // TODO: Open comments
+                  },
                 ),
                 Text('${post.commentsCount}'),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Delen komt binnenkort!')),
-                    );
+                    // TODO: Share post
+                  },
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.bookmark_border),
+                  onPressed: () {
+                    // TODO: Save post
                   },
                 ),
               ],

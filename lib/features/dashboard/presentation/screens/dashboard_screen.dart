@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../fishing_spots/presentation/screens/fishing_spots_screen.dart';
+import '../../../feed/presentation/screens/create_post_screen.dart';
 import '../../../feed/presentation/screens/feed_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../catches/presentation/screens/catches_screen.dart';
@@ -98,7 +99,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () {
-                // TODO: Navigate to create post
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreatePostScreen(),
+                  ),
+                ).then((result) {
+                  // Refresh feed if post was created
+                  if (result == true) {
+                    // TODO: Refresh feed
+                  }
+                });
               },
               icon: const Icon(Icons.add),
               label: const Text('Post'),
