@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/api/dio_client.dart';
+import '../../../blocked_users/data/services/blocked_users_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -18,7 +19,9 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   late final Dio _dio;
+  final _blockedUsersService = BlockedUsersService();
   bool _isLoading = true;
+  bool _isBlocked = false;
   Map<String, dynamic>? _profile;
   String _friendshipStatus = 'none'; // none, request_sent, request_received, friends
   bool _sendingRequest = false;
@@ -103,6 +106,67 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   @override
+  Future<void> _toggleBlock() async {
+    final action = _isBlocked ? "deblokkeren" : "blokkeren";
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_isBlocked ? "Gebruiker deblokkeren" : "Gebruiker blokkeren"),
+        content: Text("Weet je zeker dat je ${widget.userName ?? 'deze gebruiker'} wilt $action?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Annuleren"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: _isBlocked ? Colors.green : Colors.red,
+            ),
+            child: Text(_isBlocked ? "Deblokkeren" : "Blokkeren"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        if (_isBlocked) {
+          await _blockedUsersService.unblockUser(widget.userId);
+          if (mounted) {
+            setState(() => _isBlocked = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Gebruiker gedeblokkeerd"),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          await _blockedUsersService.blockUser(widget.userId);
+          if (mounted) {
+            setState(() => _isBlocked = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Gebruiker geblokkeerd"),
+                backgroundColor: Colors.red,
+              ),
+            );
+            // Go back after blocking
+            Navigator.pop(context);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Fout: $e")),
+          );
+        }
+      }
+    }
+  }
+
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -128,6 +192,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(profile['name'] ?? 'Profiel'),
+        actions: [
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Row(
+                  children: [
+                    Icon(
+                      _isBlocked ? Icons.check_circle_outline : Icons.block,
+                      color: _isBlocked ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(_isBlocked ? 'Deblokkeren' : 'Blokkeren'),
+                  ],
+                ),
+                onTap: () {
+                  Future.delayed(
+                    const Duration(milliseconds: 100),
+                    () => _toggleBlock(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

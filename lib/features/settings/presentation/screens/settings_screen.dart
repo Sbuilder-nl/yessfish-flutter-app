@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/services/privacy_service.dart';
+import '../../../blocked_users/presentation/screens/blocked_users_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -194,8 +195,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Geblokkeerde gebruikers'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Geblokkeerde gebruikers komt binnenkort')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BlockedUsersScreen(),
+                      ),
                     );
                   },
                 ),
