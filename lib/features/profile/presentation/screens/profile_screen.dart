@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'edit_profile_screen.dart';
+import '../../data/services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,8 +12,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  String? _userName;
-  String? _userEmail;
+  final _profileService = ProfileService();
+  
+  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,17 +24,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final name = await _storage.read(key: 'user_name');
-    final email = await _storage.read(key: 'user_email');
-    setState(() {
-      _userName = name ?? 'Demo Gebruiker';
-      _userEmail = email ?? 'demo@yessfish.com';
-    });
+    try {
+      final profile = await _profileService.getProfile();
+      setState(() {
+        _profile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('Error loading profile: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final userName = _profile?['name'] ?? 'Onbekend';
+    final userEmail = _profile?['email'] ?? '';
+    final postsCount = _profile?['posts_count'] ?? 0;
+    final friendsCount = _profile?['friends_count'] ?? 0;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -53,14 +69,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _userName ?? 'Laden...',
+                  userName,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _userEmail ?? '',
+                  userEmail,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -69,12 +85,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _StatColumn(label: 'Vangsten', value: '0'),
-                    _StatColumn(label: 'Volgers', value: '0'),
+                    _StatColumn(label: 'Vangsten', value: '$postsCount'),
+                    _StatColumn(label: 'Volgers', value: '$friendsCount'),
                     _StatColumn(label: 'Volgend', value: '0'),
                   ],
                 ),
               ],
+            ),
+          ),
+        ),
             ),
           ),
         ),

@@ -53,7 +53,7 @@ class ProfileService {
       if (location != null) data['location'] = location;
       if (phone != null) data['phone'] = phone;
       if (website != null) data['website'] = website;
-      if (birthDate != null) data['birth_date'] = birthDate;
+      if (birthDate != null) data['birthday'] = birthDate;
 
       final response = await _dio.put(
         '/profile.php',
