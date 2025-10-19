@@ -67,6 +67,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       default:
         return null; // No FAB for other tabs
     }
+  }
 
   @override
   Widget build(BuildContext context) {
