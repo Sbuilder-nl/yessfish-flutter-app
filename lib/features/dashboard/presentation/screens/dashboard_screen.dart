@@ -23,6 +23,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+
+  Widget? _buildFloatingActionButton() {
+    switch (_selectedIndex) {
+      case 0: // Feed tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CreatePostScreen(),
+              ),
+            ).then((result) {
+              // Refresh feed if post was created
+              if (result == true) {
+                // TODO: Refresh feed
+              }
+            });
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Post'),
+        );
+      
+      case 1: // Vangsten tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddCatchScreen(),
+              ),
+            ).then((result) {
+              // Refresh catches list if catch was added
+              if (result == true) {
+                setState(() {}); // Trigger rebuild to refresh CatchesScreen
+              }
+            });
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Vangst Toevoegen'),
+        );
+      
+      default:
+        return null; // No FAB for other tabs
+    }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -100,49 +145,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       floatingActionButton: _buildFloatingActionButton(),
     );
 
-  Widget? _buildFloatingActionButton() {
-    switch (_selectedIndex) {
-      case 0: // Feed tab
-        return FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CreatePostScreen(),
-              ),
-            ).then((result) {
-              // Refresh feed if post was created
-              if (result == true) {
-                // TODO: Refresh feed
-              }
-            });
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('Post'),
-        );
-      
-      case 1: // Vangsten tab
-        return FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AddCatchScreen(),
-              ),
-            ).then((result) {
-              // Refresh catches list if catch was added
-              if (result == true) {
-                setState(() {}); // Trigger rebuild to refresh CatchesScreen
-              }
-            });
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('Vangst Toevoegen'),
-        );
-      
-      default:
-        return null; // No FAB for other tabs
-    }
   }
   }
 }
