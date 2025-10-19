@@ -50,7 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (\!_formKey.currentState\!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
@@ -65,7 +65,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profiel bijgewerkt\! 🎣')),
+          const SnackBar(content: Text('Profiel bijgewerkt! 🎣')),
         );
         context.pop();
       }
@@ -98,7 +98,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         title: const Text('Profiel bewerken'),
         actions: [
-          if (\!_isLoading)
+          if (!_isLoading)
             TextButton(
               onPressed: _isSaving ? null : _saveProfile,
               child: _isSaving
