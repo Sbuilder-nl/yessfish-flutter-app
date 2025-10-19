@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/services/catches_service.dart';
+import '../../data/services/catches_service.dart';
 import '../../domain/models/fishing_catch.dart';
 import 'add_catch_screen.dart';
 
