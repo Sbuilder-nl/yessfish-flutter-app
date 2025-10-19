@@ -166,6 +166,18 @@ class _PremiumScreenState extends State<PremiumScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 32),
+              
+              // Cancel subscription button
+              OutlinedButton.icon(
+                onPressed: _cancelPremium,
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Abonnement opzeggen'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
             ],
           ),
         ),

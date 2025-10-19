@@ -70,11 +70,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  userName,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      userName,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_profile?['is_premium'] == 1 || _profile?['is_premium'] == true) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.workspace_premium,
+                        color: Colors.amber,
+                        size: 24,
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(

@@ -239,11 +239,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    profile['name'] ?? 'Onbekend',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        profile['name'] ?? 'Onbekend',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (profile['is_premium'] == 1 || profile['is_premium'] == true) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.workspace_premium,
+                          color: Colors.amber,
+                          size: 24,
+                        ),
+                      ],
+                    ],
                   ),
                   if (profile['username'] != null) ...[
                     const SizedBox(height: 4),
