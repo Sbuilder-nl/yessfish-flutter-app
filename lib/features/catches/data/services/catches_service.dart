@@ -51,14 +51,14 @@ class CatchesService {
     String? weatherConditions,
     double? waterTemp,
     String? caughtAt,
-    bool isPublic = true,
+    String privacy = "public", // public, friends, private
   }) async {
     await _init();
     
     try {
       final data = <String, dynamic>{
         'fish_species': fishSpecies,
-        'is_public': isPublic,
+        'privacy': privacy,
       };
 
       if (weight != null) data['weight'] = weight;

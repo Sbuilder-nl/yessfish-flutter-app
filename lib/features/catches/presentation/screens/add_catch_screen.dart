@@ -201,7 +201,7 @@ class _AddCatchScreenState extends State<AddCatchScreen> {
         photoUrl: photoUrl,
         description: _descriptionController.text.trim(),
         baitUsed: _baitController.text.trim(),
-        isPublic: true,
+        privacy: "public",
       );
 
       if (mounted) {
