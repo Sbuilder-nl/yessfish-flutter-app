@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/post.dart';
 import '../../data/services/posts_service.dart';
+import '../../../user_profile/presentation/screens/user_profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -216,20 +217,46 @@ class _PostCardState extends State<_PostCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: CircleAvatar(
-              backgroundImage: widget.post.profilePhoto != null
-                  ? NetworkImage(widget.post.profilePhoto!)
-                  : null,
-              child: widget.post.profilePhoto == null
-                  ? Text(
-                      widget.post.userName[0].toUpperCase(),
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    )
-                  : null,
+            leading: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfileScreen(
+                      userId: widget.post.userId,
+                      userName: widget.post.userName,
+                    ),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                backgroundImage: widget.post.profilePhoto != null
+                    ? NetworkImage(widget.post.profilePhoto!)
+                    : null,
+                child: widget.post.profilePhoto == null
+                    ? Text(
+                        widget.post.userName[0].toUpperCase(),
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      )
+                    : null,
+              ),
             ),
-            title: Text(widget.post.userName),
+            title: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfileScreen(
+                      userId: widget.post.userId,
+                      userName: widget.post.userName,
+                    ),
+                  ),
+                );
+              },
+              child: Text(widget.post.userName),
+            ),
             subtitle: Row(
               children: [
                 Text(widget.post.timeAgo),
