@@ -30,13 +30,13 @@ class FishingCatch {
       id: json['id'].toString(),
       userId: json['user_id'].toString(),
       fishSpecies: json['fish_species'] ?? 'Onbekend',
-      weight: json['weight'] != null ? (json['weight']).toDouble() : null,
-      length: json['length'] != null ? (json['length']).toDouble() : null,
+      weight: json['weight'] != null ? double.tryParse(json['weight'].toString()) : null,
+      length: json['length'] != null ? double.tryParse(json['length'].toString()) : null,
       location: json['location'],
       waterName: json['water_name'],
       imageUrl: json['image_url'],
-      notes: json['notes'],
-      createdAt: json['created_at'] ?? '',
+      notes: json['description'] ?? json['notes'], // Support both
+      createdAt: json['created_at'] ?? json['caught_at'] ?? '',
       timeAgo: json['time_ago'] ?? '',
     );
   }
