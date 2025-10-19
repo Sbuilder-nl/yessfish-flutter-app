@@ -19,6 +19,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
   bool _isLoading = true;
   String? _error;
   bool _premiumRequired = false;
+  bool _authRequired = false;
   Map<String, dynamic>? _pricingInfo;
   final TextEditingController _searchController = TextEditingController();
 
@@ -48,6 +49,12 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
       setState(() {
         _spots = spots;
         _filteredSpots = spots;
+        _isLoading = false;
+      });
+    } on AuthenticationRequiredException catch (e) {
+      setState(() {
+        _authRequired = true;
+        _error = e.message;
         _isLoading = false;
       });
     } on PremiumRequiredException catch (e) {
@@ -156,6 +163,10 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (_authRequired) {
+      return _buildAuthRequired();
+    }
+
     if (_premiumRequired) {
       return _buildPremiumRequired();
     }
@@ -211,6 +222,89 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
           final spot = _filteredSpots[index];
           return _SpotCard(spot: spot);
         },
+      ),
+    );
+  }
+
+  Widget _buildAuthRequired() {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Login icon
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.login,
+                size: 64,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              Inloggen Vereist,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Message
+            Text(
+              _error ?? Je moet ingelogd zijn om de viskaart te bekijken,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 32),
+
+            // Login button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  // Navigate to login screen
+                  Navigator.pushNamed(context, '/login').then((_) {
+                    // Refresh after login
+                    _loadSpots();
+                  });
+                },
+                icon: const Icon(Icons.login),
+                label: const Text(
+                  Inloggen,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Register link
+            TextButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/register').then((_) {
+                  _loadSpots();
+                });
+              },
+              child: const Text(Nog geen account? Registreer hier),
+            ),
+          ],
+        ),
       ),
     );
   }

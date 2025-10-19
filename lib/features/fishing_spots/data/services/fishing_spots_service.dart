@@ -12,6 +12,15 @@ class PremiumRequiredException implements Exception {
   String toString() => message;
 }
 
+class AuthenticationRequiredException implements Exception {
+  final String message;
+  
+  AuthenticationRequiredException(this.message);
+  
+  @override
+  String toString() => message;
+}
+
 class FishingSpotsService {
   late final Dio _dio;
   bool _initialized = false;
@@ -42,16 +51,25 @@ class FishingSpotsService {
         throw Exception(response.data["error"] ?? "Failed to load fishing spots");
       }
     } on DioException catch (e) {
-      // Check for 403 Premium Required error
-      if (e.response?.statusCode == 403 && 
-          e.response?.data != null && 
-          e.response!.data["premium_required"] == true) {
-        throw PremiumRequiredException(
-          e.response!.data["message"] ?? "Premium vereist voor viskaart",
-          pricingInfo: e.response!.data["pricing"],
+      // Check for 401 Authentication Required
+      if (e.response?.statusCode == 401) {
+        throw AuthenticationRequiredException(
+          e.response?.data["error"] ?? "Je moet ingelogd zijn om visplekken te bekijken"
         );
       }
-      throw Exception("Network error: ${e.message}");
+      
+      // Check for 403 Premium Required error
+      if (e.response?.statusCode == 403 && 
+          e.response?.data \!= null && 
+          e.response\!.data["premium_required"] == true) {
+        throw PremiumRequiredException(
+          e.response\!.data["message"] ?? "Premium vereist voor viskaart",
+          pricingInfo: e.response\!.data["pricing"],
+        );
+      }
+      
+      // Network or other errors
+      throw Exception("Netwerkfout: Kon visplekken niet laden. Controleer je internetverbinding.");
     }
   }
 
