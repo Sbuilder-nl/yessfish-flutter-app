@@ -1,6 +1,16 @@
-import 'package:dio/dio.dart';
-import '../../domain/models/fishing_spot.dart';
-import '../../../../core/api/dio_client.dart';
+import "package:dio/dio.dart";
+import "../../domain/models/fishing_spot.dart";
+import "../../../../core/api/dio_client.dart";
+
+class PremiumRequiredException implements Exception {
+  final String message;
+  final Map<String, dynamic>? pricingInfo;
+  
+  PremiumRequiredException(this.message, {this.pricingInfo});
+  
+  @override
+  String toString() => message;
+}
 
 class FishingSpotsService {
   late final Dio _dio;
@@ -21,18 +31,27 @@ class FishingSpotsService {
     try {
       await _init();
       
-      final response = await _dio.get('/fishing-spots.php');
+      final response = await _dio.get("/fishing-spots.php");
       
-      if (response.data['success'] == true) {
-        final spots = (response.data['spots'] as List)
+      if (response.data["success"] == true) {
+        final spots = (response.data["spots"] as List)
             .map((spot) => FishingSpot.fromJson(spot))
             .toList();
         return spots;
       } else {
-        throw Exception(response.data['error'] ?? 'Failed to load fishing spots');
+        throw Exception(response.data["error"] ?? "Failed to load fishing spots");
       }
     } on DioException catch (e) {
-      throw Exception('Network error: ${e.message}');
+      // Check for 403 Premium Required error
+      if (e.response?.statusCode == 403 && 
+          e.response?.data \!= null && 
+          e.response\!.data["premium_required"] == true) {
+        throw PremiumRequiredException(
+          e.response\!.data["message"] ?? "Premium vereist voor viskaart",
+          pricingInfo: e.response\!.data["pricing"],
+        );
+      }
+      throw Exception("Network error: ${e.message}");
     }
   }
 
@@ -46,7 +65,7 @@ class FishingSpotsService {
             (spot.region?.toLowerCase().contains(query.toLowerCase()) ?? false);
       }).toList();
     } catch (e) {
-      throw Exception('Search failed: $e');
+      rethrow;
     }
   }
 }

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
-import '../../domain/models/fishing_spot.dart';
-import '../../data/services/fishing_spots_service.dart';
+import "package:flutter/material.dart";
+import "../../domain/models/fishing_spot.dart";
+import "../../data/services/fishing_spots_service.dart";
+import "../../../premium/presentation/screens/premium_screen.dart";
 
 class FishingSpotsScreen extends StatefulWidget {
   const FishingSpotsScreen({super.key});
@@ -15,6 +16,8 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
   List<FishingSpot> _filteredSpots = [];
   bool _isLoading = true;
   String? _error;
+  bool _premiumRequired = false;
+  Map<String, dynamic>? _pricingInfo;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -27,6 +30,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _premiumRequired = false;
     });
 
     try {
@@ -34,6 +38,13 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
       setState(() {
         _spots = spots;
         _filteredSpots = spots;
+        _isLoading = false;
+      });
+    } on PremiumRequiredException catch (e) {
+      setState(() {
+        _premiumRequired = true;
+        _error = e.message;
+        _pricingInfo = e.pricingInfo;
         _isLoading = false;
       });
     } catch (e) {
@@ -58,35 +69,48 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
     });
   }
 
+  void _navigateToPremium() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PremiumScreen(),
+      ),
+    ).then((_) {
+      // Refresh after returning from premium screen
+      _loadSpots();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Zoek visplekken...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filterSpots('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // Search bar (alleen tonen als niet premium required)
+          if (\!_premiumRequired) 
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: "Zoek visplekken...",
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filterSpots("");
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
+                onChanged: _filterSpots,
               ),
-              onChanged: _filterSpots,
             ),
-          ),
 
           // Content
           Expanded(
@@ -102,20 +126,24 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_error != null) {
+    if (_premiumRequired) {
+      return _buildPremiumRequired();
+    }
+
+    if (_error \!= null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Fout bij laden visplekken'),
+            const Text("Fout bij laden visplekken"),
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: Colors.grey)),
+            Text(_error\!, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadSpots,
-              child: const Text('Opnieuw proberen'),
+              child: const Text("Opnieuw proberen"),
             ),
           ],
         ),
@@ -129,15 +157,15 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
           children: [
             const Icon(Icons.location_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('Geen visplekken gevonden'),
+            const Text("Geen visplekken gevonden"),
             if (_searchController.text.isNotEmpty) ...[
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   _searchController.clear();
-                  _filterSpots('');
+                  _filterSpots("");
                 },
-                child: const Text('Toon alle plekken'),
+                child: const Text("Toon alle plekken"),
               ),
             ],
           ],
@@ -153,6 +181,171 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
           final spot = _filteredSpots[index];
           return _SpotCard(spot: spot);
         },
+      ),
+    );
+  }
+
+  Widget _buildPremiumRequired() {
+    final theme = Theme.of(context);
+    final features = _pricingInfo?["features"] as List? ?? [];
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Premium icon
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.workspace_premium,
+                size: 64,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              "Premium Vereist",
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Message
+            Text(
+              _error ?? "De viskaart met GPS markers is alleen beschikbaar voor premium leden",
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 32),
+
+            // Pricing card
+            Card(
+              color: theme.colorScheme.primaryContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "€4,99",
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "/ maand",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "30 dagen gratis\!",
+                        style: TextStyle(
+                          color: theme.colorScheme.onSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Features
+            if (features.isNotEmpty) ...[
+              Text(
+                "Premium voordelen:",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...features.map((feature) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        feature.toString(),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+              const SizedBox(height: 32),
+            ],
+
+            // Upgrade button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _navigateToPremium,
+                icon: const Icon(Icons.workspace_premium),
+                label: const Text(
+                  "Upgrade naar Premium",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Info text
+            Text(
+              "Je kunt op elk moment opzeggen",
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -179,7 +372,7 @@ class _SpotCard extends StatelessWidget {
         onTap: () {
           // TODO: Navigate to spot details
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Details voor ${spot.name} komen binnenkort!')),
+            SnackBar(content: Text("Details voor ${spot.name} komen binnenkort\!")),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -209,15 +402,15 @@ class _SpotCard extends StatelessWidget {
               const SizedBox(height: 8),
 
               // Location
-              if (spot.municipality != null || spot.region != null) ...[
+              if (spot.municipality \!= null || spot.region \!= null) ...[
                 Row(
                   children: [
                     Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       [spot.municipality, spot.region]
-                          .where((e) => e != null)
-                          .join(', '),
+                          .where((e) => e \!= null)
+                          .join(", "),
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
@@ -238,7 +431,7 @@ class _SpotCard extends StatelessWidget {
               Wrap(
                 spacing: 4,
                 runSpacing: 4,
-                children: spot.fishSpecies.split(',').take(3).map((fish) {
+                children: spot.fishSpecies.split(",").take(3).map((fish) {
                   return Chip(
                     label: Text(
                       fish.trim(),
@@ -262,35 +455,35 @@ class _SpotCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   _StatChip(
                     icon: Icons.phishing,
-                    label: '${spot.catchCount} vangsten',
+                    label: "${spot.catchCount} vangsten",
                   ),
                   const SizedBox(width: 12),
                   _StatChip(
                     icon: Icons.chat_bubble_outline,
-                    label: '${spot.reviewCount}',
+                    label: "${spot.reviewCount}",
                   ),
                 ],
               ),
 
               // Details
-              if (spot.depth != null || spot.surfaceArea != null) ...[
+              if (spot.depth \!= null || spot.surfaceArea \!= null) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    if (spot.depth != null) ...[
+                    if (spot.depth \!= null) ...[
                       Icon(Icons.water, size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
-                        'Diepte: ${spot.depth}m',
+                        "Diepte: ${spot.depth}m",
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       const SizedBox(width: 16),
                     ],
-                    if (spot.surfaceArea != null) ...[
+                    if (spot.surfaceArea \!= null) ...[
                       Icon(Icons.square_foot, size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
-                        '${spot.surfaceArea} ha',
+                        "${spot.surfaceArea} ha",
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -318,12 +511,12 @@ class _CrowdBadge extends StatelessWidget {
 
   Color _getColor() {
     switch (level) {
-      case 'very_high':
+      case "very_high":
         return Colors.red;
-      case 'high':
+      case "high":
         return Colors.orange;
-      case 'medium':
-        return Colors.yellow[700]!;
+      case "medium":
+        return Colors.yellow[700]\!;
       default:
         return Colors.green;
     }
