@@ -83,6 +83,53 @@ class _PremiumScreenState extends State<PremiumScreen> {
     }
   }
 
+  Future<void> _cancelPremium() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Abonnement opzeggen'),
+        content: const Text('Weet je zeker dat je je premium abonnement wilt opzeggen? Je premium voordelen blijven actief tot het einde van de huidige periode.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Opzeggen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final response = await _dio.delete('/premium.php');
+
+        if (response.data['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response.data['message'] ?? 'Premium opgezegd'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          await _loadPremiumStatus();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Fout: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
