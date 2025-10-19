@@ -125,6 +125,7 @@ class PostsService {
     } on DioException catch (e) {
       throw Exception('Network error: ${e.message}');
     }
+  }
 
   /// Get comments for a post
   Future<List<Map<String, dynamic>>> getComments(String postId) async {
