@@ -162,8 +162,7 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 }
-
-class _PostCard extends StatelessWidget {
+class _PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback onLike;
   final VoidCallback onComment;
@@ -175,40 +174,72 @@ class _PostCard extends StatelessWidget {
   });
 
   @override
+  State<_PostCard> createState() => _PostCardState();
+}
+
+class _PostCardState extends State<_PostCard> {
+  final _postsService = PostsService();
+  List<Map<String, dynamic>> _comments = [];
+  bool _loadingComments = false;
+  bool _showAllComments = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  Future<void> _loadComments() async {
+    setState(() => _loadingComments = true);
+    try {
+      final comments = await _postsService.getComments(widget.post.id);
+      setState(() {
+        _comments = comments;
+        _loadingComments = false;
+      });
+    } catch (e) {
+      setState(() => _loadingComments = false);
+      print("Error loading comments: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final displayedComments = _showAllComments 
+        ? _comments 
+        : _comments.take(3).toList();
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           ListTile(
             leading: CircleAvatar(
-              backgroundImage: post.profilePhoto != null
-                  ? NetworkImage(post.profilePhoto!)
+              backgroundImage: widget.post.profilePhoto != null
+                  ? NetworkImage(widget.post.profilePhoto!)
                   : null,
-              child: post.profilePhoto == null
+              child: widget.post.profilePhoto == null
                   ? Text(
-                      post.userName[0].toUpperCase(),
+                      widget.post.userName[0].toUpperCase(),
                       style: TextStyle(
                         color: theme.colorScheme.onPrimaryContainer,
                       ),
                     )
                   : null,
             ),
-            title: Text(post.userName),
+            title: Text(widget.post.userName),
             subtitle: Row(
               children: [
-                Text(post.timeAgo),
-                if (post.location != null) ...[
+                Text(widget.post.timeAgo),
+                if (widget.post.location != null) ...[
                   const SizedBox(width: 8),
                   const Icon(Icons.location_on, size: 12),
                   const SizedBox(width: 2),
                   Expanded(
                     child: Text(
-                      post.location!,
+                      widget.post.location!,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -216,22 +247,18 @@ class _PostCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Content
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(post.content),
+            child: Text(widget.post.content),
           ),
           const SizedBox(height: 8),
-
-          // Image
-          if (post.imageUrl != null)
+          if (widget.post.imageUrl != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  post.imageUrl!,
+                  widget.post.imageUrl!,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
@@ -248,35 +275,113 @@ class _PostCard extends StatelessWidget {
                 ),
               ),
             ),
-
-          // Actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.favorite_border),
-                  onPressed: onLike,
+                  onPressed: widget.onLike,
                 ),
-                Text('${post.likesCount}'),
+                Text("${widget.post.likesCount}"),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.comment_outlined),
-                  onPressed: onComment,
+                  onPressed: widget.onComment,
                 ),
-                Text('${post.commentsCount}'),
+                Text("${_comments.length}"),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Delen komt binnenkort!')),
+                      const SnackBar(content: Text("Delen komt binnenkort!")),
                     );
                   },
                 ),
               ],
             ),
           ),
+          if (_comments.isNotEmpty) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...displayedComments.map((comment) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: comment["profile_photo"] != null
+                              ? NetworkImage(comment["profile_photo"])
+                              : null,
+                          child: comment["profile_photo"] == null
+                              ? Text(
+                                  (comment["user_name"] ?? "?")[0].toUpperCase(),
+                                  style: const TextStyle(fontSize: 12),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    comment["user_name"] ?? "Onbekend",
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    comment["time_ago"] ?? "",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(comment["comment"] ?? comment["content"] ?? ""),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                  if (_comments.length > 3 && !_showAllComments)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() => _showAllComments = true);
+                      },
+                      icon: const Icon(Icons.expand_more),
+                      label: Text("Lees meer (${_comments.length - 3} reacties)"),
+                    ),
+                  if (_showAllComments)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() => _showAllComments = false);
+                      },
+                      icon: const Icon(Icons.expand_less),
+                      label: const Text("Toon minder"),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          if (_loadingComments)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
         ],
       ),
     );

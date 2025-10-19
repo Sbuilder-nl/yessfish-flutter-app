@@ -125,5 +125,24 @@ class PostsService {
     } on DioException catch (e) {
       throw Exception('Network error: ${e.message}');
     }
+
+  /// Get comments for a post
+  Future<List<Map<String, dynamic>>> getComments(String postId) async {
+    try {
+      await _init();
+      
+      final response = await _dio.get(
+        '/comments.php',
+        queryParameters: {'post_id': postId},
+      );
+
+      if (response.data['success'] == true) {
+        return List<Map<String, dynamic>>.from(response.data['comments'] ?? []);
+      } else {
+        throw Exception(response.data['error'] ?? 'Failed to get comments');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
   }
 }
