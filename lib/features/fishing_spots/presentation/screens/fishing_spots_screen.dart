@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "../../domain/models/fishing_spot.dart";
 import "../../data/services/fishing_spots_service.dart";
 import "../../../premium/presentation/screens/premium_screen.dart";
+import "fishing_map_screen.dart";
 
 class FishingSpotsScreen extends StatefulWidget {
   const FishingSpotsScreen({super.key});
@@ -10,7 +11,8 @@ class FishingSpotsScreen extends StatefulWidget {
   State<FishingSpotsScreen> createState() => _FishingSpotsScreenState();
 }
 
-class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
+class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final FishingSpotsService _spotsService = FishingSpotsService();
   List<FishingSpot> _spots = [];
   List<FishingSpot> _filteredSpots = [];
@@ -23,7 +25,15 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadSpots();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSpots() async {
@@ -84,8 +94,29 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      appBar: AppBar(
+        title: const Text("Visplekken"),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.list), text: "Lijst"),
+            Tab(icon: Icon(Icons.map), text: "Kaart"),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
         children: [
+          _buildListView(),
+          const FishingMapScreen(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListView() {
+    return Column(
+      children: [
           // Search bar (alleen tonen als niet premium required)
           if (!_premiumRequired) 
             Padding(
@@ -350,11 +381,6 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 }
 
 class _SpotCard extends StatelessWidget {
