@@ -87,7 +87,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
       body: Column(
         children: [
           // Search bar (alleen tonen als niet premium required)
-          if (\!_premiumRequired) 
+          if (!_premiumRequired) 
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -130,7 +130,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
       return _buildPremiumRequired();
     }
 
-    if (_error \!= null) {
+    if (_error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -139,7 +139,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
             const SizedBox(height: 16),
             const Text("Fout bij laden visplekken"),
             const SizedBox(height: 8),
-            Text(_error\!, style: const TextStyle(color: Colors.grey)),
+            Text(_error!, style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadSpots,
@@ -272,7 +272,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        "30 dagen gratis\!",
+                        "30 dagen gratis!",
                         style: TextStyle(
                           color: theme.colorScheme.onSecondary,
                           fontWeight: FontWeight.bold,
@@ -372,7 +372,7 @@ class _SpotCard extends StatelessWidget {
         onTap: () {
           // TODO: Navigate to spot details
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Details voor ${spot.name} komen binnenkort\!")),
+            SnackBar(content: Text("Details voor ${spot.name} komen binnenkort!")),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -402,14 +402,14 @@ class _SpotCard extends StatelessWidget {
               const SizedBox(height: 8),
 
               // Location
-              if (spot.municipality \!= null || spot.region \!= null) ...[
+              if (spot.municipality != null || spot.region != null) ...[
                 Row(
                   children: [
                     Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       [spot.municipality, spot.region]
-                          .where((e) => e \!= null)
+                          .where((e) => e != null)
                           .join(", "),
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
@@ -466,11 +466,11 @@ class _SpotCard extends StatelessWidget {
               ),
 
               // Details
-              if (spot.depth \!= null || spot.surfaceArea \!= null) ...[
+              if (spot.depth != null || spot.surfaceArea != null) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    if (spot.depth \!= null) ...[
+                    if (spot.depth != null) ...[
                       Icon(Icons.water, size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
@@ -479,7 +479,7 @@ class _SpotCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
                     ],
-                    if (spot.surfaceArea \!= null) ...[
+                    if (spot.surfaceArea != null) ...[
                       Icon(Icons.square_foot, size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
@@ -516,7 +516,7 @@ class _CrowdBadge extends StatelessWidget {
       case "high":
         return Colors.orange;
       case "medium":
-        return Colors.yellow[700]\!;
+        return Colors.yellow[700]!;
       default:
         return Colors.green;
     }
