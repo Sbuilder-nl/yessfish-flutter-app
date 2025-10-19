@@ -359,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (result \!= null && result \!= _commentPrivacy) {
+    if (result != null && result != _commentPrivacy) {
       setState(() => _commentPrivacy = result);
       await _savePrivacySettings();
     }
@@ -399,7 +399,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (result \!= null && result \!= _messagePrivacy) {
+    if (result != null && result != _messagePrivacy) {
       setState(() => _messagePrivacy = result);
       await _savePrivacySettings();
     }
