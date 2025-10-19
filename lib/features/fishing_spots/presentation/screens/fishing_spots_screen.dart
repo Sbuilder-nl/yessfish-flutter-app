@@ -148,8 +148,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
             child: _buildContent(),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildContent() {
