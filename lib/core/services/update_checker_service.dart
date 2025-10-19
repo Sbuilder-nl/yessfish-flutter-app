@@ -108,6 +108,7 @@ class UpdateCheckerService {
         ongoing: true,
         showProgress: true,
         progress: 0,
+        silent: true, // SILENT - no sound/vibration when download starts
       );
 
       // Request storage permissions for older Android versions
@@ -183,13 +184,14 @@ class UpdateCheckerService {
 
       _downloadedApkPath = savePath;
 
-      // Show completion notification
+      // Show completion notification (silent - auto-install starts immediately)
       await _showNotification(
         id: 1,
         title: 'Update Klaar! 🎣',
-        body: 'YessFish v$version is gedownload. Tik om te installeren.',
+        body: 'Installatie wordt gestart...',
         ongoing: false,
         showProgress: false,
+        silent: true, // SILENT - auto-install starts automatically
       );
 
       _isDownloading = false;
