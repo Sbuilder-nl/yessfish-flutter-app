@@ -42,7 +42,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (\!serviceEnabled) {
+      if (!serviceEnabled) {
         return;
       }
 
@@ -118,11 +118,11 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
     final Set<Marker> markers = {};
 
     // Add user location marker
-    if (_userLocation \!= null) {
+    if (_userLocation != null) {
       markers.add(
         Marker(
           markerId: const MarkerId("user_location"),
-          position: LatLng(_userLocation\!.latitude, _userLocation\!.longitude),
+          position: LatLng(_userLocation!.latitude, _userLocation!.longitude),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
           infoWindow: const InfoWindow(
             title: "Jouw locatie",
@@ -134,7 +134,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
 
     // Add fishing spot markers
     for (final spot in _spots) {
-      if (spot.latitude \!= null && spot.longitude \!= null) {
+      if (spot.latitude != null && spot.longitude != null) {
         // Color based on crowd level
         double hue = BitmapDescriptor.hueGreen; // Low crowd
         if (spot.crowdLevel == "high") {
@@ -148,7 +148,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
         markers.add(
           Marker(
             markerId: MarkerId(spot.id),
-            position: LatLng(spot.latitude\!, spot.longitude\!),
+            position: LatLng(spot.latitude!, spot.longitude!),
             icon: BitmapDescriptor.defaultMarkerWithHue(hue),
             infoWindow: InfoWindow(
               title: spot.name,
@@ -193,7 +193,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
       );
     }
 
-    if (_error \!= null && \!_premiumRequired) {
+    if (_error != null && !_premiumRequired) {
       return Scaffold(
         body: Center(
           child: Column(
@@ -203,7 +203,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               const SizedBox(height: 16),
               const Text("Fout bij laden viskaart"),
               const SizedBox(height: 8),
-              Text(_error\!, style: const TextStyle(color: Colors.grey)),
+              Text(_error!, style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadSpots,
@@ -221,10 +221,10 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
           // Google Map
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: _userLocation \!= null
-                  ? LatLng(_userLocation\!.latitude, _userLocation\!.longitude)
+              target: _userLocation != null
+                  ? LatLng(_userLocation!.latitude, _userLocation!.longitude)
                   : _netherlandsCenter,
-              zoom: _userLocation \!= null ? 12.0 : 7.0,
+              zoom: _userLocation != null ? 12.0 : 7.0,
             ),
             markers: _markers,
             myLocationEnabled: true,
@@ -287,7 +287,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               onPressed: () {
                 // TODO: Implement filter dialog
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Filters komen binnenkort\!")),
+                  const SnackBar(content: Text("Filters komen binnenkort!")),
                 );
               },
               child: const Icon(Icons.filter_list),
@@ -295,17 +295,17 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
           ),
 
           // Selected spot bottom sheet
-          if (_selectedSpot \!= null)
+          if (_selectedSpot != null)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
-              child: _buildSpotBottomSheet(_selectedSpot\!),
+              child: _buildSpotBottomSheet(_selectedSpot!),
             ),
 
           // Legend
           Positioned(
-            bottom: _selectedSpot \!= null ? 240 : 100,
+            bottom: _selectedSpot != null ? 240 : 100,
             right: 16,
             child: Material(
               elevation: 4,
@@ -410,14 +410,14 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               const SizedBox(height: 8),
 
               // Location
-              if (spot.municipality \!= null || spot.region \!= null) ...[
+              if (spot.municipality != null || spot.region != null) ...[
                 Row(
                   children: [
                     Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       [spot.municipality, spot.region]
-                          .where((e) => e \!= null)
+                          .where((e) => e != null)
                           .join(", "),
                       style: TextStyle(color: Colors.grey[600]),
                     ),
@@ -466,10 +466,10 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         // Navigate to spot
-                        if (spot.latitude \!= null && spot.longitude \!= null) {
+                        if (spot.latitude != null && spot.longitude != null) {
                           _mapController?.animateCamera(
                             CameraUpdate.newLatLngZoom(
-                              LatLng(spot.latitude\!, spot.longitude\!),
+                              LatLng(spot.latitude!, spot.longitude!),
                               15.0,
                             ),
                           );
@@ -485,7 +485,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                       onPressed: () {
                         // TODO: Navigate to spot details
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Details voor ${spot.name} komen binnenkort\!")),
+                          SnackBar(content: Text("Details voor ${spot.name} komen binnenkort!")),
                         );
                       },
                       icon: const Icon(Icons.info_outline),
@@ -511,7 +511,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
         color = Colors.orange;
         break;
       case "medium":
-        color = Colors.yellow[700]\!;
+        color = Colors.yellow[700]!;
         break;
       default:
         color = Colors.green;
@@ -642,7 +642,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          "30 dagen gratis\!",
+                          "30 dagen gratis!",
                           style: TextStyle(
                             color: theme.colorScheme.onSecondary,
                             fontWeight: FontWeight.bold,
