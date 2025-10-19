@@ -37,7 +37,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         imageQuality: 85,
       );
 
-      if (photo \!= null) {
+      if (photo != null) {
         setState(() {
           _selectedPhotoPath = photo.path;
         });
@@ -66,7 +66,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto geüpload\! 📸')),
+          const SnackBar(content: Text('Foto geüpload! 📸')),
         );
       }
     } catch (e) {
@@ -144,7 +144,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (mounted) {
         Navigator.pop(context, true); // Return true to refresh feed
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post geplaatst\! 🎣')),
+          const SnackBar(content: Text('Post geplaatst! 🎣')),
         );
       }
     } catch (e) {
@@ -193,7 +193,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 hintText: 'Wat wil je delen?',
                 border: OutlineInputBorder(),
               ),
-              enabled: \!_isSubmitting,
+              enabled: !_isSubmitting,
             ),
             const SizedBox(height: 16),
 
@@ -206,18 +206,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 prefixIcon: Icon(Icons.location_on_outlined),
                 border: OutlineInputBorder(),
               ),
-              enabled: \!_isSubmitting,
+              enabled: !_isSubmitting,
             ),
             const SizedBox(height: 16),
 
             // Photo preview
-            if (_selectedPhotoPath \!= null) ...[
+            if (_selectedPhotoPath != null) ...[
               Card(
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
                     Image.file(
-                      File(_selectedPhotoPath\!),
+                      File(_selectedPhotoPath!),
                       width: double.infinity,
                       height: 300,
                       fit: BoxFit.cover,
