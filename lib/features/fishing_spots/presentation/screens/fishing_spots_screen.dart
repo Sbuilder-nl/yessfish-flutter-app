@@ -301,7 +301,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
                   _loadSpots();
                 });
               },
-              child: const Text(Nog geen account? Registreer hier),
+              child: const Text("Nog geen account? Registreer hier"),
             ),
           ],
         ),
