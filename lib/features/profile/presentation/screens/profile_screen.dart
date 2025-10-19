@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'edit_profile_screen.dart';
 import '../../data/services/profile_service.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
+import '../../../premium/presentation/screens/premium_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -119,8 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 title: const Text('Instellingen'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Instellingen komen binnenkort!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
                   );
                 },
               ),
@@ -137,8 +142,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: theme.colorScheme.primaryContainer,
                 ),
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Premium upgrade komt binnenkort!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PremiumScreen(),
+                    ),
                   );
                 },
               ),
