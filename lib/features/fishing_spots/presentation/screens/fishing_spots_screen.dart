@@ -176,11 +176,11 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
             const SizedBox(height: 16),
             const Text("Fout bij laden visplekken"),
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(color: Colors.grey)),
+            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadSpots,
@@ -196,7 +196,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.location_off, size: 64, color: Colors.grey),
+            Icon(Icons.location_off, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             const Text("Geen visplekken gevonden"),
             if (_searchController.text.isNotEmpty) ...[
@@ -524,13 +524,13 @@ class _SpotCard extends StatelessWidget {
               if (spot.municipality != null || spot.region != null) ...[
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                    Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       [spot.municipality, spot.region]
                           .where((e) => e != null)
                           .join(", "),
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                     ),
                   ],
                 ),
@@ -590,20 +590,20 @@ class _SpotCard extends StatelessWidget {
                 Row(
                   children: [
                     if (spot.depth != null) ...[
-                      Icon(Icons.water, size: 14, color: Colors.grey[600]),
+                      Icon(Icons.water, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         "Diepte: ${spot.depth}m",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(width: 16),
                     ],
                     if (spot.surfaceArea != null) ...[
-                      Icon(Icons.square_foot, size: 14, color: Colors.grey[600]),
+                      Icon(Icons.square_foot, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         "${spot.surfaceArea} ha",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ],
@@ -629,15 +629,17 @@ class _CrowdBadge extends StatelessWidget {
   });
 
   Color _getColor() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     switch (level) {
       case "very_high":
-        return Colors.red;
+        return isDark ? const Color(0xFFFF6B6B) : Colors.red;
       case "high":
-        return Colors.orange;
+        return isDark ? const Color(0xFFFF9E4F) : Colors.orange;
       case "medium":
-        return Colors.yellow[700]!;
+        return isDark ? const Color(0xFFFFC107) : Colors.yellow[700]!;
       default:
-        return Colors.green;
+        return isDark ? const Color(0xFF51CF66) : Colors.green;
     }
   }
 

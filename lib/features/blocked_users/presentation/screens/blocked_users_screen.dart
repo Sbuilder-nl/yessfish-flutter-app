@@ -67,9 +67,11 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           });
           
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Gebruiker gedeblokkeerd"),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text("Gebruiker gedeblokkeerd"),
+              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                  ? const Color(0xFF51CF66) 
+                  : Colors.green,
             ),
           );
         }

@@ -199,11 +199,11 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               const Text("Fout bij laden viskaart"),
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.grey)),
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadSpots,
@@ -252,7 +252,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
@@ -313,7 +313,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -340,6 +340,22 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
         ],
       ),
     );
+  }
+
+    Color _getCrowdColor(String level) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    switch (level) {
+      case "very_high":
+        return isDark ? const Color(0xFFFF6B6B) : Colors.red;
+      case "high":
+        return isDark ? const Color(0xFFFF9E4F) : Colors.orange;
+      case "medium":
+        return isDark ? const Color(0xFFFFC107) : Colors.yellow[700]!;
+      default: // "low"
+        return isDark ? const Color(0xFF51CF66) : Colors.green;
+    }
   }
 
   Widget _buildLegendItem(Color color, String label) {
@@ -387,7 +403,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -413,13 +429,13 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
               if (spot.municipality != null || spot.region != null) ...[
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                    Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       [spot.municipality, spot.region]
                           .where((e) => e != null)
                           .join(", "),
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -440,7 +456,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                   const SizedBox(width: 20),
                   _buildStat(Icons.phishing, "${spot.catchCount}", theme.colorScheme.primary),
                   const SizedBox(width: 20),
-                  _buildStat(Icons.people, "${spot.activeUsers}", Colors.blue),
+                  _buildStat(Icons.people, "${spot.activeUsers}", Theme.of(context).colorScheme.primary),
                 ],
               ),
               const SizedBox(height: 16),
@@ -589,7 +605,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
                 child: const Icon(
                   Icons.map,
                   size: 64,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
               const SizedBox(height: 32),
