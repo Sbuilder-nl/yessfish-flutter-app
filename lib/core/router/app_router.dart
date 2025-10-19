@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/',
   routes: [
+    GoRoute(
+      path: '/',
+      name: 'splash',
+      pageBuilder: (context, state) => MaterialPage(
+        key: state.pageKey,
+        child: const SplashScreen(),
+      ),
+    ),
     GoRoute(
       path: '/login',
       name: 'login',
