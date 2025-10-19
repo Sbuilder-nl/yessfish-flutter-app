@@ -253,7 +253,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
 
             // Title
             Text(
-              Inloggen Vereist,
+              "Inloggen Vereist",
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -262,7 +262,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
 
             // Message
             Text(
-              _error ?? Je moet ingelogd zijn om de viskaart te bekijken,
+              _error ?? "Je moet ingelogd zijn om de viskaart te bekijken",
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge,
             ),
@@ -281,7 +281,7 @@ class _FishingSpotsScreenState extends State<FishingSpotsScreen> with SingleTick
                 },
                 icon: const Icon(Icons.login),
                 label: const Text(
-                  Inloggen,
+                  "Inloggen",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
