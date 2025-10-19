@@ -115,7 +115,7 @@ class PostsService {
         '/comments.php',
         data: {
           'post_id': postId,
-          'comment': comment,
+          'content': comment,
         },
       );
 
