@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../data/services/privacy_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,6 +10,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _privacyService = PrivacyService();
+  bool _loadingSettings = true;
+  
   // Notification settings
   bool _notifyNewPosts = true;
   bool _notifyComments = true;
@@ -17,10 +21,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
   
   // Privacy settings
   bool _profilePublic = true;
-  bool _shareLocation = true;
+  String _commentPrivacy = 'public'; // public, friends, none
+  String _messagePrivacy = 'friends'; // public, friends, none
   
   // App preferences
   bool _darkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrivacySettings();
+  }
+
+  Future<void> _loadPrivacySettings() async {
+    try {
+      final settings = await _privacyService.getPrivacySettings();
+      if (mounted) {
+        setState(() {
+          _profilePublic = settings['profile_public'] == 1 || settings['profile_public'] == true;
+          _commentPrivacy = settings['comment_privacy'] ?? 'public';
+          _messagePrivacy = settings['message_privacy'] ?? 'friends';
+          _loadingSettings = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingSettings = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij laden: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +162,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
+                ListTile(
+                  leading: const Icon(Icons.comment_outlined),
+                  title: const Text('Reacties privacy'),
+                  subtitle: Text(_commentPrivacyLabel()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showCommentPrivacyDialog(),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.message_outlined),
+                  title: const Text('Berichten privacy'),
+                  subtitle: Text(_messagePrivacyLabel()),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showMessagePrivacyDialog(),
+                ),
+                const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.public),
                   title: const Text('Publiek profiel'),
@@ -269,11 +317,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _savePrivacySettings() {
-    // TODO: Save to backend API
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Privacy instellingen opgeslagen')),
-    );
+  Future<void> _savePrivacySettings() async {
+    try {
+      await _privacyService.updatePrivacySettings(
+        commentPrivacy: _commentPrivacy,
+        messagePrivacy: _messagePrivacy,
+        profilePublic: _profilePublic,
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Privacy instellingen opgeslagen ✓')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout: $e')),
+        );
+      }
+    }
   }
 
   void _showChangePasswordDialog(BuildContext context) {
@@ -331,6 +394,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SnackBar(content: Text('Account verwijderen komt binnenkort')),
               );
             },
+
+  String _commentPrivacyLabel() {
+    switch (_commentPrivacy) {
+      case 'public':
+        return 'Iedereen kan reageren';
+      case 'friends':
+        return 'Alleen vrienden';
+      case 'none':
+        return 'Reacties uitgeschakeld';
+      default:
+        return 'Onbekend';
+    }
+  }
+
+  String _messagePrivacyLabel() {
+    switch (_messagePrivacy) {
+      case 'public':
+        return 'Iedereen kan berichten sturen';
+      case 'friends':
+        return 'Alleen vrienden';
+      case 'none':
+        return 'Berichten uitgeschakeld';
+      default:
+        return 'Onbekend';
+    }
+  }
+
+  Future<void> _showCommentPrivacyDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reacties privacy'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              title: const Text('Iedereen'),
+              subtitle: const Text('Iedereen kan reageren op je posts'),
+              value: 'public',
+              groupValue: _commentPrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+            RadioListTile<String>(
+              title: const Text('Vrienden'),
+              subtitle: const Text('Alleen vrienden kunnen reageren'),
+              value: 'friends',
+              groupValue: _commentPrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+            RadioListTile<String>(
+              title: const Text('Niemand'),
+              subtitle: const Text('Reacties uitgeschakeld'),
+              value: 'none',
+              groupValue: _commentPrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result != _commentPrivacy) {
+      setState(() => _commentPrivacy = result);
+      await _savePrivacySettings();
+    }
+  }
+
+  Future<void> _showMessagePrivacyDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Berichten privacy'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              title: const Text('Iedereen'),
+              subtitle: const Text('Iedereen kan je berichten sturen'),
+              value: 'public',
+              groupValue: _messagePrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+            RadioListTile<String>(
+              title: const Text('Vrienden'),
+              subtitle: const Text('Alleen vrienden kunnen berichten sturen'),
+              value: 'friends',
+              groupValue: _messagePrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+            RadioListTile<String>(
+              title: const Text('Niemand'),
+              subtitle: const Text('Berichten uitgeschakeld'),
+              value: 'none',
+              groupValue: _messagePrivacy,
+              onChanged: (value) => Navigator.pop(context, value),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && result != _messagePrivacy) {
+      setState(() => _messagePrivacy = result);
+      await _savePrivacySettings();
+    }
+  }
+
             child: const Text('Verwijderen'),
           ),
         ],

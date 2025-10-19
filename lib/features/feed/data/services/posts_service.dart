@@ -146,4 +146,28 @@ class PostsService {
       throw Exception('Network error: ${e.message}');
     }
   }
+
+  /// Upload photo for post
+  Future<String> uploadPostPhoto(String filePath) async {
+    try {
+      await _init();
+      
+      final formData = FormData.fromMap({
+        'post_photo': await MultipartFile.fromFile(filePath),
+      });
+
+      final response = await _dio.post(
+        '/upload-post-photo.php',
+        data: formData,
+      );
+
+      if (response.data['success'] == true) {
+        return response.data['photo_url'];
+      } else {
+        throw Exception(response.data['error'] ?? 'Photo upload failed');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
 }
