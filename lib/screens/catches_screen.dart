@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import 'new_catch_screen.dart';
+import 'catch_detail_screen.dart';
 
 class CatchesScreen extends StatefulWidget {
   const CatchesScreen({super.key});
@@ -64,7 +65,8 @@ class _CatchesScreenState extends State<CatchesScreen> {
                             if (c['length_cm'] != null) '${c['length_cm']} cm',
                             if (c['bait'] != null) c['bait'],
                           ].join(' · ')),
-                          trailing: c['moon_phase'] != null ? const Icon(Icons.nightlight_round, size: 16, color: Colors.black26) : null,
+                          trailing: c['moon_phase'] != null ? const Icon(Icons.nightlight_round, size: 16, color: Colors.black26) : const Icon(Icons.chevron_right, color: Colors.black26),
+                          onTap: () async { final ch = await Navigator.push(context, MaterialPageRoute(builder: (_) => CatchDetailScreen(catchId: c['id']))); if (ch == true) _load(); },
                         ),
                       );
                     },
