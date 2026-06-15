@@ -9,6 +9,8 @@ import 'bite_screen.dart';
 import 'clubs_screen.dart';
 import 'profile_screen.dart';
 import 'notifications_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../core/update_check.dart';
 import '../widgets/yf_logo.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +28,20 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     final auth = context.read<AuthState>();
     if (auth.user != null) context.read<RealtimeService>().start(auth.user!.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkUpdate());
+  }
+
+  Future<void> _checkUpdate() async {
+    final u = await checkForUpdate();
+    if (u == null || !mounted) return;
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Update beschikbaar'),
+      content: Text('Versie ${u.versionName} staat klaar.${u.notes.isNotEmpty ? "\n\n${u.notes}" : ""}'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+        FilledButton(onPressed: () { Navigator.pop(ctx); launchUrl(Uri.parse(u.url), mode: LaunchMode.externalApplication); }, child: const Text('Downloaden')),
+      ],
+    ));
   }
 
   @override
