@@ -32,6 +32,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
     if (q.trim().isEmpty) { setState(() => _search = []); return; }
     try { final r = await Api.get('/users?q=${Uri.encodeComponent(q)}'); setState(() => _search = (r is List ? r : r['data']) ?? []); } catch (_) {}
   }
+  Future<void> _accept(int id) async { await Api.post('/friends/$id/accept').catchError((_) => null); _load(); }
+  Future<void> _addFriend(int id) async {
+    final m = ScaffoldMessenger.of(context);
+    await Api.post('/friends/$id').catchError((_) => null);
+    m.showSnackBar(const SnackBar(content: Text('Verzoek verstuurd')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,13 +47,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
         ListView(children: _friends.map((u) => ListTile(leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''))).toList()),
         ListView(children: _pending.map((u) => ListTile(
           leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''),
-          trailing: FilledButton(onPressed: () async { await Api.post('/friends/${u['id']}/accept').catchError((_) => null); _load(); }, child: const Text('Accepteren')),
+          trailing: FilledButton(onPressed: () => _accept(u['id']), child: const Text('Accepteren')),
         )).toList()),
         Column(children: [
           Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _q, onChanged: _doSearch, decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Zoek vissers'))),
           Expanded(child: ListView(children: _search.map((u) => ListTile(
             leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [IconButton(icon: const Icon(Icons.person_add, color: AppColors.teal), onPressed: () async { await Api.post('/friends/\${u['id']}').catchError((_) => null); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Verzoek verstuurd'))); }), IconButton(icon: const Icon(Icons.flag_outlined, color: Colors.black26, size: 18), onPressed: () => showReportSheet(context, type: 'user', targetId: u['id']))]),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(icon: const Icon(Icons.person_add, color: AppColors.teal), onPressed: () => _addFriend(u['id'])),
+              IconButton(icon: const Icon(Icons.flag_outlined, color: Colors.black26, size: 18), onPressed: () => showReportSheet(context, type: 'user', targetId: u['id'])),
+            ]),
           )).toList())),
         ]),
       ]),
