@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import 'package:provider/provider.dart';
 import '../core/config.dart';
+import '../core/realtime_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -12,7 +14,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List _list = [];
   bool _loading = true;
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() { super.initState(); _load(); context.read<RealtimeService>().clearUnread(); }
   Future<void> _load() async {
     try {
       final r = await Api.get('/notifications');

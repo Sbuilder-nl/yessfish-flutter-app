@@ -6,8 +6,10 @@ import '../core/config.dart';
 import '../core/realtime.dart';
 
 class ChatScreen extends StatefulWidget {
-  final Map conversation;
-  const ChatScreen({super.key, required this.conversation});
+  final Map? conversation;
+  final int? recipientId;
+  final String? recipientName;
+  const ChatScreen({super.key, this.conversation, this.recipientId, this.recipientName});
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -17,23 +19,30 @@ class _ChatScreenState extends State<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   Realtime? _rt;
-  late int _convId;
+  int? _convId;
   int? _otherId;
+  String _title = 'Gesprek';
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _convId = widget.conversation['id'];
-    final others = (widget.conversation['users'] ?? []) as List;
-    if (others.isNotEmpty) _otherId = others.first['id'];
-    _load();
-    _initRealtime();
+    if (widget.conversation != null) {
+      _convId = widget.conversation!['id'];
+      final others = (widget.conversation!['users'] ?? []) as List;
+      if (others.isNotEmpty) { _otherId = others.first['id']; _title = others.first['username'] ?? 'Gesprek'; }
+      _load();
+      _subscribe();
+    } else {
+      _otherId = widget.recipientId;
+      _title = widget.recipientName ?? 'Nieuw bericht';
+      _loading = false;
+    }
   }
 
   @override
   void dispose() {
-    _rt?.unsubscribe('private-conversation.$_convId');
+    if (_convId != null) _rt?.unsubscribe('private-conversation.$_convId');
     _rt?.dispose();
     super.dispose();
   }
@@ -48,16 +57,14 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (_) { setState(() => _loading = false); }
   }
 
-  void _initRealtime() {
+  void _subscribe() {
+    if (_convId == null) return;
     final me = context.read<AuthState>().user?.id;
-    final rt = Realtime()..connect();
+    final rt = _rt ?? (Realtime()..connect());
     rt.events.listen((e) {
       if (e['event'].toString().contains('message.sent') && e['channel'] == 'private-conversation.$_convId') {
         final data = e['data'];
-        if (data is Map && data['sender_id'] != me) {
-          setState(() => _messages.add(data));
-          _toBottom();
-        }
+        if (data is Map && data['sender_id'] != me) { setState(() => _messages.add(data)); _toBottom(); }
       }
     });
     rt.subscribe('private-conversation.$_convId');
@@ -76,16 +83,19 @@ class _ChatScreenState extends State<ChatScreen> {
       final m = await Api.post('/messages', {'recipient_id': _otherId, 'body': body});
       setState(() => _messages.add(m));
       _toBottom();
+      // Nieuw gesprek? haal conversation_id op en abonneer alsnog op realtime.
+      if (_convId == null && m is Map && m['conversation_id'] != null) {
+        _convId = m['conversation_id'];
+        _subscribe();
+      }
     } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     final me = context.read<AuthState>().user?.id;
-    final others = (widget.conversation['users'] ?? []) as List;
-    final title = others.isNotEmpty ? (others.first['username'] ?? 'Gesprek') : 'Gesprek';
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(_title)),
       body: Column(children: [
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
           controller: _scroll, padding: const EdgeInsets.all(12), itemCount: _messages.length,

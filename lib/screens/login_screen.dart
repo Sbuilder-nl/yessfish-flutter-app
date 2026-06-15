@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import '../core/auth.dart';
 import '../core/api.dart';
 import '../core/config.dart';
@@ -30,6 +31,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _google() async {
+    setState(() => _err = null);
+    try {
+      final result = await FlutterWebAuth2.authenticate(
+        url: '${Config.apiBase}/auth/google/redirect?platform=app',
+        callbackUrlScheme: 'nl.sbuilder.yessfish',
+      );
+      final params = Uri.parse(result).queryParameters;
+      if (params['token'] != null && mounted) {
+        await context.read<AuthState>().loginWithToken(params['token']!);
+      } else if (mounted) {
+        setState(() => _err = 'Google-login mislukt');
+      }
+    } catch (_) {
+      // gebruiker brak af — geen melding nodig
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,13 +68,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(width: double.infinity, padding: const EdgeInsets.all(10), margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(color: const Color(0xFFFFE4E6), borderRadius: BorderRadius.circular(10)),
                     child: Text(_err!, style: const TextStyle(color: AppColors.danger))),
-                TextField(controller: _email, keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'E-mail')),
+                TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'E-mail')),
                 const SizedBox(height: 12),
                 TextField(controller: _pw, obscureText: true, decoration: const InputDecoration(labelText: 'Wachtwoord')),
                 const SizedBox(height: 20),
                 SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit,
                   child: _busy ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Inloggen'))),
+                const SizedBox(height: 8),
+                SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _google,
+                  icon: const Icon(Icons.g_mobiledata, size: 28), label: const Text('Inloggen met Google'))),
                 TextButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
                   child: const Text('Nog geen account? Aanmelden'),

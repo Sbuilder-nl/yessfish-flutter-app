@@ -10,6 +10,8 @@ import 'species_screen.dart';
 import 'weather_screen.dart';
 import 'messages_screen.dart';
 import 'notifications_screen.dart';
+import 'map_screen.dart';
+import 'edit_profile_screen.dart';
 import 'tournaments_screen.dart';
 import 'albums_screen.dart';
 import 'tackle_screen.dart';
@@ -36,6 +38,8 @@ class ProfileScreen extends StatelessWidget {
       const SizedBox(height: 10),
       Center(child: Text(u?.firstName ?? u?.username ?? '', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.navy))),
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
+      const SizedBox(height: 10),
+      Center(child: OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())), icon: const Icon(Icons.edit, size: 16), label: const Text('Profiel bewerken'))),
       const SizedBox(height: 24),
       item(Icons.notifications_outlined, 'Meldingen', const NotificationsScreen()),
       item(Icons.chat_bubble_outline, 'Berichten', const MessagesScreen()),
@@ -45,6 +49,7 @@ class ProfileScreen extends StatelessWidget {
       item(Icons.photo_album_outlined, 'Albums', const AlbumsScreen()),
       item(Icons.phishing, 'Uitrusting', const TackleScreen()),
       item(Icons.menu_book_outlined, 'Soortengids', const SpeciesScreen()),
+      item(Icons.map_outlined, 'Stekkenkaart', const MapScreen()),
       item(Icons.cloud_outlined, 'Visweer', const WeatherScreen()),
       item(Icons.badge_outlined, 'Visdocumenten', const LicensesScreen()),
       item(Icons.settings_outlined, 'Instellingen', const SettingsScreen()),

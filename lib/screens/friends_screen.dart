@@ -3,6 +3,7 @@ import '../core/api.dart';
 import '../core/config.dart';
 import '../widgets/avatar.dart';
 import '../widgets/report.dart';
+import 'chat_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -44,7 +45,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     return DefaultTabController(length: 3, child: Scaffold(
       appBar: AppBar(title: const Text('Vrienden'), bottom: const TabBar(tabs: [Tab(text: 'Vrienden'), Tab(text: 'Verzoeken'), Tab(text: 'Zoeken')])),
       body: _loading ? const Center(child: CircularProgressIndicator()) : TabBarView(children: [
-        ListView(children: _friends.map((u) => ListTile(leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''))).toList()),
+        ListView(children: _friends.map((u) => ListTile(leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''), trailing: IconButton(icon: const Icon(Icons.chat_bubble_outline, color: AppColors.teal), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(recipientId: u['id'], recipientName: u['username'])))))).toList()),
         ListView(children: _pending.map((u) => ListTile(
           leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''),
           trailing: FilledButton(onPressed: () => _accept(u['id']), child: const Text('Accepteren')),

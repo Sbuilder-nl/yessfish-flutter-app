@@ -49,6 +49,14 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  Future<void> loginWithToken(String token) async {
+    await Api.setToken(token);
+    final r = await Api.get('/auth/me');
+    user = User.fromJson(r['data']);
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try { await Api.post('/auth/logout'); } catch (_) {}
     await Api.clearToken();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../core/api.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
+import '../core/realtime_service.dart';
 import '../widgets/avatar.dart';
 import '../widgets/report.dart';
 
@@ -20,9 +22,19 @@ class _FeedScreenState extends State<FeedScreen> {
   final _composer = TextEditingController();
   String? _photoPath, _photoUrl;
   bool _posting = false;
+  StreamSubscription? _liveSub;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+    _liveSub = context.read<RealtimeService>().feedPosts.listen((post) {
+      if (mounted && !_posts.any((p) => p['id'] == post['id'])) setState(() => _posts.insert(0, post));
+    });
+  }
+
+  @override
+  void dispose() { _liveSub?.cancel(); super.dispose(); }
 
   Future<void> _load() async {
     try { final r = await Api.get('/feed'); setState(() { _posts = r['data'] ?? []; _loading = false; }); }
@@ -51,6 +63,8 @@ class _FeedScreenState extends State<FeedScreen> {
     setState(() { p['liked_by_me'] = !liked; p['likes_count'] = (p['likes_count'] ?? 0) + (liked ? -1 : 1); });
     try { await (liked ? Api.delete('/posts/${p['id']}/like') : Api.post('/posts/${p['id']}/like')); } catch (_) { _load(); }
   }
+
+  void _openComments(Map p) => showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => _CommentsSheet(postId: p['id']));
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +111,6 @@ class _FeedScreenState extends State<FeedScreen> {
         },
       ),
     );
-  }
-
-  void _openComments(Map p) {
-    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => _CommentsSheet(postId: p['id']));
   }
 }
 
