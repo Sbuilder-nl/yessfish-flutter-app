@@ -1,7 +1,7 @@
 name: yessfish
 description: "YessFish - het sociale netwerk voor sportvissers"
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.9.0
@@ -40,7 +40,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon-512.png"
-  adaptive_icon_background: "#0A3D62"
-  adaptive_icon_foreground: "assets/icon-512.png"
+  image_path: "assets/yf_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/yf_icon_fg.png"
   min_sdk_android: 23
