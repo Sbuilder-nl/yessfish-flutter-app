@@ -9,6 +9,7 @@ import 'bite_screen.dart';
 import 'clubs_screen.dart';
 import 'profile_screen.dart';
 import 'notifications_screen.dart';
+import '../widgets/yf_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _i = 0;
-  static const _titles = ['Feed', 'Vangsten', 'Bijtkans', 'Clubs', 'Profiel'];
   final _screens = const [FeedScreen(), CatchesScreen(), BiteScreen(), ClubsScreen(), ProfileScreen()];
 
   @override
@@ -32,11 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(children: [
-          const Icon(Icons.set_meal, color: Colors.white),
-          const SizedBox(width: 8),
-          Text(_titles[_i], style: const TextStyle(fontWeight: FontWeight.bold)),
-        ]),
+        title: const YfLogo(size: 30, light: true),
         actions: [
           Consumer<RealtimeService>(builder: (_, rt, __) => Stack(alignment: Alignment.center, children: [
             IconButton(icon: const Icon(Icons.notifications_outlined),

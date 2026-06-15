@@ -42,7 +42,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (ok != true) return;
     try {
       await Api.delete('/account', {'password': pw.text, 'confirm': true});
-      if (mounted) await context.read<AuthState>().logout();
+      if (!mounted) return;
+      final nav = Navigator.of(context);
+      await context.read<AuthState>().logout();
+      nav.popUntil((r) => r.isFirst);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     }
@@ -62,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ])),
         const SizedBox(height: 16),
         Card(child: ListTile(leading: const Icon(Icons.logout), title: const Text('Uitloggen'),
-          onTap: () => context.read<AuthState>().logout())),
+          onTap: () async { final nav = Navigator.of(context); await context.read<AuthState>().logout(); nav.popUntil((r) => r.isFirst); })),
         const SizedBox(height: 8),
         Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFFECDD3))),
           child: ListTile(leading: const Icon(Icons.delete_forever, color: AppColors.danger),

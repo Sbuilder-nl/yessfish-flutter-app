@@ -59,8 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.set_meal, size: 56, color: AppColors.teal),
-                const SizedBox(height: 8),
+                Image.asset('assets/logo.png', height: 84),
+                const SizedBox(height: 10),
                 const Text('YessFish', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.navy)),
                 const Text('Het sociale netwerk voor sportvissers', style: TextStyle(color: Colors.black54)),
                 const SizedBox(height: 28),
