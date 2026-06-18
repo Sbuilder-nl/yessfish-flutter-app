@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/location.dart';
+import '../core/i18n.dart';
 
 class NewCatchScreen extends StatefulWidget {
   const NewCatchScreen({super.key});
@@ -18,41 +19,55 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   final _bait = TextEditingController();
   String _privacy = 'public';
   bool _addLocation = true;
-  String? _photoPath;
-  String? _photoUrl;
+  final List<Map<String, String>> _photos = []; // {path, url}
   bool _uploading = false, _identifying = false, _saving = false;
   String? _aiTip;
 
   Future<void> _pick(ImageSource src) async {
-    final x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85);
-    if (x == null) return;
+    List<XFile> files = [];
+    try {
+      final picker = ImagePicker();
+      if (src == ImageSource.gallery) {
+        files = await picker.pickMultiImage(maxWidth: 1600, imageQuality: 85);
+      } else {
+        final x = await picker.pickImage(source: ImageSource.camera, maxWidth: 1600, imageQuality: 85);
+        if (x != null) files = [x];
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${src == ImageSource.camera ? context.tr('newcatch.openCameraFail') : context.tr('newcatch.openGalleryFail')}: $e')));
+      return;
+    }
+    if (files.isEmpty) return;
     setState(() => _uploading = true);
     try {
-      final r = await Api.uploadImage(x.path);
-      setState(() { _photoPath = r['path']; _photoUrl = r['url']; });
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload mislukt')));
+      for (final f in files) {
+        final r = await Api.uploadImage(f.path);
+        _photos.add({'path': r['path'].toString(), 'url': r['url'].toString()});
+      }
+      setState(() {});
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('newcatch.uploadFail')}: ${e.message}' : '${context.tr('newcatch.uploadFail')}: $e'), duration: const Duration(seconds: 8)));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
   }
 
   Future<void> _identify() async {
-    if (_photoPath == null) return;
+    if (_photos.isEmpty) return;
     setState(() { _identifying = true; _aiTip = null; });
     try {
-      final r = await Api.post('/catches/identify', {'photo_path': _photoPath});
+      final r = await Api.post('/catches/identify', {'path': _photos.first['path']});
       if (r['is_fish'] == true && r['species_nl'] != null) {
         setState(() {
           _species.text = r['species_nl'];
           final conf = ((r['confidence'] ?? 0) as num).round();
-          _aiTip = '${r['species_nl']} ($conf% zeker)${r['tip'] != null ? '\n${r['tip']}' : ''}';
+          _aiTip = '${r['species_nl']} ($conf% ${context.tr('newcatch.sure')})${r['tip'] != null ? '\n${r['tip']}' : ''}';
         });
       } else {
-        setState(() => _aiTip = 'Geen vis herkend op de foto.');
+        setState(() => _aiTip = context.tr('newcatch.noFish'));
       }
     } catch (_) {
-      setState(() => _aiTip = 'Herkenning mislukt.');
+      setState(() => _aiTip = context.tr('newcatch.identifyFail'));
     } finally {
       if (mounted) setState(() => _identifying = false);
     }
@@ -60,7 +75,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
 
   Future<void> _save() async {
     if (_species.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vul een vissoort in')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('newcatch.enterSpecies'))));
       return;
     }
     setState(() => _saving = true);
@@ -71,7 +86,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         if (_weight.text.isNotEmpty) 'weight_kg': double.tryParse(_weight.text.replaceAll(',', '.')),
         if (_length.text.isNotEmpty) 'length_cm': double.tryParse(_length.text.replaceAll(',', '.')),
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
-        if (_photoPath != null) 'photo_path': _photoPath,
+        if (_photos.isNotEmpty) 'photo_paths': _photos.map((p) => p['path']).toList(),
       };
       if (_addLocation) {
         final loc = await currentLocation();
@@ -90,44 +105,53 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nieuwe vangst')),
+      appBar: AppBar(title: Text(context.tr('newcatch.title'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        if (_photoUrl != null)
-          ClipRRect(borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(imageUrl: _photoUrl!, height: 200, width: double.infinity, fit: BoxFit.cover)),
-        const SizedBox(height: 8),
+        if (_photos.isNotEmpty)
+          SizedBox(height: 96, child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _photos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) => Stack(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(10), child: CachedNetworkImage(imageUrl: _photos[i]['url']!, height: 96, width: 96, fit: BoxFit.cover)),
+              Positioned(right: 2, top: 2, child: GestureDetector(
+                onTap: () => setState(() => _photos.removeAt(i)),
+                child: Container(decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), padding: const EdgeInsets.all(2), child: const Icon(Icons.close, size: 16, color: Colors.white)))),
+            ]),
+          )),
+        if (_photos.isNotEmpty) const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.camera), icon: const Icon(Icons.camera_alt), label: const Text('Camera'))),
+          Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.camera), icon: const Icon(Icons.camera_alt), label: Text(context.tr('newcatch.camera')))),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.gallery), icon: const Icon(Icons.photo), label: const Text('Galerij'))),
+          Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.gallery), icon: const Icon(Icons.photo), label: Text(context.tr('newcatch.gallery')))),
         ]),
         if (_uploading) const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator()),
-        if (_photoPath != null) Padding(padding: const EdgeInsets.only(top: 8),
+        if (_photos.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
           child: FilledButton.icon(onPressed: _identifying ? null : _identify,
             icon: _identifying ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome),
-            label: const Text('Herken vis (AI)'))),
+            label: Text(context.tr('newcatch.identify')))),
         if (_aiTip != null) Padding(padding: const EdgeInsets.only(top: 8),
           child: Container(width: double.infinity, padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: Text(_aiTip!, style: const TextStyle(fontSize: 13)))),
         const SizedBox(height: 14),
-        TextField(controller: _species, decoration: const InputDecoration(labelText: 'Vissoort')),
+        TextField(controller: _species, decoration: InputDecoration(labelText: context.tr('newcatch.species'))),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: TextField(controller: _weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Gewicht (kg)'))),
+          Expanded(child: TextField(controller: _weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.tr('newcatch.weight')))),
           const SizedBox(width: 10),
-          Expanded(child: TextField(controller: _length, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Lengte (cm)'))),
+          Expanded(child: TextField(controller: _length, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.tr('newcatch.length')))),
         ]),
         const SizedBox(height: 12),
-        TextField(controller: _bait, decoration: const InputDecoration(labelText: 'Aas / techniek')),
+        TextField(controller: _bait, decoration: InputDecoration(labelText: context.tr('newcatch.bait'))),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _privacy,
-          decoration: const InputDecoration(labelText: 'Zichtbaarheid'),
-          items: const [
-            DropdownMenuItem(value: 'public', child: Text('Openbaar')),
-            DropdownMenuItem(value: 'friends', child: Text('Alleen vrienden')),
-            DropdownMenuItem(value: 'private', child: Text('Privé')),
+          decoration: InputDecoration(labelText: context.tr('newcatch.visibility')),
+          items: [
+            DropdownMenuItem(value: 'public', child: Text(context.tr('newcatch.public'))),
+            DropdownMenuItem(value: 'friends', child: Text(context.tr('newcatch.friends'))),
+            DropdownMenuItem(value: 'private', child: Text(context.tr('newcatch.private'))),
           ],
           onChanged: (v) => setState(() => _privacy = v!),
         ),
@@ -136,12 +160,12 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           value: _addLocation,
           activeThumbColor: AppColors.teal,
           onChanged: (v) => setState(() => _addLocation = v),
-          title: const Text('Locatie toevoegen'),
-          subtitle: const Text('Voor de stekkenkaart + bijtkans in de buurt'),
+          title: Text(context.tr('newcatch.addLocation')),
+          subtitle: Text(context.tr('newcatch.addLocationSub')),
         ),
         const SizedBox(height: 12),
         FilledButton(onPressed: _saving ? null : _save,
-          child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Vangst opslaan')),
+          child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('newcatch.save'))),
       ]),
     );
   }

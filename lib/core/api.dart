@@ -46,7 +46,7 @@ class Api {
     req.headers['Accept'] = 'application/json';
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
     req.files.add(await http.MultipartFile.fromPath('file', filePath));
-    final res = await http.Response.fromStream(await req.send());
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 60)));
     final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
     if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data);
     throw ApiException(res.statusCode, data);

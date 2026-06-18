@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 
 class SpeciesDetailScreen extends StatefulWidget {
   final int id;
@@ -32,7 +33,7 @@ class _SpeciesDetailScreenState extends State<SpeciesDetailScreen> {
         const SizedBox(height: 12),
         if (s?['description'] != null) Text(s!['description'], style: const TextStyle(fontSize: 15, height: 1.4)),
         const SizedBox(height: 16),
-        const Text('Regels verschillen per land/water/jaar — controleer altijd je VISpas of de officiële instantie.', style: TextStyle(fontSize: 12, color: Colors.black38)),
+        Text(context.tr('speciesdetail.rules_disclaimer'), style: const TextStyle(fontSize: 12, color: Colors.black38)),
       ]));
   }
 }

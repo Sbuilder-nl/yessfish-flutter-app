@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../core/api.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import '../core/realtime.dart';
+import '../widgets/report.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map? conversation;
@@ -21,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Realtime? _rt;
   int? _convId;
   int? _otherId;
-  String _title = 'Gesprek';
+  String? _title;
   bool _loading = true;
 
   @override
@@ -29,13 +31,16 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     if (widget.conversation != null) {
       _convId = widget.conversation!['id'];
-      final others = (widget.conversation!['users'] ?? []) as List;
-      if (others.isNotEmpty) { _otherId = others.first['id']; _title = others.first['username'] ?? 'Gesprek'; }
+      final myId = context.read<AuthState>().user?.id;
+      final users = (widget.conversation!['users'] ?? []) as List;
+      final others = users.where((u) => (u as Map)['id'] != myId).toList();
+      final other = (others.isNotEmpty ? others.first : (users.isNotEmpty ? users.first : null)) as Map?;
+      if (other != null) { _otherId = other['id']; _title = other['username']; }
       _load();
       _subscribe();
     } else {
       _otherId = widget.recipientId;
-      _title = widget.recipientName ?? 'Nieuw bericht';
+      _title = widget.recipientName;
       _loading = false;
     }
   }
@@ -95,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final me = context.read<AuthState>().user?.id;
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(title: Text(_title ?? context.tr('chat.new_message'))),
       body: Column(children: [
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
           controller: _scroll, padding: const EdgeInsets.all(12), itemCount: _messages.length,
@@ -103,13 +108,15 @@ class _ChatScreenState extends State<ChatScreen> {
             final m = _messages[i] as Map;
             final mine = m['sender_id'] == me;
             return Align(alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(margin: const EdgeInsets.symmetric(vertical: 3), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
-                decoration: BoxDecoration(color: mine ? AppColors.teal : Colors.white, borderRadius: BorderRadius.circular(16)),
-                child: Text(m['body'] ?? '', style: TextStyle(color: mine ? Colors.white : Colors.black87))));
+              child: GestureDetector(
+                onLongPress: (!mine && m['id'] != null) ? () => showReportSheet(context, type: 'message', targetId: m['id']) : null,
+                child: Container(margin: const EdgeInsets.symmetric(vertical: 3), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
+                  decoration: BoxDecoration(color: mine ? AppColors.teal : Colors.white, borderRadius: BorderRadius.circular(16)),
+                  child: Text(m['body'] ?? '', style: TextStyle(color: mine ? Colors.white : Colors.black87)))));
           })),
         SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-          Expanded(child: TextField(controller: _input, decoration: const InputDecoration(hintText: 'Bericht…'), onSubmitted: (_) => _send())),
+          Expanded(child: TextField(controller: _input, decoration: InputDecoration(hintText: context.tr('chat.message_hint')), onSubmitted: (_) => _send())),
           const SizedBox(width: 8),
           IconButton.filled(style: IconButton.styleFrom(backgroundColor: AppColors.teal), onPressed: _send, icon: const Icon(Icons.send)),
         ]))),

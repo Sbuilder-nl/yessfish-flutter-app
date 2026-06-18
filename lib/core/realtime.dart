@@ -26,6 +26,16 @@ class Realtime {
         _connected = true;
         for (final c in _pending) { _doSubscribe(c); }
         _pending.clear();
+      } else if (event == 'pusher_internal:subscription_succeeded' && (msg['channel']?.toString() ?? '').startsWith('presence-')) {
+        dynamic d = msg['data']; if (d is String) { try { d = jsonDecode(d); } catch (_) {} }
+        final pres = (d is Map && d['presence'] is Map) ? d['presence'] as Map : const {};
+        _events.add({'event': 'presence:here', 'channel': msg['channel'], 'data': pres['hash'] ?? {}});
+      } else if (event == 'pusher_internal:member_added') {
+        dynamic d = msg['data']; if (d is String) { try { d = jsonDecode(d); } catch (_) {} }
+        _events.add({'event': 'presence:joined', 'channel': msg['channel'], 'data': d});
+      } else if (event == 'pusher_internal:member_removed') {
+        dynamic d = msg['data']; if (d is String) { try { d = jsonDecode(d); } catch (_) {} }
+        _events.add({'event': 'presence:left', 'channel': msg['channel'], 'data': d});
       } else if (event.isNotEmpty && !event.startsWith('pusher')) {
         dynamic data = msg['data'];
         if (data is String) { try { data = jsonDecode(data); } catch (_) {} }

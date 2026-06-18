@@ -47,3 +47,11 @@ app.*.map.json
 # Signing (NOOIT committen)
 android/key.properties
 *.jks
+*.keystore
+key.properties
+**/key.properties
+google-services.json
+*.p12
+*.pem
+.env
+.env.*

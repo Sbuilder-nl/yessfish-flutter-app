@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/realtime_service.dart';
+import '../core/i18n.dart';
 import 'feed_screen.dart';
 import 'catches_screen.dart';
 import 'bite_screen.dart';
@@ -67,12 +68,12 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: (v) => setState(() => _i = v),
         backgroundColor: Colors.white,
         indicatorColor: AppColors.teal.withValues(alpha: 0.15),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Feed'),
-          NavigationDestination(icon: Icon(Icons.set_meal_outlined), selectedIcon: Icon(Icons.set_meal), label: 'Vangsten'),
-          NavigationDestination(icon: Icon(Icons.water_outlined), selectedIcon: Icon(Icons.water), label: 'Bijtkans'),
-          NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Clubs'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profiel'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.dynamic_feed_outlined), selectedIcon: const Icon(Icons.dynamic_feed), label: context.tr('nav.feed')),
+          NavigationDestination(icon: const Icon(Icons.set_meal_outlined), selectedIcon: const Icon(Icons.set_meal), label: context.tr('nav.catches')),
+          NavigationDestination(icon: const Icon(Icons.water_outlined), selectedIcon: const Icon(Icons.water), label: context.tr('nav.bite')),
+          NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: context.tr('nav.clubs')),
+          NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: context.tr('nav.profile')),
         ],
       ),
     );

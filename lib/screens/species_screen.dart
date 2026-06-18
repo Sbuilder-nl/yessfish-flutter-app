@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import 'species_detail_screen.dart';
+import '../core/i18n.dart';
 
 class SpeciesScreen extends StatefulWidget {
   const SpeciesScreen({super.key});
@@ -21,7 +22,7 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Soortengids')),
+    return Scaffold(appBar: AppBar(title: Text(context.tr('species.title'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : GridView.builder(
         padding: const EdgeInsets.all(12),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.82, crossAxisSpacing: 10, mainAxisSpacing: 10),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 
 class ClubDetailScreen extends StatefulWidget {
@@ -43,9 +44,9 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   Future<void> _newCompetition() async {
     final name = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Competitie aanmaken'),
-      content: TextField(controller: name, decoration: const InputDecoration(labelText: 'Naam')),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuleren')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Aanmaken'))],
+      title: Text(ctx.tr('clubdetail.comp_create_title')),
+      content: TextField(controller: name, decoration: InputDecoration(labelText: ctx.tr('clubdetail.name_label'))),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('clubdetail.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('clubdetail.create')))],
     ));
     if (ok != true || name.text.trim().isEmpty) return;
     try { await Api.post('/clubs/${widget.clubId}/competitions', {'name': name.text.trim()}); _load(); } catch (_) {}
@@ -61,23 +62,23 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     final isMember = role != null;
     final canManage = role == 'owner' || role == 'admin';
     return Scaffold(
-      appBar: AppBar(title: Text(c['name'] ?? 'Club'), actions: [
-        if (isMember && role != 'owner') IconButton(icon: const Icon(Icons.logout), tooltip: 'Verlaten', onPressed: _leave),
+      appBar: AppBar(title: Text(c['name'] ?? context.tr('clubdetail.title')), actions: [
+        if (isMember && role != 'owner') IconButton(icon: const Icon(Icons.logout), tooltip: context.tr('clubdetail.leave'), onPressed: _leave),
       ]),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         if ((c['description'] ?? '').toString().isNotEmpty) Text(c['description'], style: const TextStyle(fontSize: 15)),
         const SizedBox(height: 12),
         Row(children: [
-          Text('${c['members_count'] ?? 0} leden', style: const TextStyle(color: Colors.black54)),
+          Text('${c['members_count'] ?? 0} ${context.tr('clubdetail.members')}', style: const TextStyle(color: Colors.black54)),
           const Spacer(),
-          if (!isMember) FilledButton(onPressed: _busy ? null : _join, child: const Text('Lid worden')) else const Chip(label: Text('Je bent lid')),
+          if (!isMember) FilledButton(onPressed: _busy ? null : _join, child: Text(context.tr('clubdetail.join'))) else Chip(label: Text(context.tr('clubdetail.you_member'))),
         ]),
         if (isMember) ...[
           const Divider(height: 28),
-          const Text('Clubfeed', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+          Text(context.tr('clubdetail.feed'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextField(controller: _post, decoration: const InputDecoration(hintText: 'Deel iets met de club…'))),
+            Expanded(child: TextField(controller: _post, decoration: InputDecoration(hintText: context.tr('clubdetail.feed_hint')))),
             IconButton.filled(style: IconButton.styleFrom(backgroundColor: AppColors.teal), onPressed: _postFeed, icon: const Icon(Icons.send)),
           ]),
           const SizedBox(height: 8),
@@ -88,14 +89,14 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
         ],
         const Divider(height: 28),
         Row(children: [
-          const Text('Competities', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+          Text(context.tr('clubdetail.competitions'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const Spacer(),
-          if (canManage) TextButton.icon(onPressed: _newCompetition, icon: const Icon(Icons.add, size: 18), label: const Text('Nieuw')),
+          if (canManage) TextButton.icon(onPressed: _newCompetition, icon: const Icon(Icons.add, size: 18), label: Text(context.tr('clubdetail.new'))),
         ]),
-        if (comps.isEmpty) const Padding(padding: EdgeInsets.all(8), child: Text('Nog geen competities', style: TextStyle(color: Colors.black45))),
-        ...comps.map((t) => Card(child: ListTile(leading: const Icon(Icons.emoji_events, color: AppColors.teal), title: Text(t['name'] ?? ''), subtitle: Text('${t['participants_count'] ?? 0} deelnemers')))),
+        if (comps.isEmpty) Padding(padding: const EdgeInsets.all(8), child: Text(context.tr('clubdetail.no_competitions'), style: const TextStyle(color: Colors.black45))),
+        ...comps.map((t) => Card(child: ListTile(leading: const Icon(Icons.emoji_events, color: AppColors.teal), title: Text(t['name'] ?? ''), subtitle: Text('${t['participants_count'] ?? 0} ${context.tr('clubdetail.participants')}')))),
         const Divider(height: 28),
-        const Text('Leden', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+        Text(context.tr('clubdetail.members_title'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
         const SizedBox(height: 8),
         ...members.map((m) => ListTile(contentPadding: EdgeInsets.zero, leading: Avatar(name: m['username'], src: m['avatar_path'], size: 36), title: Text(m['username'] ?? ''), trailing: Text(m['role'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.black45)))),
       ]),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import 'new_catch_screen.dart';
 import 'catch_detail_screen.dart';
 
@@ -39,12 +40,12 @@ class _CatchesScreenState extends State<CatchesScreen> {
           if (added == true) _load();
         },
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Vangst', style: TextStyle(color: Colors.white)),
+        label: Text(context.tr('catches.fab'), style: const TextStyle(color: Colors.white)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _catches.isEmpty
-              ? const Center(child: Text('Nog geen vangsten — registreer je eerste!', style: TextStyle(color: Colors.black45)))
+              ? Center(child: Text(context.tr('catches.empty'), style: const TextStyle(color: Colors.black45)))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
@@ -59,7 +60,7 @@ class _CatchesScreenState extends State<CatchesScreen> {
                               ? ClipRRect(borderRadius: BorderRadius.circular(8),
                                   child: CachedNetworkImage(imageUrl: c['photo_path'], width: 52, height: 52, fit: BoxFit.cover))
                               : const CircleAvatar(backgroundColor: AppColors.bg, child: Icon(Icons.set_meal, color: AppColors.teal)),
-                          title: Text(c['species'] ?? 'Vis', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(c['species'] ?? context.tr('catches.fish'), style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text([
                             if (c['weight_kg'] != null) '${c['weight_kg']} kg',
                             if (c['length_cm'] != null) '${c['length_cm']} cm',

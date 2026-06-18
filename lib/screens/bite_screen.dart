@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/location.dart';
+import '../core/i18n.dart';
 
 class BiteScreen extends StatefulWidget {
   const BiteScreen({super.key});
@@ -11,6 +12,7 @@ class BiteScreen extends StatefulWidget {
 
 class _BiteScreenState extends State<BiteScreen> {
   Map? _data;
+  Map? _sol;
   bool _loading = true;
   String? _err;
 
@@ -22,11 +24,20 @@ class _BiteScreenState extends State<BiteScreen> {
     try {
       final loc = await currentLocation();
       final r = await Api.get('/bite-forecast?lat=${loc.lat}&lng=${loc.lng}');
-      setState(() { _data = r; _loading = false; });
+      Map? sol;
+      try { sol = await Api.get('/solunar?lat=${loc.lat}&lng=${loc.lng}') as Map?; } catch (_) {}
+      setState(() { _data = r; _sol = sol; _loading = false; });
     } catch (e) {
-      setState(() { _err = 'Kon bijtkans niet laden'; _loading = false; });
+      setState(() { _err = 'error'; _loading = false; });
     }
   }
+
+  static const _moonKeys = {
+    'new': 'bite.moon_new', 'waxing_crescent': 'bite.moon_waxing_crescent', 'first_quarter': 'bite.moon_first_quarter',
+    'waxing_gibbous': 'bite.moon_waxing_gibbous', 'full': 'bite.moon_full', 'waning_gibbous': 'bite.moon_waning_gibbous',
+    'last_quarter': 'bite.moon_last_quarter', 'waning_crescent': 'bite.moon_waning_crescent',
+  };
+  String _moonName(String? phase) { final k = _moonKeys[phase]; return k != null ? context.tr(k) : context.tr('bite.moon'); }
 
   Color _labelColor(String? l) {
     switch (l) {
@@ -37,13 +48,19 @@ class _BiteScreenState extends State<BiteScreen> {
     }
   }
 
-  String _labelNl(String? l) => {'top': 'Topdag', 'good': 'Goede dag', 'ok': 'Redelijk', 'poor': 'Matig'}[l] ?? '';
-  String _factorNl(String k) => {'solunar': 'Maanstand', 'pressure': 'Luchtdruk', 'wind': 'Wind', 'clouds': 'Bewolking', 'history': 'Jouw historie', 'community': 'In de buurt'}[k] ?? k;
+  Widget _solItem(IconData ic, String label, String value) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Icon(ic, color: AppColors.teal, size: 22), const SizedBox(height: 4),
+    Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+    Text(label, style: const TextStyle(fontSize: 10.5, color: Colors.black45), textAlign: TextAlign.center),
+  ]);
+
+  String _labelNl(String? l) { final k = {'top': 'bite.label_top', 'good': 'bite.label_good', 'ok': 'bite.label_ok', 'poor': 'bite.label_poor'}[l]; return k != null ? context.tr(k) : ''; }
+  String _factorNl(String k) { final key = {'solunar': 'bite.factor_solunar', 'pressure': 'bite.factor_pressure', 'wind': 'bite.factor_wind', 'clouds': 'bite.factor_clouds', 'history': 'bite.factor_history', 'community': 'bite.factor_community'}[k]; return key != null ? context.tr(key) : k; }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_err != null) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_err!), TextButton(onPressed: _load, child: const Text('Opnieuw'))]));
+    if (_err != null) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(context.tr('bite.load_error')), TextButton(onPressed: _load, child: Text(context.tr('bite.retry')))]));
     final d = _data!;
     final score = d['score'] ?? 0;
     final color = _labelColor(d['label']);
@@ -55,7 +72,7 @@ class _BiteScreenState extends State<BiteScreen> {
       onRefresh: _load,
       child: ListView(padding: const EdgeInsets.all(16), children: [
         Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-          const Text('Bijtkans vandaag', style: TextStyle(color: Colors.black54)),
+          Text(context.tr('bite.today'), style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 12),
           Container(width: 120, height: 120,
             decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.12), border: Border.all(color: color, width: 4)),
@@ -67,10 +84,20 @@ class _BiteScreenState extends State<BiteScreen> {
           const SizedBox(height: 10),
           Text(_labelNl(d['label']), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           if (weather != null) Padding(padding: const EdgeInsets.only(top: 8),
-            child: Text('${weather['pressure_hpa']} hPa · ${(weather['wind_speed_ms'] as num?)?.round()} m/s · ${weather['clouds_pct']}% bewolking', style: const TextStyle(color: Colors.black45, fontSize: 12))),
+            child: Text('${weather['pressure_hpa']} hPa · ${(weather['wind_speed_ms'] as num?)?.round()} m/s · ${weather['clouds_pct']}% ${context.tr('bite.clouds')}', style: const TextStyle(color: Colors.black45, fontSize: 12))),
         ]))),
+        if (_sol != null && (_sol!['sun'] != null || _sol!['moon'] != null)) ...[
+          const SizedBox(height: 14),
+          Text(context.tr('bite.sun_moon'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+          const SizedBox(height: 8),
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+            _solItem(Icons.wb_sunny_outlined, context.tr('bite.sunrise'), _sol!['sun']?['rise']?.toString() ?? '—'),
+            _solItem(Icons.nightlight_outlined, context.tr('bite.sunset'), _sol!['sun']?['set']?.toString() ?? '—'),
+            _solItem(Icons.brightness_3, _moonName(_sol!['moon']?['phase']), _sol!['moon']?['illumination'] != null ? '${((_sol!['moon']['illumination'] as num) * (((_sol!['moon']['illumination'] as num) <= 1) ? 100 : 1)).round()}%' : '—'),
+          ]))),
+        ],
         const SizedBox(height: 14),
-        const Text('Factoren', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+        Text(context.tr('bite.factors'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
         const SizedBox(height: 8),
         ...factors.map((f) {
           final s = (f['score'] ?? 0) as int;
@@ -83,24 +110,24 @@ class _BiteScreenState extends State<BiteScreen> {
         }),
         const SizedBox(height: 16),
         if (windows.isNotEmpty) ...[
-          const Text('Bijtperiodes vandaag', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+          Text(context.tr('bite.windows'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const SizedBox(height: 8),
           ...windows.map((w) => Card(child: ListTile(
             dense: true,
             leading: Icon(w['type'] == 'major' ? Icons.star : Icons.star_border, color: AppColors.teal),
             title: Text('${w['start']} – ${w['end']}'),
-            subtitle: Text(w['type'] == 'major' ? 'Topperiode' : 'Bijtperiode'),
+            subtitle: Text(w['type'] == 'major' ? context.tr('bite.window_major') : context.tr('bite.window_minor')),
           ))),
         ],
         if (species.isNotEmpty) ...[
           const SizedBox(height: 12),
-          const Text('Kansrijk vandaag', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+          Text(context.tr('bite.likely_species'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: species.map<Widget>((s) => Chip(label: Text('$s'), backgroundColor: Colors.white)).toList()),
         ],
         const SizedBox(height: 16),
-        const Text('Op basis van maanstand, weer, jouw historie en vangsten in de buurt — indicatief.',
-          style: TextStyle(color: Colors.black38, fontSize: 12)),
+        Text(context.tr('bite.disclaimer'),
+          style: const TextStyle(color: Colors.black38, fontSize: 12)),
       ]),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import 'club_detail_screen.dart';
 
 class ClubsScreen extends StatefulWidget {
@@ -26,17 +27,17 @@ class _ClubsScreenState extends State<ClubsScreen> {
     final city = TextEditingController();
     String country = 'NL';
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
-      title: const Text('Club starten'),
+      title: Text(ctx.tr('clubs.create_title')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'Clubnaam')),
+        TextField(controller: name, decoration: InputDecoration(labelText: ctx.tr('clubs.name_label'))),
         const SizedBox(height: 8),
-        TextField(controller: city, decoration: const InputDecoration(labelText: 'Plaats')),
+        TextField(controller: city, decoration: InputDecoration(labelText: ctx.tr('clubs.city_label'))),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(initialValue: country, decoration: const InputDecoration(labelText: 'Land'),
-          items: const [DropdownMenuItem(value: 'NL', child: Text('Nederland')), DropdownMenuItem(value: 'BE', child: Text('België')), DropdownMenuItem(value: 'DE', child: Text('Duitsland')), DropdownMenuItem(value: 'FR', child: Text('Frankrijk'))],
+        DropdownButtonFormField<String>(initialValue: country, decoration: InputDecoration(labelText: ctx.tr('clubs.country_label')),
+          items: [DropdownMenuItem(value: 'NL', child: Text(ctx.tr('clubs.country_nl'))), DropdownMenuItem(value: 'BE', child: Text(ctx.tr('clubs.country_be'))), DropdownMenuItem(value: 'DE', child: Text(ctx.tr('clubs.country_de'))), DropdownMenuItem(value: 'FR', child: Text(ctx.tr('clubs.country_fr')))],
           onChanged: (v) => setS(() => country = v!)),
       ]),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuleren')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Aanmaken'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('clubs.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('clubs.create')))],
     )));
     if (ok != true || name.text.trim().isEmpty) return;
     try { await Api.post('/clubs', {'name': name.text.trim(), 'country': country, if (city.text.isNotEmpty) 'city': city.text.trim()}); _load(); } catch (_) {}
@@ -46,11 +47,11 @@ class _ClubsScreenState extends State<ClubsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: const Text('Club', style: TextStyle(color: Colors.white))),
+      floatingActionButton: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('clubs.fab'), style: const TextStyle(color: Colors.white))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load,
         child: _clubs.isEmpty
-            ? ListView(children: const [SizedBox(height: 120), Center(child: Text('Nog geen clubs — start de eerste!', style: TextStyle(color: Colors.black45)))])
+            ? ListView(children: [const SizedBox(height: 120), Center(child: Text(context.tr('clubs.empty'), style: const TextStyle(color: Colors.black45)))])
             : ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: _clubs.length,
@@ -59,8 +60,8 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   return Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(
                     leading: const CircleAvatar(backgroundColor: AppColors.bg, child: Icon(Icons.groups, color: AppColors.teal)),
                     title: Text(c['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(['${c['members_count'] ?? 0} leden', if (c['city'] != null) c['city']].join(' · ')),
-                    trailing: c['is_member'] == true ? const Chip(label: Text('Lid', style: TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact) : const Icon(Icons.chevron_right),
+                    subtitle: Text(['${c['members_count'] ?? 0} ${context.tr('clubs.members')}', if (c['city'] != null) c['city']].join(' · ')),
+                    trailing: c['is_member'] == true ? Chip(label: Text(context.tr('clubs.member_badge'), style: const TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact) : const Icon(Icons.chevron_right),
                     onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => ClubDetailScreen(clubId: c['id']))); _load(); },
                   ));
                 },

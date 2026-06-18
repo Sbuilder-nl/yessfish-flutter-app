@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../core/api.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -47,18 +48,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final u = context.read<AuthState>().user;
-    return Scaffold(appBar: AppBar(title: const Text('Profiel bewerken')),
+    return Scaffold(appBar: AppBar(title: Text(context.tr('editprofile.title'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Center(child: GestureDetector(onTap: _pickAvatar, child: Stack(children: [
           Avatar(name: u?.username, src: _avatar, size: 90),
           const Positioned(bottom: 0, right: 0, child: CircleAvatar(radius: 14, backgroundColor: AppColors.teal, child: Icon(Icons.camera_alt, size: 15, color: Colors.white))),
         ]))),
         const SizedBox(height: 20),
-        TextField(controller: _first, decoration: const InputDecoration(labelText: 'Voornaam')),
+        TextField(controller: _first, decoration: InputDecoration(labelText: context.tr('editprofile.first_name'))),
         const SizedBox(height: 12),
-        TextField(controller: _bio, maxLines: 3, decoration: const InputDecoration(labelText: 'Bio')),
+        TextField(controller: _bio, maxLines: 3, decoration: InputDecoration(labelText: context.tr('editprofile.bio'))),
         const SizedBox(height: 20),
-        FilledButton(onPressed: _saving ? null : _save, child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Opslaan')),
+        FilledButton(onPressed: _saving ? null : _save, child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('editprofile.save'))),
       ]));
   }
 }

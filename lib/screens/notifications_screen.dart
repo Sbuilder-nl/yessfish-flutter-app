@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import 'package:provider/provider.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 import '../core/realtime_service.dart';
+import 'friends_screen.dart';
+import 'messages_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -24,14 +27,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text('Meldingen')),
+    return Scaffold(appBar: AppBar(title: Text(context.tr('notifs.title'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _list.isEmpty
-        ? const Center(child: Text('Geen meldingen', style: TextStyle(color: Colors.black45)))
+        ? Center(child: Text(context.tr('notifs.empty'), style: const TextStyle(color: Colors.black45)))
         : ListView.builder(padding: const EdgeInsets.all(12), itemCount: _list.length, itemBuilder: (_, i) {
             final n = _list[i] as Map; final data = (n['data'] ?? n) as Map;
+            final link = (data['link'] ?? '').toString();
+            final event = (data['event'] ?? '').toString();
+            Widget? target;
+            if (link.contains('vrienden') || event == 'friend_request') target = const FriendsScreen();
+            else if (link.contains('berichten') || event == 'message') target = const MessagesScreen();
             return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
               leading: const CircleAvatar(backgroundColor: AppColors.bg, child: Icon(Icons.notifications, color: AppColors.teal)),
               title: Text(data['message'] ?? ''),
+              trailing: target != null ? const Icon(Icons.chevron_right, color: Colors.black26) : null,
+              onTap: target != null ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => target!)) : null,
             ));
           }));
   }
