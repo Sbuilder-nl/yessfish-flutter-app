@@ -42,7 +42,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await Api.put('/profile', {'first_name': _first.text.trim(), if (_bio.text.isNotEmpty) 'bio': _bio.text.trim(), if (_avatarPath != null) 'avatar_path': _avatarPath});
       await auth.refresh();
       if (mounted) nav.pop();
-    } catch (_) {} finally { if (mounted) setState(() => _saving = false); }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    } finally { if (mounted) setState(() => _saving = false); }
   }
 
   @override

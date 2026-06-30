@@ -12,6 +12,9 @@ import 'profile_screen.dart';
 import 'notifications_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/update_check.dart';
+import '../core/api.dart';
+import '../core/disciplines_i18n.dart';
+import 'disciplines_screen.dart';
 import '../widgets/yf_logo.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,7 +32,29 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     final auth = context.read<AuthState>();
     if (auth.user != null) context.read<RealtimeService>().start(auth.user!.id);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkUpdate());
+    WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); _maybePromptDisciplines(); });
+  }
+
+  // Bestaande én nieuwe accounts: als er nog geen visstijlen gekozen zijn,
+  // bied de keuze actief aan zodat de dashboards verschijnen.
+  Future<void> _maybePromptDisciplines() async {
+    try {
+      final r = await Api.get('/profile/disciplines');
+      final list = (r is Map ? r['disciplines'] : null) as List?;
+      if (list == null || list.isNotEmpty || !mounted) return;
+      showDialog(context: context, builder: (ctx) => AlertDialog(
+        title: Text(dui(ctx, 'title')),
+        content: Text(dui(ctx, 'prompt')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(dui(ctx, 'later'))),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
+            onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const DisciplinesScreen())); },
+            child: Text(dui(ctx, 'choose')),
+          ),
+        ],
+      ));
+    } catch (_) {}
   }
 
   Future<void> _checkUpdate() async {

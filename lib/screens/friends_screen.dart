@@ -35,7 +35,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     if (q.trim().isEmpty) { setState(() => _search = []); return; }
     try { final r = await Api.get('/users?q=${Uri.encodeComponent(q)}'); setState(() => _search = (r is List ? r : r['data']) ?? []); } catch (_) {}
   }
-  Future<void> _accept(int friendshipId) async { await Api.post('/friends/$friendshipId/accept').catchError((_) => null); _load(); }
+  Future<void> _accept(int friendshipId) async { try { await Api.post('/friends/$friendshipId/accept'); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); } _load(); }
   Future<void> _addFriend(int userId) async {
     final m = ScaffoldMessenger.of(context);
     try {

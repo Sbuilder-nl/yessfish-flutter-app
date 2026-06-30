@@ -93,7 +93,10 @@ class _ChatScreenState extends State<ChatScreen> {
         _convId = m['conversation_id'];
         _subscribe();
       }
-    } catch (_) {}
+    } catch (e) {
+      _input.text = body; // bericht terugzetten zodat het niet verloren gaat
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    }
   }
 
   @override

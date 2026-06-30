@@ -40,7 +40,8 @@ class _ClubsScreenState extends State<ClubsScreen> {
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('clubs.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('clubs.create')))],
     )));
     if (ok != true || name.text.trim().isEmpty) return;
-    try { await Api.post('/clubs', {'name': name.text.trim(), 'country': country, if (city.text.isNotEmpty) 'city': city.text.trim()}); _load(); } catch (_) {}
+    try { await Api.post('/clubs', {'name': name.text.trim(), 'country': country, if (city.text.isNotEmpty) 'city': city.text.trim()}); _load(); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
   }
 
   @override

@@ -20,6 +20,8 @@ import 'tackle_screen.dart';
 import 'identify_screen.dart';
 import 'moderation_screen.dart';
 import 'settings_screen.dart';
+import 'discipline_dashboards_screen.dart';
+import '../core/disciplines_i18n.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -84,6 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.emoji_events_outlined, context.tr('p.leaderboard'), const LeaderboardScreen()),
       ]),
       _section(context.tr('sec.fishing'), [
+        _tile(Icons.style_outlined, dui(context, 'title'), const DisciplineDashboardsScreen()),
         _tile(Icons.photo_album_outlined, context.tr('p.albums'), const AlbumsScreen()),
         _tile(Icons.phishing, context.tr('p.tackle'), const TackleScreen()),
         _tile(Icons.military_tech_outlined, context.tr('p.tournaments'), const TournamentsScreen()),

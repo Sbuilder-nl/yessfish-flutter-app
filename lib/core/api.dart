@@ -14,6 +14,7 @@ class ApiException implements Exception {
 class Api {
   static const _storage = FlutterSecureStorage();
   static String? _token;
+  static String lang = 'nl'; // ingestelde taal → backend geeft meldingen in deze taal (X-App-Lang)
 
   static Future<void> loadToken() async => _token = await _storage.read(key: 'yf_token');
   static Future<void> setToken(String t) async { _token = t; await _storage.write(key: 'yf_token', value: t); }
@@ -23,6 +24,7 @@ class Api {
   static Map<String, String> _headers() => {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    'X-App-Lang': lang,
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
@@ -44,6 +46,7 @@ class Api {
   static Future<Map<String, dynamic>> uploadImage(String filePath) async {
     final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}/uploads'));
     req.headers['Accept'] = 'application/json';
+    req.headers['X-App-Lang'] = lang;
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
     req.files.add(await http.MultipartFile.fromPath('file', filePath));
     final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 60)));

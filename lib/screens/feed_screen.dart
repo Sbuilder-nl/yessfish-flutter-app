@@ -61,7 +61,9 @@ class _FeedScreenState extends State<FeedScreen> {
       _composer.clear();
       setState(() { _photoPath = null; _photoUrl = null; });
       await _load();
-    } catch (_) {} finally { setState(() => _posting = false); }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    } finally { setState(() => _posting = false); }
   }
 
   Future<void> _deletePost(Map p) async {
@@ -193,7 +195,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Future<void> _add() async {
     if (_input.text.trim().isEmpty) return;
     final body = _input.text.trim(); _input.clear();
-    try { final c = await Api.post('/posts/${widget.postId}/comments', {'body': body}); setState(() => _comments.insert(0, c)); } catch (_) {}
+    try { final c = await Api.post('/posts/${widget.postId}/comments', {'body': body}); setState(() => _comments.insert(0, c)); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
   }
   @override
   Widget build(BuildContext context) {

@@ -42,7 +42,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
     )));
     if (ok != true || name.text.trim().isEmpty) return;
     try { await Api.post('/licenses', {'country': country, 'name': name.text.trim(), 'type': 'vispas', if (number.text.isNotEmpty) 'number': number.text.trim()}); _load(); }
-    catch (_) {}
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
   }
 
   @override
@@ -60,7 +60,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
               leading: const Icon(Icons.badge, color: AppColors.teal),
               title: Text(l['name'] ?? ''),
               subtitle: Text([_countries[l['country']] ?? l['country'], if (l['number'] != null) l['number'], if (l['valid_until'] != null) '${context.tr('licenses.until')} ${(l['valid_until'] as String).substring(0, 10)}'].join(' · ')),
-              trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.black38), onPressed: () async { await Api.delete('/licenses/${l['id']}'); _load(); }),
+              trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.black38), onPressed: () async { try { await Api.delete('/licenses/${l['id']}'); _load(); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); } }),
             ));
           })),
       ]),

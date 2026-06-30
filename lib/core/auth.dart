@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'api.dart';
+import 'push.dart';
 
 class User {
   final int id;
@@ -23,12 +24,19 @@ class AuthState extends ChangeNotifier {
   User? user;
   bool loading = true;
 
+  // Na een geslaagde authenticatie: push opzetten + toestel-token registreren (best-effort).
+  void _afterAuth() {
+    Push.init();
+    Push.registerToken();
+  }
+
   Future<void> bootstrap() async {
     await Api.loadToken();
     if (Api.token != null) {
       try {
         final r = await Api.get('/auth/me');
         user = User.fromJson(r['data']);
+        _afterAuth();
       } catch (_) {
         await Api.clearToken();
       }
@@ -41,6 +49,7 @@ class AuthState extends ChangeNotifier {
     final r = await Api.post('/auth/login', {'email': email, 'password': password});
     await Api.setToken(r['token']);
     user = User.fromJson(r['user']);
+    _afterAuth();
     notifyListeners();
   }
 
@@ -48,6 +57,7 @@ class AuthState extends ChangeNotifier {
     final r = await Api.post('/auth/register', data);
     await Api.setToken(r['token']);
     user = User.fromJson(r['user']);
+    _afterAuth();
     notifyListeners();
   }
 
@@ -56,10 +66,12 @@ class AuthState extends ChangeNotifier {
     await Api.setToken(token);
     final r = await Api.get('/auth/me');
     user = User.fromJson(r['data']);
+    _afterAuth();
     notifyListeners();
   }
 
   Future<void> logout() async {
+    await Push.unregisterToken();
     try { await Api.post('/auth/logout'); } catch (_) {}
     await Api.clearToken();
     user = null;

@@ -36,7 +36,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
             title: Text(t['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('${_status(context, t['status'])} · ${t['participants_count'] ?? 0} ${context.tr('tournaments.participants')}'),
             children: [
-              if (t['status'] == 'open') Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Align(alignment: Alignment.centerLeft, child: FilledButton(onPressed: () async { final m = ScaffoldMessenger.of(context); await Api.post('/tournaments/$id/join').catchError((_) => null); m.showSnackBar(SnackBar(content: Text(context.tr('tournaments.joined')))); }, child: Text(context.tr('tournaments.join'))))),
+              if (t['status'] == 'open') Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Align(alignment: Alignment.centerLeft, child: FilledButton(onPressed: () async { final m = ScaffoldMessenger.of(context); try { await Api.post('/tournaments/$id/join'); m.showSnackBar(SnackBar(content: Text(context.tr('tournaments.joined')))); } catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); } }, child: Text(context.tr('tournaments.join'))))),
               ...((_boards[id] ?? []).asMap().entries.map((e) {
                 final r = e.value as Map; final u = r['user'] as Map?;
                 return ListTile(dense: true, leading: Text('${e.key + 1}'), title: Text(u?['username'] ?? ''), trailing: Text('${r['score'] ?? 0} ${context.tr('tournaments.points')}'));

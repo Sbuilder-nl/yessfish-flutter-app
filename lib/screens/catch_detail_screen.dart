@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -67,8 +68,12 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('catchdetail.delete'))),
       ]));
     if (ok != true) return;
-    await Api.delete('/catches/${widget.catchId}').catchError((_) => null);
-    if (mounted) Navigator.pop(context, true);
+    try {
+      await Api.delete('/catches/${widget.catchId}');
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    }
   }
 
   Future<void> _aiStory() async {
@@ -89,7 +94,9 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         await Api.post('/posts', {'content': ctrl.text, 'visibility': 'public', if (_c?['photo_path'] != null) 'image_path': _c!['photo_path']});
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('catchdetail.postedToFeed'))));
       }
-    } catch (_) {} finally { if (mounted) setState(() => _storyBusy = false); }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    } finally { if (mounted) setState(() => _storyBusy = false); }
   }
 
   Widget _chip(String t) => Chip(label: Text(t), backgroundColor: AppColors.bg, visualDensity: VisualDensity.compact);
@@ -109,6 +116,10 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
     ];
     return Scaffold(
       appBar: AppBar(title: Text(c['species'] ?? context.tr('catchdetail.catch')), actions: [
+        IconButton(icon: const Icon(Icons.share_outlined), tooltip: 'Delen', onPressed: () {
+          Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/${widget.catchId}'));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link gekopieerd — plak \'m om te delen 🔗')));
+        }),
         if (mine) IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
       ]),
       body: ListView(padding: const EdgeInsets.all(16), children: [

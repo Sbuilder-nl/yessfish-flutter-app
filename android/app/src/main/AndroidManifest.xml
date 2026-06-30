@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="YessFish"
         android:name="${applicationName}"
@@ -44,6 +45,8 @@
                 <data android:scheme="nl.sbuilder.yessfish" />
             </intent-filter>
         </activity>
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="messages"/>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

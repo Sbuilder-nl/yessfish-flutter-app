@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/auth.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import '../core/disciplines_i18n.dart';
+import 'disciplines_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -23,7 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
   Future<void> _set(String key, bool v) async {
     setState(() => _s[key] = v);
-    try { await Api.put('/profile/settings', {key: v}); } catch (_) {}
+    try { await Api.put('/profile/settings', {key: v}); }
+    catch (e) { if (mounted) setState(() => _s[key] = !v); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
   }
 
   Future<void> _deleteAccount() async {
@@ -68,6 +72,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         )),
         const SizedBox(height: 12),
+        Card(child: ListTile(
+          leading: const Icon(Icons.style_outlined, color: AppColors.teal),
+          title: Text(dui(context, 'title')),
+          subtitle: Text(dui(context, 'hint')),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DisciplinesScreen())),
+        )),
+        const SizedBox(height: 12),
         Card(child: Column(children: [
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.email_notifications')),
             value: _s['email_notifications'] != false, onChanged: (v) => _set('email_notifications', v)),
@@ -76,6 +88,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _s['share_catches_community'] != false, onChanged: (v) => _set('share_catches_community', v)),
         ])),
         const SizedBox(height: 16),
+        Card(child: ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.teal),
+          title: Text(context.tr('priv.title')),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => launchUrl(Uri.parse('https://yessfish.com/privacy'), mode: LaunchMode.externalApplication),
+        )),
+        const SizedBox(height: 8),
         Card(child: ListTile(leading: const Icon(Icons.logout), title: Text(context.tr('settings.logout')),
           onTap: () async { final nav = Navigator.of(context); await context.read<AuthState>().logout(); nav.popUntil((r) => r.isFirst); })),
         const SizedBox(height: 8),

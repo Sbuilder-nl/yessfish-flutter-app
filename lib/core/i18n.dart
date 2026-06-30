@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'translations.dart';
 import 'translations_app.dart';
+import 'api.dart';
 
 /// Meertaligheid (NL/EN/DE/FR) — zelfde sleutels/vertalingen als de website.
 class I18n extends ChangeNotifier {
   static const _storage = FlutterSecureStorage();
-  static const Map<String, String> languages = {'nl': 'Nederlands', 'en': 'English', 'de': 'Deutsch', 'fr': 'Français'};
+  static const Map<String, String> languages = {'nl': 'Nederlands', 'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'pl': 'Polski'};
 
   String _locale = 'nl';
   String get locale => _locale;
@@ -18,12 +19,14 @@ class I18n extends ChangeNotifier {
       final s = await _storage.read(key: 'yf_locale');
       if (s != null && kTranslations.containsKey(s)) _locale = s;
     } catch (_) {}
+    Api.lang = _locale;
     notifyListeners();
   }
 
   Future<void> setLocale(String l) async {
     if (!kTranslations.containsKey(l) || l == _locale) return;
     _locale = l;
+    Api.lang = l;
     try { await _storage.write(key: 'yf_locale', value: l); } catch (_) {}
     notifyListeners();
   }
@@ -40,7 +43,7 @@ const Map<String, Map<String, String>> kAppExtra = {
     'nav.bite': 'Bijtkans', 'nav.clubs': 'Clubs', 'nav.profile': 'Profiel',
     'sec.social': 'Sociaal', 'sec.fishing': 'Mijn visserij', 'sec.tools': 'Hulpmiddelen', 'sec.account': 'Account',
     'p.notifications': 'Meldingen', 'p.messages': 'Berichten', 'p.friends': 'Vrienden', 'p.leaderboard': 'Ranglijst',
-    'p.albums': 'Albums', 'p.tackle': 'Uitrusting', 'p.tournaments': 'Toernooien', 'p.map': 'Stekkenkaart',
+    'p.albums': 'Albums', 'p.tackle': 'Uitrusting', 'p.tournaments': 'Toernooien', 'p.map': 'Viskaart',
     'p.identify': 'Vis herkennen', 'p.species': 'Soortengids', 'p.weather': 'Visweer', 'p.docs': 'Visdocumenten',
     'p.settings': 'Instellingen', 'p.moderation': 'Moderatie', 'p.edit': 'Profiel bewerken',
     'common.save': 'Opslaan', 'common.add': 'Toevoegen', 'common.delete': 'Verwijderen', 'common.report': 'Melden',
@@ -54,7 +57,7 @@ const Map<String, Map<String, String>> kAppExtra = {
     'nav.bite': 'Bite forecast', 'nav.clubs': 'Clubs', 'nav.profile': 'Profile',
     'sec.social': 'Social', 'sec.fishing': 'My fishing', 'sec.tools': 'Tools', 'sec.account': 'Account',
     'p.notifications': 'Notifications', 'p.messages': 'Messages', 'p.friends': 'Friends', 'p.leaderboard': 'Leaderboard',
-    'p.albums': 'Albums', 'p.tackle': 'Gear', 'p.tournaments': 'Tournaments', 'p.map': 'Spots map',
+    'p.albums': 'Albums', 'p.tackle': 'Gear', 'p.tournaments': 'Tournaments', 'p.map': 'Viskaart',
     'p.identify': 'Identify fish', 'p.species': 'Species guide', 'p.weather': 'Fishing weather', 'p.docs': 'Fishing documents',
     'p.settings': 'Settings', 'p.moderation': 'Moderation', 'p.edit': 'Edit profile',
     'common.save': 'Save', 'common.add': 'Add', 'common.delete': 'Delete', 'common.report': 'Report',
@@ -68,7 +71,7 @@ const Map<String, Map<String, String>> kAppExtra = {
     'nav.bite': 'Beißprognose', 'nav.clubs': 'Vereine', 'nav.profile': 'Profil',
     'sec.social': 'Sozial', 'sec.fishing': 'Mein Angeln', 'sec.tools': 'Werkzeuge', 'sec.account': 'Konto',
     'p.notifications': 'Mitteilungen', 'p.messages': 'Nachrichten', 'p.friends': 'Freunde', 'p.leaderboard': 'Rangliste',
-    'p.albums': 'Alben', 'p.tackle': 'Ausrüstung', 'p.tournaments': 'Turniere', 'p.map': 'Spot-Karte',
+    'p.albums': 'Alben', 'p.tackle': 'Ausrüstung', 'p.tournaments': 'Turniere', 'p.map': 'Viskaart',
     'p.identify': 'Fisch erkennen', 'p.species': 'Artenführer', 'p.weather': 'Angelwetter', 'p.docs': 'Angeldokumente',
     'p.settings': 'Einstellungen', 'p.moderation': 'Moderation', 'p.edit': 'Profil bearbeiten',
     'common.save': 'Speichern', 'common.add': 'Hinzufügen', 'common.delete': 'Löschen', 'common.report': 'Melden',
@@ -82,7 +85,7 @@ const Map<String, Map<String, String>> kAppExtra = {
     'nav.bite': 'Prévision de touche', 'nav.clubs': 'Clubs', 'nav.profile': 'Profil',
     'sec.social': 'Social', 'sec.fishing': 'Ma pêche', 'sec.tools': 'Outils', 'sec.account': 'Compte',
     'p.notifications': 'Notifications', 'p.messages': 'Messages', 'p.friends': 'Amis', 'p.leaderboard': 'Classement',
-    'p.albums': 'Albums', 'p.tackle': 'Équipement', 'p.tournaments': 'Tournois', 'p.map': 'Carte des spots',
+    'p.albums': 'Albums', 'p.tackle': 'Équipement', 'p.tournaments': 'Tournois', 'p.map': 'Viskaart',
     'p.identify': 'Identifier le poisson', 'p.species': 'Guide des espèces', 'p.weather': 'Météo de pêche', 'p.docs': 'Documents de pêche',
     'p.settings': 'Paramètres', 'p.moderation': 'Modération', 'p.edit': 'Modifier le profil',
     'common.save': 'Enregistrer', 'common.add': 'Ajouter', 'common.delete': 'Supprimer', 'common.report': 'Signaler',
@@ -91,6 +94,100 @@ const Map<String, Map<String, String>> kAppExtra = {
     'catch.save': 'Enregistrer la prise', 'catch.identify': 'Identifier (IA)', 'catch.story': 'Créer une histoire IA',
     'vis.public': 'Public', 'vis.friends': 'Amis seulement', 'vis.private': 'Privé',
     'set.notif': 'Notifications par e-mail', 'online.now': 'en ligne', 'feed.translate': 'Traduire', 'feed.show_original': 'Voir l\'original', 'set.logout': 'Se déconnecter', 'set.delete': 'Supprimer le compte',
+  },
+  'es': {
+    "nav.bite": "Previsión de picadas",
+    "nav.clubs": "Clubes",
+    "nav.profile": "Perfil",
+    "sec.social": "Social",
+    "sec.fishing": "Mi pesca",
+    "sec.tools": "Herramientas",
+    "sec.account": "Cuenta",
+    "p.notifications": "Notificaciones",
+    "p.messages": "Mensajes",
+    "p.friends": "Amigos",
+    "p.leaderboard": "Clasificación",
+    "p.albums": "Álbumes",
+    "p.tackle": "Equipo",
+    "p.tournaments": "Torneos",
+    "p.map": "Mapa de spots",
+    "p.identify": "Identificar pez",
+    "p.species": "Guía de especies",
+    "p.weather": "Tiempo de pesca",
+    "p.docs": "Documentos de pesca",
+    "p.settings": "Ajustes",
+    "p.moderation": "Moderación",
+    "p.edit": "Editar perfil",
+    "common.save": "Guardar",
+    "common.add": "Añadir",
+    "common.delete": "Eliminar",
+    "common.report": "Denunciar",
+    "catch.new": "Nueva captura",
+    "catch.species": "Especie",
+    "catch.weight": "Peso (kg)",
+    "catch.length": "Longitud (cm)",
+    "catch.bait": "Cebo / técnica",
+    "catch.visibility": "Visibilidad",
+    "catch.addloc": "Añadir ubicación",
+    "catch.save": "Guardar captura",
+    "catch.identify": "Identificar pez (IA)",
+    "catch.story": "Crear historia de captura con IA",
+    "vis.public": "Pública",
+    "vis.friends": "Solo amigos",
+    "vis.private": "Privada",
+    "set.notif": "Notificaciones por correo",
+    "online.now": "en línea",
+    "feed.translate": "Traducir",
+    "feed.show_original": "Ver original",
+    "set.logout": "Cerrar sesión",
+    "set.delete": "Eliminar cuenta",
+  },
+  'pl': {
+    "nav.bite": "Prognoza brań",
+    "nav.clubs": "Kluby",
+    "nav.profile": "Profil",
+    "sec.social": "Społeczność",
+    "sec.fishing": "Moje wędkarstwo",
+    "sec.tools": "Narzędzia",
+    "sec.account": "Konto",
+    "p.notifications": "Powiadomienia",
+    "p.messages": "Wiadomości",
+    "p.friends": "Znajomi",
+    "p.leaderboard": "Ranking",
+    "p.albums": "Albumy",
+    "p.tackle": "Sprzęt",
+    "p.tournaments": "Turnieje",
+    "p.map": "Mapa łowisk",
+    "p.identify": "Rozpoznaj rybę",
+    "p.species": "Atlas gatunków",
+    "p.weather": "Pogoda wędkarska",
+    "p.docs": "Dokumenty wędkarskie",
+    "p.settings": "Ustawienia",
+    "p.moderation": "Moderacja",
+    "p.edit": "Edytuj profil",
+    "common.save": "Zapisz",
+    "common.add": "Dodaj",
+    "common.delete": "Usuń",
+    "common.report": "Zgłoś",
+    "catch.new": "Nowy połów",
+    "catch.species": "Gatunek",
+    "catch.weight": "Waga (kg)",
+    "catch.length": "Długość (cm)",
+    "catch.bait": "Przynęta / technika",
+    "catch.visibility": "Widoczność",
+    "catch.addloc": "Dodaj lokalizację",
+    "catch.save": "Zapisz połów",
+    "catch.identify": "Rozpoznaj rybę (AI)",
+    "catch.story": "Stwórz opis połowu (AI)",
+    "vis.public": "Publiczny",
+    "vis.friends": "Tylko znajomi",
+    "vis.private": "Prywatny",
+    "set.notif": "Powiadomienia e-mail",
+    "online.now": "online",
+    "feed.translate": "Przetłumacz",
+    "feed.show_original": "Pokaż oryginał",
+    "set.logout": "Wyloguj się",
+    "set.delete": "Usuń konto",
   },
 };
 
