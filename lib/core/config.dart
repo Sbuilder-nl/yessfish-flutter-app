@@ -8,7 +8,7 @@ class Config {
   static const String reverbHost = 'api.yessfish.com';
   static const int reverbPort = 443;
   static const String googleServerClientId = "722347151371-ht0f8ekdrb3e5p2k61ugb6jck8d42upm.apps.googleusercontent.com";
-  static const String appVersion = "1.0.1 (94)";
+  static const String appVersion = "1.0.1 (95)";
 }
 
 class AppColors {

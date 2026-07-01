@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:exif/exif.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import '../core/api.dart';
 import '../core/analytics.dart';
 import '../core/config.dart';
@@ -21,6 +24,8 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   String _privacy = 'public';
   bool _addLocation = true;
   DateTime _caughtAt = DateTime.now();
+  int? _waterId;
+  String? _waterName;
   final List<Map<String, String>> _photos = []; // {path, url}
   bool _uploading = false, _identifying = false, _saving = false;
   String? _aiTip;
@@ -30,9 +35,9 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     try {
       final picker = ImagePicker();
       if (src == ImageSource.gallery) {
-        files = await picker.pickMultiImage(maxWidth: 1600, imageQuality: 85);
+        files = await picker.pickMultiImage(); // origineel (met EXIF-datum)
       } else {
-        final x = await picker.pickImage(source: ImageSource.camera, maxWidth: 1600, imageQuality: 85);
+        final x = await picker.pickImage(source: ImageSource.camera);
         if (x != null) files = [x];
       }
     } catch (e) {
@@ -40,10 +45,13 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       return;
     }
     if (files.isEmpty) return;
+    // Galerij-foto: probeer de opnamedatum (EXIF) → vult de vangst-datum automatisch in.
+    if (src == ImageSource.gallery) await _readExifDate(files.first);
     setState(() => _uploading = true);
     try {
       for (final f in files) {
-        final r = await Api.uploadImage(f.path);
+        final path = await _compress(f.path); // klein maken vóór upload (EXIF is al gelezen)
+        final r = await Api.uploadImage(path);
         _photos.add({'path': r['path'].toString(), 'url': r['url'].toString()});
       }
       setState(() {});
@@ -76,6 +84,30 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     }
   }
 
+  // EXIF-opnamedatum lezen (formaat "YYYY:MM:DD HH:MM:SS") → vult de vangst-datum.
+  Future<void> _readExifDate(XFile f) async {
+    try {
+      final tags = await readExifFromBytes(await f.readAsBytes());
+      final t = tags['EXIF DateTimeOriginal'] ?? tags['Image DateTime'];
+      if (t == null) return;
+      final m = RegExp(r'^(\d{4}):(\d{2}):(\d{2})').firstMatch(t.printable);
+      if (m == null) return;
+      final d = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!), 12);
+      if (!d.isAfter(DateTime.now())) setState(() => _caughtAt = d);
+    } catch (_) {}
+  }
+
+  // Comprimeer een (origineel) foto vóór upload zodat de upload klein blijft.
+  Future<String> _compress(String path) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final target = '${dir.path}/yf_${DateTime.now().microsecondsSinceEpoch}.jpg';
+      final out = await FlutterImageCompress.compressAndGetFile(path, target,
+          minWidth: 1600, minHeight: 1600, quality: 85);
+      return out?.path ?? path;
+    } catch (_) { return path; }
+  }
+
   Future<void> _pickDate() async {
     final d = await showDatePicker(
       context: context,
@@ -84,6 +116,51 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       lastDate: DateTime.now(),
     );
     if (d != null) setState(() => _caughtAt = DateTime(d.year, d.month, d.day, 12));
+  }
+
+  // Optioneel een viswater koppelen (ook voor oude vangsten). Zoekt via /waters?q=.
+  Future<void> _pickWater() async {
+    final search = TextEditingController();
+    List results = [];
+    bool busy = false;
+    final picked = await showDialog<Map?>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+      Future<void> doSearch() async {
+        final q = search.text.trim();
+        if (q.length < 2) return;
+        setS(() => busy = true);
+        try {
+          final r = await Api.get('/waters?q=${Uri.encodeComponent(q)}');
+          final list = r is List ? r : (r['data'] ?? []);
+          final seen = <String>{};
+          results = [];
+          for (final w in list) { final n = '${w['name']}'; if (n.isNotEmpty && seen.add(n)) results.add(w); }
+        } catch (_) {}
+        setS(() => busy = false);
+      }
+      return AlertDialog(
+        title: Text(context.tr('newcatch.water')),
+        content: SizedBox(width: double.maxFinite, child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: search, autofocus: true,
+            decoration: InputDecoration(hintText: context.tr('newcatch.water_search'),
+              suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: doSearch)),
+            onSubmitted: (_) => doSearch()),
+          const SizedBox(height: 8),
+          if (busy) const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()),
+          Flexible(child: ListView(shrinkWrap: true, children: results.map((w) => ListTile(
+            dense: true, title: Text('${w['name'] ?? ''}'),
+            subtitle: w['country'] != null ? Text('${w['country']}') : null,
+            onTap: () => Navigator.pop(ctx, Map<String, dynamic>.from(w)),
+          )).toList())),
+        ])),
+        actions: [
+          if (_waterId != null) TextButton(onPressed: () => Navigator.pop(ctx, <String, dynamic>{}), child: Text(context.tr('newcatch.water_clear'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: Text(context.tr('map.cancel'))),
+        ],
+      );
+    }));
+    if (picked == null) return;
+    if (picked.isEmpty) { setState(() { _waterId = null; _waterName = null; }); return; }
+    setState(() { _waterId = picked['id'] as int?; _waterName = picked['name']?.toString(); });
   }
 
   Future<void> _save() async {
@@ -97,6 +174,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         'species_text': _species.text.trim(),
         'privacy': _privacy,
         'caught_at': _caughtAt.toIso8601String(),
+        if (_waterId != null) 'water_id': _waterId,
         if (_weight.text.isNotEmpty) 'weight_kg': double.tryParse(_weight.text.replaceAll(',', '.')),
         if (_length.text.isNotEmpty) 'length_cm': double.tryParse(_length.text.replaceAll(',', '.')),
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
@@ -168,6 +246,20 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
               const Icon(Icons.event, size: 18, color: AppColors.teal),
               const SizedBox(width: 8),
               Expanded(child: Text(MaterialLocalizations.of(context).formatFullDate(_caughtAt))),
+              const Icon(Icons.arrow_drop_down, color: Colors.black45),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _pickWater,
+          child: InputDecorator(
+            decoration: InputDecoration(labelText: context.tr('newcatch.water')),
+            child: Row(children: [
+              const Icon(Icons.water, size: 18, color: AppColors.teal),
+              const SizedBox(width: 8),
+              Expanded(child: Text(_waterName ?? context.tr('newcatch.water_none'),
+                  style: TextStyle(color: _waterName == null ? Colors.black45 : null))),
               const Icon(Icons.arrow_drop_down, color: Colors.black45),
             ]),
           ),
