@@ -12,6 +12,7 @@ import '../core/config.dart';
 import '../core/location.dart' as loc;
 import '../core/i18n.dart';
 import '../core/map_l10n.dart';
+import 'catch_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -510,11 +511,13 @@ class _MapScreenState extends State<MapScreen> {
   void _showMedia(Map w) {
     final wid = w['id'];
     List? items;
+    List? catches;
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
       expand: false, initialChildSize: 0.6, minChildSize: 0.3, maxChildSize: 0.95,
       builder: (_, scroll) => StatefulBuilder(builder: (ctx, setS) {
         Future<void> reload() async {
           try { final r = await Api.get('/waters/$wid/media'); items = r is List ? r : []; } catch (_) { items = []; }
+          try { final rc = await Api.get('/waters/$wid/catches'); catches = rc is List ? rc : []; } catch (_) { catches = []; }
           if (ctx.mounted) setS(() {});
         }
         if (items == null) { items = []; reload(); }
@@ -556,6 +559,27 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 6),
           Text(mui(context, 'media_moderated'), style: const TextStyle(fontSize: 11, color: Colors.black45)),
           const SizedBox(height: 12),
+          if ((catches ?? []).isNotEmpty) ...[
+            Row(children: [const Icon(Icons.set_meal, size: 18, color: AppColors.teal), const SizedBox(width: 6),
+              Text(mui(context, 'catches_here'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy))]),
+            const SizedBox(height: 8),
+            GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 8, crossAxisSpacing: 8, children: catches!.map<Widget>((cc) {
+              return GestureDetector(
+                onTap: () { Navigator.push(context, MaterialPageRoute(builder: (_) => CatchDetailScreen(catchId: cc['id'] as int))); },
+                child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Stack(fit: StackFit.expand, children: [
+                  Image.network('${cc['photo']}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.black12, child: const Icon(Icons.broken_image, color: Colors.black26))),
+                  Positioned(left: 0, right: 0, bottom: 0, child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.black87, Colors.transparent])),
+                    child: Text([if (cc['species'] != null) '${cc['species']}', if (cc['weight_kg'] != null) Units.weight(cc['weight_kg'])].join(' \u00b7 '),
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)))),
+                ])),
+              );
+            }).toList()),
+            const Divider(height: 26),
+            Text(mui(context, 'media_title'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54)),
+            const SizedBox(height: 8),
+          ],
           if ((items ?? []).isEmpty)
             Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Center(child: Text(mui(context, 'media_empty'), style: const TextStyle(color: Colors.black45))))
           else
