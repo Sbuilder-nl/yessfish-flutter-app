@@ -6,6 +6,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import '../core/api.dart';
 import '../core/analytics.dart';
+import '../core/units.dart';
 import '../core/config.dart';
 import '../core/location.dart';
 import '../core/i18n.dart';
@@ -175,7 +176,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         'privacy': _privacy,
         'caught_at': _caughtAt.toIso8601String(),
         if (_waterId != null) 'water_id': _waterId,
-        if (_weight.text.isNotEmpty) 'weight_kg': double.tryParse(_weight.text.replaceAll(',', '.')),
+        if (_weight.text.isNotEmpty) 'weight_kg': Units.toKg(_weight.text),
         if (_length.text.isNotEmpty) 'length_cm': double.tryParse(_length.text.replaceAll(',', '.')),
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
         if (_photos.isNotEmpty) 'photo_paths': _photos.map((p) => p['path']).toList(),
@@ -231,7 +232,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         TextField(controller: _species, decoration: InputDecoration(labelText: context.tr('newcatch.species'))),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: TextField(controller: _weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.tr('newcatch.weight')))),
+          Expanded(child: TextField(controller: _weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: '${context.tr('newcatch.weight')} (${Units.label})'))),
           const SizedBox(width: 10),
           Expanded(child: TextField(controller: _length, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.tr('newcatch.length')))),
         ]),

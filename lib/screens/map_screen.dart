@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/analytics.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
@@ -896,7 +897,7 @@ class _MapScreenState extends State<MapScreen> {
     showModalBottomSheet(context: context, builder: (_) => Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [const Icon(Icons.set_meal, color: Colors.orange), const SizedBox(width: 8), Expanded(child: Text(c['species'] ?? c['species_text'] ?? context.tr('map.catch'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
       const SizedBox(height: 6),
-      if (c['weight_kg'] != null) Text('${context.tr('map.weight')}: ${c['weight_kg']} kg', style: const TextStyle(color: Colors.black54)),
+      if (c['weight_kg'] != null) Text('${context.tr('map.weight')}: ${Units.weight(c['weight_kg'])}', style: const TextStyle(color: Colors.black54)),
       if (c['length_cm'] != null) Text('${context.tr('map.length')}: ${c['length_cm']} cm', style: const TextStyle(color: Colors.black54)),
     ])));
   }

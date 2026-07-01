@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'api.dart';
 import 'push.dart';
+import 'units.dart';
 
 class User {
   final int id;
@@ -28,6 +29,17 @@ class AuthState extends ChangeNotifier {
   void _afterAuth() {
     Push.init();
     Push.registerToken();
+    _loadUnitPref();
+  }
+
+  // Gewichts-eenheid-voorkeur (kg/lb) laden zodat de app overal in de juiste eenheid toont.
+  Future<void> _loadUnitPref() async {
+    try {
+      final s = await Api.get('/profile/settings');
+      if (s is Map && (s['weight_unit'] == 'kg' || s['weight_unit'] == 'lb')) {
+        Units.unit = s['weight_unit'] as String;
+      }
+    } catch (_) {}
   }
 
   Future<void> bootstrap() async {

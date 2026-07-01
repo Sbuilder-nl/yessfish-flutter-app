@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/species_l10n.dart';
@@ -44,7 +45,7 @@ class _SpeciesDetailScreenState extends State<SpeciesDetailScreen> {
     String? kg() {
       final w = double.tryParse('${s['max_weight_kg']}');
       if (w == null) return null;
-      return (w % 1 == 0 ? w.toInt().toString() : w.toString()) + ' kg';
+      return Units.weight(w);
     }
     final items = <Widget>[];
     void add(String label, String? val) { if (val != null && val.isNotEmpty) items.add(_chip(label, val)); }

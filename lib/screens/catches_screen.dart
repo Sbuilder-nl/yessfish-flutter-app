@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import 'new_catch_screen.dart';
@@ -62,7 +63,7 @@ class _CatchesScreenState extends State<CatchesScreen> {
                               : const CircleAvatar(backgroundColor: AppColors.bg, child: Icon(Icons.set_meal, color: AppColors.teal)),
                           title: Text(c['species'] ?? context.tr('catches.fish'), style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text([
-                            if (c['weight_kg'] != null) '${c['weight_kg']} kg',
+                            if (c['weight_kg'] != null) Units.weight(c['weight_kg']),
                             if (c['length_cm'] != null) '${c['length_cm']} cm',
                             if (c['bait'] != null) c['bait'],
                           ].join(' · ')),

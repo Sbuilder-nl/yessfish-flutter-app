@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -136,7 +137,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         Text(c['species'] ?? context.tr('catchdetail.fish'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          if (c['weight_kg'] != null) _chip('${c['weight_kg']} kg'),
+          if (c['weight_kg'] != null) _chip(Units.weight(c['weight_kg'])),
           if (c['length_cm'] != null) _chip('${c['length_cm']} cm'),
           if (c['bait'] != null) _chip(c['bait']),
           if (c['technique'] != null) _chip(c['technique']),

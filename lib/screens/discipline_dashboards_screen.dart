@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/disciplines_i18n.dart';
@@ -106,7 +107,7 @@ class _DisciplineDashboardsScreenState extends State<DisciplineDashboardsScreen>
 
     String biggest() {
       final parts = <String>[];
-      if (bw != null) parts.add('${(bw as num).toStringAsFixed(bw % 1 == 0 ? 0 : 1)} kg');
+      if (bw != null) parts.add(Units.weight(bw));
       if (bl != null) parts.add('$bl cm');
       return parts.isEmpty ? '—' : parts.join(' · ');
     }
@@ -193,7 +194,7 @@ class _DisciplineDashboardsScreenState extends State<DisciplineDashboardsScreen>
     String sub() {
       final p = <String>[];
       if (maxL != null) p.add('${maxL}cm');
-      if (maxW != null) { final w = maxW as num; p.add('${w.toStringAsFixed(w % 1 == 0 ? 0 : 1)}kg'); }
+      if (maxW != null) { final w = maxW as num; p.add(Units.weight(w)); }
       return p.isEmpty ? '' : 'tot ${p.join(' · ')}';
     }
     Widget ph() => Container(width: 96, height: 74, color: AppColors.bg, child: const Icon(Icons.set_meal, color: Colors.black26));

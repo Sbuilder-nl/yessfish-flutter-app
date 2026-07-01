@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/auth.dart';
 import '../core/api.dart';
+import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/disciplines_i18n.dart';
@@ -24,6 +25,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try { final r = await Api.get('/profile/settings'); setState(() { _s = r; _loading = false; }); }
     catch (_) { setState(() => _loading = false); }
   }
+  Future<void> _setUnit(String? v) async {
+    if (v == null) return;
+    setState(() => _s['weight_unit'] = v);
+    Units.unit = v;
+    try { await Api.put('/profile/settings', {'weight_unit': v}); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+  }
+
   Future<void> _set(String key, bool v) async {
     setState(() => _s[key] = v);
     try { await Api.put('/profile/settings', {key: v}); }
@@ -69,6 +78,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             underline: const SizedBox.shrink(),
             items: I18n.languages.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (v) { if (v != null) context.read<I18n>().setLocale(v); },
+          ),
+        )),
+        const SizedBox(height: 12),
+        Card(child: ListTile(
+          leading: const Icon(Icons.scale, color: AppColors.teal),
+          title: Text(context.tr('settings.weight_unit')),
+          trailing: DropdownButton<String>(
+            value: (_s['weight_unit'] == 'lb') ? 'lb' : 'kg',
+            underline: const SizedBox.shrink(),
+            items: const [
+              DropdownMenuItem(value: 'kg', child: Text('kg')),
+              DropdownMenuItem(value: 'lb', child: Text('lb (pounds)')),
+            ],
+            onChanged: _setUnit,
           ),
         )),
         const SizedBox(height: 12),
