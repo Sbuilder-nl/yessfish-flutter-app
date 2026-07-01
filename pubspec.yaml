@@ -1,7 +1,7 @@
 name: yessfish
 description: "YessFish - het sociale netwerk voor sportvissers"
 publish_to: 'none'
-version: 1.0.1+92
+version: 1.0.1+93
 
 environment:
   sdk: ^3.9.0
@@ -33,6 +33,7 @@ dependencies:
   firebase_core: ^4.11.0
   firebase_messaging: ^16.4.1
   flutter_local_notifications: ^22.0.1
+  firebase_analytics: ^12.4.3
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
+import '../core/analytics.dart';
 import '../core/config.dart';
 import '../core/location.dart';
 import '../core/i18n.dart';
@@ -57,6 +58,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     setState(() { _identifying = true; _aiTip = null; });
     try {
       final r = await Api.post('/catches/identify', {'path': _photos.first['path']});
+      Analytics.log('ai_identify');
       if (r['is_fish'] == true && r['species_nl'] != null) {
         setState(() {
           _species.text = r['species_nl'];
@@ -94,6 +96,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         body['longitude'] = loc.lng;
       }
       await Api.post('/catches', body);
+      Analytics.log('catch_created');
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

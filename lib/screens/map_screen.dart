@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import '../core/api.dart';
+import '../core/analytics.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/location.dart' as loc;
@@ -173,6 +174,7 @@ class _MapScreenState extends State<MapScreen> {
       ));
       if (yes == true) {
         await Api.post('/checkin', {'latitude': p.lat, 'longitude': p.lng, 'accuracy': p.accuracy});
+        Analytics.log('checkin');
         _checkedIn = true;
         await _load();
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'checked_in'))));
@@ -702,6 +704,7 @@ class _MapScreenState extends State<MapScreen> {
         if (canMod && isPaid) 'is_paid': true,
         if (canMod && isPaid && booking.text.trim().isNotEmpty) 'booking_url': booking.text.trim(),
       });
+      Analytics.log('water_created');
       await _load();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'water_added'))));
     } catch (e) {
@@ -748,6 +751,7 @@ class _MapScreenState extends State<MapScreen> {
     if (ok != true || name.text.trim().isEmpty) return;
     try {
       final created = await Api.post('/spots', {'name': name.text.trim(), 'latitude': target.latitude, 'longitude': target.longitude, 'privacy': privacy, if (notes.text.trim().isNotEmpty) 'notes': notes.text.trim()});
+      Analytics.log('spot_created');
       await _load();
       // Direct het verse stek-detail openen zodat de maker meteen foto's/video's kan toevoegen.
       if (mounted && created is Map && created['id'] != null) {

@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/analytics.dart';
 import 'core/auth.dart';
 import 'core/realtime_service.dart';
 import 'core/i18n.dart';
@@ -42,6 +43,7 @@ class YessFishApp extends StatelessWidget {
         title: 'YessFish',
         debugShowCheckedModeBanner: false,
         navigatorKey: Push.navKey,
+        navigatorObservers: [Analytics.observer],
         theme: buildTheme(),
         locale: i18n.flutterLocale,
         supportedLocales: const [Locale('nl'), Locale('en'), Locale('de'), Locale('fr')],
