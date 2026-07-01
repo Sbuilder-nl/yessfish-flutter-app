@@ -16,25 +16,9 @@ class Api {
   static String? _token;
   static String lang = 'nl'; // ingestelde taal → backend geeft meldingen in deze taal (X-App-Lang)
 
-  // Versleutelde opslag kan op sommige Android-toestellen na een app-update de waarde
-  // niet meer ontsleutelen (keystore) → read/write/delete gooit. NOOIT laten crashen:
-  // token blijft in het geheugen werken voor de sessie; corrupte waarde wordt gewist.
-  static Future<void> loadToken() async {
-    try {
-      _token = await _storage.read(key: 'yf_token');
-    } catch (_) {
-      _token = null;
-      try { await _storage.delete(key: 'yf_token'); } catch (_) {}
-    }
-  }
-  static Future<void> setToken(String t) async {
-    _token = t;
-    try { await _storage.write(key: 'yf_token', value: t); } catch (_) {}
-  }
-  static Future<void> clearToken() async {
-    _token = null;
-    try { await _storage.delete(key: 'yf_token'); } catch (_) {}
-  }
+  static Future<void> loadToken() async => _token = await _storage.read(key: 'yf_token');
+  static Future<void> setToken(String t) async { _token = t; await _storage.write(key: 'yf_token', value: t); }
+  static Future<void> clearToken() async { _token = null; await _storage.delete(key: 'yf_token'); }
   static String? get token => _token;
 
   static Map<String, String> _headers() => {

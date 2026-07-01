@@ -31,20 +31,16 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> bootstrap() async {
-    // Volledig afgeschermd: wat er ook misgaat bij de opstartcheck, de app moet
-    // ALTIJD doorgaan naar het inlogscherm (nooit op een wit laadscherm blijven hangen).
-    try {
-      await Api.loadToken();
-      if (Api.token != null) {
-        try {
-          final r = await Api.get('/auth/me');
-          user = User.fromJson(r['data']);
-          _afterAuth();
-        } catch (_) {
-          await Api.clearToken();
-        }
+    await Api.loadToken();
+    if (Api.token != null) {
+      try {
+        final r = await Api.get('/auth/me');
+        user = User.fromJson(r['data']);
+        _afterAuth();
+      } catch (_) {
+        await Api.clearToken();
       }
-    } catch (_) {/* niets mag de opstart blokkeren */}
+    }
     loading = false;
     notifyListeners();
   }

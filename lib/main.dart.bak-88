@@ -14,9 +14,9 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+    await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(firebaseBgHandler);
-  } catch (_) {/* push (of een trage init) mag het opstarten nooit blokkeren */}
+  } catch (_) {/* push mag het opstarten nooit blokkeren */}
   runApp(const YessFishApp());
 }
 
