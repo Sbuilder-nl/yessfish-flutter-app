@@ -41,7 +41,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       _otherId = widget.recipientId;
       _title = widget.recipientName;
-      _loadByRecipient();
+      _loading = false;
     }
   }
 
@@ -58,22 +58,6 @@ class _ChatScreenState extends State<ChatScreen> {
       final data = (r['data'] ?? []) as List;
       setState(() { _messages.addAll(data.reversed); _loading = false; });
       Api.post('/conversations/$_convId/read').catchError((_) => null);
-      _toBottom();
-    } catch (_) { setState(() => _loading = false); }
-  }
-
-  // Chat geopend vanaf een vriend (recipientId, geen gesprek-object): haal het bestaande
-  // 1-op-1 gesprek + berichten op, zodat eerder verstuurde berichten niet "verdwijnen".
-  Future<void> _loadByRecipient() async {
-    try {
-      final r = await Api.get('/messages/with/$_otherId');
-      _convId = r['conversation_id'];
-      final data = (r['data'] ?? []) as List;
-      setState(() { _messages.addAll(data.reversed); _loading = false; });
-      if (_convId != null) {
-        _subscribe();
-        Api.post('/conversations/$_convId/read').catchError((_) => null);
-      }
       _toBottom();
     } catch (_) { setState(() => _loading = false); }
   }

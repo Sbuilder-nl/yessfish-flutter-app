@@ -95,13 +95,7 @@ class Push {
   static Future<void> registerToken() async {
     try {
       if (Api.token == null) return;
-      // getToken() kan bij de eerste poging (net na opstart / trage Play Services) null
-      // teruggeven → een paar keer opnieuw proberen zodat het toestel-token alsnog registreert.
-      String? t;
-      for (int i = 0; i < 4 && t == null; i++) {
-        t = await FirebaseMessaging.instance.getToken();
-        if (t == null) await Future.delayed(const Duration(seconds: 3));
-      }
+      final String? t = await FirebaseMessaging.instance.getToken();
       if (t != null) await _send(t);
     } catch (_) {}
   }
