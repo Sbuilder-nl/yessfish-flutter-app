@@ -20,6 +20,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   final _bait = TextEditingController();
   String _privacy = 'public';
   bool _addLocation = true;
+  DateTime _caughtAt = DateTime.now();
   final List<Map<String, String>> _photos = []; // {path, url}
   bool _uploading = false, _identifying = false, _saving = false;
   String? _aiTip;
@@ -75,6 +76,16 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _caughtAt,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (d != null) setState(() => _caughtAt = DateTime(d.year, d.month, d.day, 12));
+  }
+
   Future<void> _save() async {
     if (_species.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('newcatch.enterSpecies'))));
@@ -85,6 +96,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       final body = <String, dynamic>{
         'species_text': _species.text.trim(),
         'privacy': _privacy,
+        'caught_at': _caughtAt.toIso8601String(),
         if (_weight.text.isNotEmpty) 'weight_kg': double.tryParse(_weight.text.replaceAll(',', '.')),
         if (_length.text.isNotEmpty) 'length_cm': double.tryParse(_length.text.replaceAll(',', '.')),
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
@@ -147,6 +159,19 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         ]),
         const SizedBox(height: 12),
         TextField(controller: _bait, decoration: InputDecoration(labelText: context.tr('newcatch.bait'))),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _pickDate,
+          child: InputDecorator(
+            decoration: InputDecoration(labelText: context.tr('newcatch.date')),
+            child: Row(children: [
+              const Icon(Icons.event, size: 18, color: AppColors.teal),
+              const SizedBox(width: 8),
+              Expanded(child: Text(MaterialLocalizations.of(context).formatFullDate(_caughtAt))),
+              const Icon(Icons.arrow_drop_down, color: Colors.black45),
+            ]),
+          ),
+        ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _privacy,
