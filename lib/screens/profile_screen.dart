@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
+import '../core/api.dart';
+import '../core/units.dart';
 import '../core/realtime_service.dart';
 import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 import 'licenses_screen.dart';
 import 'leaderboard_screen.dart';
+import 'clubs_screen.dart';
 import 'friends_screen.dart';
 import 'species_screen.dart';
 import 'weather_screen.dart';
@@ -30,10 +33,47 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  Map? _stats;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<RealtimeService>().refreshCounts());
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try { final r = await Api.get('/profile/stats'); if (mounted) setState(() => _stats = r is Map ? r : null); } catch (_) {}
+  }
+
+  Widget _statsCard() {
+    final s = _stats;
+    if (s == null) return const SizedBox.shrink();
+    Widget pill(IconData ic, String val, String lbl) => Expanded(child: Column(children: [
+      Icon(ic, color: AppColors.teal, size: 20), const SizedBox(height: 4),
+      Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.navy)),
+      Text(lbl, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+    ]));
+    final big = s['biggest'];
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+      child: Column(children: [
+        Row(children: [
+          pill(Icons.set_meal, '${s['catches'] ?? 0}', context.tr('stats.catches')),
+          pill(Icons.calendar_month, '${s['this_month'] ?? 0}', context.tr('stats.this_month')),
+          pill(Icons.menu_book_outlined, '${s['species'] ?? 0}', context.tr('stats.species')),
+        ]),
+        if (big != null && big['weight_kg'] != null) ...[
+          const Divider(height: 20),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.emoji_events, color: Color(0xFFD4A017), size: 18), const SizedBox(width: 6),
+            Text('${context.tr('stats.biggest')}: ', style: const TextStyle(color: Colors.black54)),
+            Flexible(child: Text('${big['species'] ?? ''} \u00b7 ${Units.weight(big['weight_kg'])}', overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy))),
+          ]),
+        ],
+      ]),
+    );
   }
 
   void _open(Widget screen) async {
@@ -79,11 +119,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
       const SizedBox(height: 12),
       Center(child: OutlinedButton.icon(onPressed: () => _open(const EditProfileScreen()), icon: const Icon(Icons.edit, size: 16), label: Text(context.tr('p.edit')))),
+      _statsCard(),
       _section(context.tr('sec.social'), [
         _tile(Icons.notifications_outlined, context.tr('p.notifications'), const NotificationsScreen(), badge: rt.unread),
         _tile(Icons.chat_bubble_outline, context.tr('p.messages'), const MessagesScreen(), badge: rt.messagesUnread),
         _tile(Icons.people_outline, context.tr('p.friends'), const FriendsScreen(), badge: rt.pendingFriends),
         _tile(Icons.emoji_events_outlined, context.tr('p.leaderboard'), const LeaderboardScreen()),
+        _tile(Icons.groups_outlined, context.tr('nav.clubs'), const ClubsScreen()),
       ]),
       _section(context.tr('sec.fishing'), [
         _tile(Icons.style_outlined, dui(context, 'title'), const DisciplineDashboardsScreen()),

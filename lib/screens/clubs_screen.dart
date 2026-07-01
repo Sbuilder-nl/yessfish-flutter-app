@@ -47,7 +47,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: Text(context.tr('nav.clubs'))),
       floatingActionButton: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('clubs.fab'), style: const TextStyle(color: Colors.white))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load,

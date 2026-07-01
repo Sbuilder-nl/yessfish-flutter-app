@@ -7,7 +7,7 @@ import '../core/i18n.dart';
 import 'feed_screen.dart';
 import 'catches_screen.dart';
 import 'bite_screen.dart';
-import 'clubs_screen.dart';
+import 'map_screen.dart';
 import 'profile_screen.dart';
 import 'notifications_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -25,7 +25,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _i = 0;
-  final _screens = const [FeedScreen(), CatchesScreen(), BiteScreen(), ClubsScreen(), ProfileScreen()];
+  final Set<int> _visited = {0};
+
+  Widget _pageFor(int idx) {
+    switch (idx) {
+      case 0: return const FeedScreen();
+      case 1: return const CatchesScreen();
+      case 2: return const BiteScreen();
+      case 3: return const MapScreen();
+      default: return const ProfileScreen();
+    }
+  }
 
   @override
   void initState() {
@@ -73,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: _i == 3 ? null : AppBar(
         title: const YfLogo(size: 30, light: true),
         actions: [
           Consumer<RealtimeService>(builder: (_, rt, __) => Stack(alignment: Alignment.center, children: [
@@ -87,18 +97,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ])),
         ],
       ),
-      body: IndexedStack(index: _i, children: _screens),
+      body: IndexedStack(index: _i, children: List.generate(5, (idx) => _visited.contains(idx) ? _pageFor(idx) : const SizedBox.shrink())),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() => _i = v),
+        onDestinationSelected: (v) => setState(() { _i = v; _visited.add(v); }),
         backgroundColor: Colors.white,
         indicatorColor: AppColors.teal.withValues(alpha: 0.15),
         destinations: [
           NavigationDestination(icon: const Icon(Icons.dynamic_feed_outlined), selectedIcon: const Icon(Icons.dynamic_feed), label: context.tr('nav.feed')),
           NavigationDestination(icon: const Icon(Icons.set_meal_outlined), selectedIcon: const Icon(Icons.set_meal), label: context.tr('nav.catches')),
           NavigationDestination(icon: const Icon(Icons.water_outlined), selectedIcon: const Icon(Icons.water), label: context.tr('nav.bite')),
-          NavigationDestination(icon: const Icon(Icons.groups_outlined), selectedIcon: const Icon(Icons.groups), label: context.tr('nav.clubs')),
-          NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: context.tr('nav.profile')),
+          NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: context.tr('nav.map')),
+          NavigationDestination(icon: const Icon(Icons.grid_view_outlined), selectedIcon: const Icon(Icons.grid_view), label: context.tr('nav.menu')),
         ],
       ),
     );
