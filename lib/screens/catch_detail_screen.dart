@@ -102,6 +102,14 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
 
   Widget _chip(String t) => Chip(label: Text(t), backgroundColor: AppColors.bg, visualDensity: VisualDensity.compact);
 
+  // Vangst-moment (datum + tijd) als chip.
+  Widget _dateChip(BuildContext context, dynamic caughtAt) {
+    final dt = DateTime.tryParse('$caughtAt')?.toLocal();
+    if (dt == null) return const SizedBox.shrink();
+    final s = '${MaterialLocalizations.of(context).formatMediumDate(dt)} · ${TimeOfDay.fromDateTime(dt).format(context)}';
+    return Chip(avatar: const Icon(Icons.event, size: 16, color: AppColors.teal), label: Text(s), backgroundColor: AppColors.bg, visualDensity: VisualDensity.compact);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -137,6 +145,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         Text(c['species'] ?? context.tr('catchdetail.fish'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
+          if (c['caught_at'] != null) _dateChip(context, c['caught_at']),
           if (c['weight_kg'] != null) _chip(Units.weight(c['weight_kg'])),
           if (c['length_cm'] != null) _chip('${c['length_cm']} cm'),
           if (c['bait'] != null) _chip(c['bait']),

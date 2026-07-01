@@ -47,7 +47,8 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     }
     if (files.isEmpty) return;
     // Galerij-foto: probeer de opnamedatum (EXIF) → vult de vangst-datum automatisch in.
-    if (src == ImageSource.gallery) await _readExifDate(files.first);
+    bool exifFound = false;
+    if (src == ImageSource.gallery) exifFound = await _readExifDate(files.first);
     setState(() => _uploading = true);
     try {
       for (final f in files) {
@@ -56,6 +57,11 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         _photos.add({'path': r['path'].toString(), 'url': r['url'].toString()});
       }
       setState(() {});
+      // Geen opnamedatum uit de foto → gebruiker laten weten dat hij datum + tijd zelf zet.
+      if (src == ImageSource.gallery && !exifFound && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('newcatch.no_exif_date')), duration: const Duration(seconds: 5)));
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('newcatch.uploadFail')}: ${e.message}' : '${context.tr('newcatch.uploadFail')}: $e'), duration: const Duration(seconds: 8)));
     } finally {
@@ -86,16 +92,21 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   }
 
   // EXIF-opnamedatum lezen (formaat "YYYY:MM:DD HH:MM:SS") → vult de vangst-datum.
-  Future<void> _readExifDate(XFile f) async {
+  // Geeft true als er een geldige opnamedatum uit de EXIF kwam.
+  Future<bool> _readExifDate(XFile f) async {
     try {
       final tags = await readExifFromBytes(await f.readAsBytes());
       final t = tags['EXIF DateTimeOriginal'] ?? tags['Image DateTime'];
-      if (t == null) return;
-      final m = RegExp(r'^(\d{4}):(\d{2}):(\d{2})').firstMatch(t.printable);
-      if (m == null) return;
-      final d = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!), 12);
-      if (!d.isAfter(DateTime.now())) setState(() => _caughtAt = d);
-    } catch (_) {}
+      if (t == null) return false;
+      // "YYYY:MM:DD HH:MM:SS" — datum + (optioneel) tijd meenemen.
+      final m = RegExp(r'^(\d{4}):(\d{2}):(\d{2})(?:[ T](\d{2}):(\d{2}))?').firstMatch(t.printable);
+      if (m == null) return false;
+      final d = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!),
+          m[4] != null ? int.parse(m[4]!) : 12, m[5] != null ? int.parse(m[5]!) : 0);
+      if (d.isAfter(DateTime.now())) return false;
+      setState(() => _caughtAt = d);
+      return true;
+    } catch (_) { return false; }
   }
 
   // Comprimeer een (origineel) foto vóór upload zodat de upload klein blijft.
@@ -116,7 +127,10 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (d != null) setState(() => _caughtAt = DateTime(d.year, d.month, d.day, 12));
+    if (d == null || !mounted) return;
+    final t = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_caughtAt));
+    setState(() => _caughtAt = DateTime(d.year, d.month, d.day,
+        t?.hour ?? _caughtAt.hour, t?.minute ?? _caughtAt.minute));
   }
 
   // Optioneel een viswater koppelen (ook voor oude vangsten). Zoekt via /waters?q=.
@@ -246,7 +260,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
             child: Row(children: [
               const Icon(Icons.event, size: 18, color: AppColors.teal),
               const SizedBox(width: 8),
-              Expanded(child: Text(MaterialLocalizations.of(context).formatFullDate(_caughtAt))),
+              Expanded(child: Text('${MaterialLocalizations.of(context).formatMediumDate(_caughtAt)} · ${TimeOfDay.fromDateTime(_caughtAt).format(context)}')),
               const Icon(Icons.arrow_drop_down, color: Colors.black45),
             ]),
           ),
