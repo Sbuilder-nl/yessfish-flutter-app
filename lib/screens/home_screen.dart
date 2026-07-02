@@ -37,12 +37,38 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool _resendBusy = false;
+  Future<void> _resendVerify() async {
+    setState(() => _resendBusy = true);
+    final m = ScaffoldMessenger.of(context);
+    final sent = context.tr('verify.sent');
+    try { await Api.post('/auth/email/resend', {}); m.showSnackBar(SnackBar(content: Text(sent))); }
+    catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : sent))); }
+    finally { if (mounted) setState(() => _resendBusy = false); }
+  }
+
+  Widget _verifyBanner() {
+    final u = context.watch<AuthState>().user;
+    if (u == null || u.emailVerified) return const SizedBox.shrink();
+    return Material(color: const Color(0xFFFFF4D6), child: Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      child: Row(children: [
+        const Icon(Icons.mark_email_unread_outlined, size: 18, color: Color(0xFFB26A00)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(context.tr('verify.banner'), style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A4E00)))),
+        _resendBusy
+          ? const Padding(padding: EdgeInsets.all(10), child: SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+          : TextButton(onPressed: _resendVerify, child: Text(context.tr('verify.resend'))),
+      ]),
+    ));
+  }
+
   @override
   void initState() {
     super.initState();
     final auth = context.read<AuthState>();
     if (auth.user != null) context.read<RealtimeService>().start(auth.user!.id);
-    WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); _maybePromptDisciplines(); });
+    WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); _maybePromptDisciplines(); context.read<AuthState>().refresh(); });
   }
 
   // Bestaande én nieuwe accounts: als er nog geen visstijlen gekozen zijn,
@@ -97,7 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ])),
         ],
       ),
-      body: IndexedStack(index: _i, children: List.generate(5, (idx) => _visited.contains(idx) ? _pageFor(idx) : const SizedBox.shrink())),
+      body: Column(children: [
+        _verifyBanner(),
+        Expanded(child: IndexedStack(index: _i, children: List.generate(5, (idx) => _visited.contains(idx) ? _pageFor(idx) : const SizedBox.shrink()))),
+      ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
         onDestinationSelected: (v) => setState(() { _i = v; _visited.add(v); }),

@@ -10,7 +10,8 @@ class User {
   final String? avatarPath;
   final bool isAdmin;
   final bool canModerate;
-  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false});
+  final bool emailVerified;
+  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false, this.emailVerified = true});
   factory User.fromJson(Map<String, dynamic> j) => User(
         id: j['id'] as int,
         username: (j['username'] ?? '') as String,
@@ -18,6 +19,7 @@ class User {
         avatarPath: j['avatar_path'] as String?,
         isAdmin: (j['is_admin'] ?? false) as bool,
         canModerate: (j['can_moderate'] ?? j['is_admin'] ?? false) as bool,
+        emailVerified: (j['email_verified'] ?? true) as bool,
       );
 }
 
