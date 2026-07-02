@@ -46,7 +46,7 @@ class YessFishApp extends StatelessWidget {
         navigatorObservers: [Analytics.observer],
         theme: buildTheme(),
         locale: i18n.flutterLocale,
-        supportedLocales: const [Locale('nl'), Locale('en'), Locale('de'), Locale('fr')],
+        supportedLocales: const [Locale('nl'), Locale('en'), Locale('de'), Locale('fr'), Locale('es'), Locale('pl')],
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
