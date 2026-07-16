@@ -1,0 +1,39 @@
+# YessFish iOS-builds via Codemagic (geen Mac nodig)
+# Vereist in de Codemagic-UI (eenmalig):
+#  1. App koppelen aan deze GitHub-repo (Sbuilder-nl/yessfish-flutter-app)
+#  2. Teams > Integrations > App Store Connect: API-key uploaden met de naam "yessfish-asc"
+#     (key aanmaken op appstoreconnect.apple.com > Users and Access > Integrations, rol: App Manager)
+# Signing gaat automatisch: Codemagic maakt zelf het certificaat + provisioning profile
+# aan via de App Store Connect API (distribution_type: app_store).
+workflows:
+  ios-testflight:
+    name: YessFish iOS - TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: yessfish-asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: nl.sbuilder.yessfish
+      flutter: 3.38.5
+    scripts:
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Signing profiles toepassen
+        script: xcode-project use-profiles
+      - name: IPA bouwen
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - info@sbuilder.nl
+        notify:
+          success: true
+          failure: true
