@@ -326,6 +326,11 @@ class _MapScreenState extends State<MapScreen> {
     )));
   }
 
+  bool _inNL(Map w) {
+    final la = double.tryParse('${w['latitude']}') ?? 0, lo = double.tryParse('${w['longitude']}') ?? 0;
+    return la > 50.7 && la < 53.6 && lo > 3.2 && lo < 7.3;
+  }
+
   void _showWater(Map w) {
     final level = '${w['busyness']?['level'] ?? 'none'}';
     final count = w['busyness']?['count'] ?? 0;
@@ -517,6 +522,33 @@ class _MapScreenState extends State<MapScreen> {
             statusRow(Icons.badge_outlined, mui(context, 'rules_license'), '${r['license_required'] ?? 'unknown'}', true),
             statusRow(Icons.nightlight_round, mui(context, 'rules_night'), '${r['night_fishing'] ?? 'unknown'}', false),
             statusRow(Icons.event_busy, mui(context, 'rules_season'), '${r['closed_season'] ?? 'unknown'}', false),
+            if (w['permit_type'] == null && _inNL(w)) Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Container(padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFFF2F4F6), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFD6DDE2))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(mui(context, 'permit_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black54)),
+                  const SizedBox(height: 2),
+                  Text(mui(context, 'permit_onbekend_lang'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Padding(padding: const EdgeInsets.only(top: 4),
+                    child: InkWell(onTap: () => launchUrl(Uri.parse('https://www.visplanner.nl/'), mode: LaunchMode.externalApplication),
+                      child: Text(mui(context, 'permit_visplanner'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
+                  const SizedBox(height: 8),
+                  Text(mui(context, 'permit_claim_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                  const SizedBox(height: 6),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.check, size: 16),
+                    label: Text(mui(context, 'permit_claim_btn')),
+                    onPressed: () async {
+                      final m = ScaffoldMessenger.of(context);
+                      try {
+                        final r = await Api.post('/waters/${w['id']}/permit-report', {'claim': 'vispas'});
+                        m.showSnackBar(SnackBar(content: Text(r is Map ? '${r['message']}' : 'OK')));
+                        if (r is Map && r['applied'] == true) { w['permit_type'] = 'landelijk'; _loadWaters(); }
+                      } catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
+                    },
+                  ),
+                ]))),
             if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend') Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(padding: const EdgeInsets.all(12),
