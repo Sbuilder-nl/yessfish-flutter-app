@@ -6,6 +6,7 @@ import "../core/api.dart";
 import "../core/config.dart";
 import "../core/i18n.dart";
 import "register_screen.dart";
+import "forgot_password_screen.dart";
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
   bool _gbusy = false;
   String? _err;
+  bool _remember = true;
+  bool _showPw = false;
 
   final _gsi = GoogleSignIn(
     serverClientId: Config.googleServerClientId,
@@ -28,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     setState(() { _busy = true; _err = null; });
     try {
-      await context.read<AuthState>().login(_email.text.trim(), _pw.text);
+      await context.read<AuthState>().login(_email.text.trim(), _pw.text, remember: _remember);
     } on ApiException catch (e) {
       setState(() => _err = e.message);
     } catch (_) {
@@ -84,8 +87,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text(_err!, style: const TextStyle(color: AppColors.danger))),
                 TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: context.tr("login.email"))),
                 const SizedBox(height: 12),
-                TextField(controller: _pw, obscureText: true, decoration: InputDecoration(labelText: context.tr("login.password"))),
-                const SizedBox(height: 20),
+                TextField(controller: _pw, obscureText: !_showPw, decoration: InputDecoration(
+                  labelText: context.tr("login.password"),
+                  suffixIcon: IconButton(
+                    icon: Icon(_showPw ? Icons.visibility_off : Icons.visibility, color: Colors.black45),
+                    onPressed: () => setState(() => _showPw = !_showPw),
+                  ),
+                )),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      Checkbox(value: _remember, onChanged: (v) => setState(() => _remember = v ?? true), visualDensity: VisualDensity.compact),
+                      Text(context.tr("login.remember"), style: const TextStyle(fontSize: 13)),
+                    ]),
+                    TextButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                      child: Text(context.tr("login.forgot")),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit,
                   child: _busy ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr("login.login")))),
                 const SizedBox(height: 8),

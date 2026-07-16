@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class Config {
   static const String apiBase = 'https://api.yessfish.com/api';
@@ -8,7 +9,10 @@ class Config {
   static const String reverbHost = 'api.yessfish.com';
   static const int reverbPort = 443;
   static const String googleServerClientId = "722347151371-ht0f8ekdrb3e5p2k61ugb6jck8d42upm.apps.googleusercontent.com";
-  static const String appVersion = "1.0.1 (102)";
+  static String appVersion = "1.0.11 (118)"; // wordt bij opstart bijgewerkt uit de echte build
+  static Future<void> loadVersion() async {
+    try { final i = await PackageInfo.fromPlatform(); appVersion = "${i.version} (${i.buildNumber})"; } catch (_) {}
+  }
 }
 
 class AppColors {

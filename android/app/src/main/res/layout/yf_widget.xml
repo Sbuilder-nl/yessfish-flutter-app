@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/yf_widget_bg"
+    android:padding="11dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <ImageView
+            android:layout_width="16dp" android:layout_height="16dp"
+            android:layout_marginEnd="5dp"
+            android:src="@mipmap/ic_launcher" android:contentDescription="YessFish" />
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="YessFish" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp" />
+        <TextView android:id="@+id/yf_weather"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:gravity="end" android:maxLines="1" android:ellipsize="end"
+            android:text="" android:textColor="#DCEEF4" android:textSize="11sp" />
+    </LinearLayout>
+
+    <FrameLayout android:id="@+id/yf_photo_area"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:layout_marginTop="9dp" android:background="@drawable/yf_photo_bg">
+        <ImageView android:id="@+id/yf_photo"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:scaleType="centerCrop" android:contentDescription="vangst" />
+        <TextView android:id="@+id/yf_latest"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom"
+            android:background="@drawable/yf_caption_scrim"
+            android:paddingLeft="10dp" android:paddingRight="10dp" android:paddingTop="16dp" android:paddingBottom="8dp"
+            android:maxLines="2" android:ellipsize="end" android:text="—"
+            android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="13sp" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginTop="9dp">
+        <ImageView android:id="@+id/yf_btn_catch"
+            android:layout_width="0dp" android:layout_height="42dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+            android:background="@drawable/yf_iconbtn" android:padding="9dp" android:scaleType="fitCenter"
+            android:src="@drawable/ic_wg_catch" android:contentDescription="Vangst" />
+        <ImageView android:id="@+id/yf_btn_spot"
+            android:layout_width="0dp" android:layout_height="42dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+            android:background="@drawable/yf_iconbtn" android:padding="9dp" android:scaleType="fitCenter"
+            android:src="@drawable/ic_wg_spot" android:contentDescription="Stek" />
+        <ImageView android:id="@+id/yf_btn_feed"
+            android:layout_width="0dp" android:layout_height="42dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+            android:background="@drawable/yf_iconbtn" android:padding="9dp" android:scaleType="fitCenter"
+            android:src="@drawable/ic_wg_feed" android:contentDescription="Feed" />
+        <ImageView android:id="@+id/yf_btn_map"
+            android:layout_width="0dp" android:layout_height="42dp" android:layout_weight="1" android:layout_marginEnd="6dp"
+            android:background="@drawable/yf_iconbtn" android:padding="9dp" android:scaleType="fitCenter"
+            android:src="@drawable/ic_wg_map" android:contentDescription="Kaart" />
+        <ImageView android:id="@+id/yf_btn_album"
+            android:layout_width="0dp" android:layout_height="42dp" android:layout_weight="1"
+            android:background="@drawable/yf_iconbtn" android:padding="9dp" android:scaleType="fitCenter"
+            android:src="@drawable/ic_wg_album" android:contentDescription="Album" />
+    </LinearLayout>
+</LinearLayout>

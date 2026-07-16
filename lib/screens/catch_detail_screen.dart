@@ -8,6 +8,7 @@ import '../core/units.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import '../widgets/photo_viewer.dart';
 
 const _moonNl = {
   'new': 'Nieuwe maan', 'waxing_crescent': 'Wassende sikkel', 'first_quarter': 'Eerste kwartier',
@@ -60,6 +61,67 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
   Future<void> _load() async {
     try { final r = await Api.get('/catches/${widget.catchId}'); setState(() { _c = r['data']; _loading = false; }); }
     catch (_) { setState(() => _loading = false); }
+  }
+
+
+  Future<void> _edit() async {
+    final c = _c!;
+    final species = TextEditingController(text: c['species']?.toString() ?? '');
+    final weight = TextEditingController(text: c['weight_kg']?.toString() ?? '');
+    final length = TextEditingController(text: c['length_cm']?.toString() ?? '');
+    final bait = TextEditingController(text: c['bait']?.toString() ?? '');
+    final technique = TextEditingController(text: c['technique']?.toString() ?? '');
+    final notes = TextEditingController(text: c['notes']?.toString() ?? '');
+    String privacy = (c['privacy'] ?? 'public').toString();
+    final saved = await showModalBottomSheet<bool>(context: context, isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) => Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(ctx).viewInsets.bottom + 16),
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(ctx.tr('catchdetail.editTitle'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.navy)),
+          const SizedBox(height: 12),
+          TextField(controller: species, decoration: InputDecoration(labelText: ctx.tr('newcatch.species'))),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: TextField(controller: weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: ctx.tr('newcatch.weight')))),
+            const SizedBox(width: 10),
+            Expanded(child: TextField(controller: length, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: ctx.tr('newcatch.length')))),
+          ]),
+          const SizedBox(height: 10),
+          TextField(controller: bait, decoration: InputDecoration(labelText: ctx.tr('catchdetail.bait'))),
+          const SizedBox(height: 10),
+          TextField(controller: technique, decoration: InputDecoration(labelText: ctx.tr('catchdetail.technique'))),
+          const SizedBox(height: 10),
+          TextField(controller: notes, maxLines: 3, decoration: InputDecoration(labelText: ctx.tr('catchdetail.notes'))),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: privacy,
+            decoration: InputDecoration(labelText: ctx.tr('newcatch.visibility')),
+            items: [
+              DropdownMenuItem(value: 'public', child: Text(ctx.tr('newcatch.public'))),
+              DropdownMenuItem(value: 'friends', child: Text(ctx.tr('newcatch.friends'))),
+              DropdownMenuItem(value: 'private', child: Text(ctx.tr('newcatch.private'))),
+            ],
+            onChanged: (v) => setSheet(() => privacy = v ?? 'public'),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('newcatch.save'))),
+        ])))));
+    if (saved != true) return;
+    try {
+      final r = await Api.put('/catches/${widget.catchId}', {
+        'species_text': species.text.trim(),
+        'weight_kg': double.tryParse(weight.text.replaceAll(',', '.')),
+        'length_cm': double.tryParse(length.text.replaceAll(',', '.')),
+        'bait': bait.text.trim().isEmpty ? null : bait.text.trim(),
+        'technique': technique.text.trim().isEmpty ? null : technique.text.trim(),
+        'notes': notes.text.trim().isEmpty ? null : notes.text.trim(),
+        'privacy': privacy,
+      });
+      if (mounted) { setState(() => _c = r['data']); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('catchdetail.saved')))); }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    }
   }
 
   Future<void> _delete() async {
@@ -129,17 +191,18 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
           Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/${widget.catchId}'));
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link gekopieerd — plak \'m om te delen 🔗')));
         }),
+        if (mine) IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _edit),
         if (mine) IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
       ]),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         if (_photoUrls(c).length == 1)
-          ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: _photoUrls(c).first, width: double.infinity, fit: BoxFit.cover))
+          GestureDetector(onTap: () => PhotoViewer.open(context, _photoUrls(c)), child: ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: _photoUrls(c).first, width: double.infinity, fit: BoxFit.cover)))
         else if (_photoUrls(c).length > 1)
           SizedBox(height: 220, child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _photoUrls(c).length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: _photoUrls(c)[i], width: 300, fit: BoxFit.cover)),
+            itemBuilder: (_, i) => GestureDetector(onTap: () => PhotoViewer.open(context, _photoUrls(c), i), child: ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: _photoUrls(c)[i], width: 300, fit: BoxFit.cover))),
           )),
         const SizedBox(height: 14),
         Text(c['species'] ?? context.tr('catchdetail.fish'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy)),

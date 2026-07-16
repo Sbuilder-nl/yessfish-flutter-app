@@ -9,6 +9,7 @@ import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 import 'licenses_screen.dart';
 import 'leaderboard_screen.dart';
+import 'toplist_screen.dart';
 import 'clubs_screen.dart';
 import 'friends_screen.dart';
 import 'species_screen.dart';
@@ -21,6 +22,8 @@ import 'tournaments_screen.dart';
 import 'albums_screen.dart';
 import 'tackle_screen.dart';
 import 'identify_screen.dart';
+import 'vis_ai_screen.dart';
+import '../core/app_config.dart';
 import 'moderation_screen.dart';
 import 'settings_screen.dart';
 import 'discipline_dashboards_screen.dart';
@@ -125,6 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.chat_bubble_outline, context.tr('p.messages'), const MessagesScreen(), badge: rt.messagesUnread),
         _tile(Icons.people_outline, context.tr('p.friends'), const FriendsScreen(), badge: rt.pendingFriends),
         _tile(Icons.emoji_events_outlined, context.tr('p.leaderboard'), const LeaderboardScreen()),
+        _tile(Icons.leaderboard_outlined, context.tr('toplist.title'), const ToplistScreen()),
         _tile(Icons.groups_outlined, context.tr('nav.clubs'), const ClubsScreen()),
       ]),
       _section(context.tr('sec.fishing'), [
@@ -136,6 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ]),
       _section(context.tr('sec.tools'), [
         _tile(Icons.auto_awesome, context.tr('p.identify'), const IdentifyScreen()),
+        if (AppConfig.aiVisible) _tile(Icons.smart_toy_outlined, visAiLabel(context), const VisAiScreen()),
         _tile(Icons.menu_book_outlined, context.tr('p.species'), const SpeciesScreen()),
         _tile(Icons.cloud_outlined, context.tr('p.weather'), const WeatherScreen()),
         _tile(Icons.badge_outlined, context.tr('p.docs'), const LicensesScreen()),

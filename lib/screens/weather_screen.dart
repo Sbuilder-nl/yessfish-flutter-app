@@ -10,6 +10,12 @@ class WeatherScreen extends StatefulWidget {
   State<WeatherScreen> createState() => _WeatherScreenState();
 }
 
+String _compassFrom(String letters, dynamic deg) {
+  if (deg == null) return '–';
+  final d = letters.split(',');
+  return d[(((deg as num).round() % 360) ~/ 45) % 8];
+}
+
 class _WeatherScreenState extends State<WeatherScreen> {
   Map? _w;
   bool _loading = true;
@@ -19,6 +25,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     try { final loc = await currentLocation(); final r = await Api.get('/weather?lat=${loc.lat}&lng=${loc.lng}'); setState(() { _w = r; _loading = false; }); }
     catch (_) { setState(() => _loading = false); }
   }
+  String _compass(BuildContext context, dynamic deg) => _compassFrom(context.tr('weather.compass'), deg);
   Widget _tile(IconData ic, String label, String val) => Card(child: Padding(padding: const EdgeInsets.all(14),
     child: Column(children: [Icon(ic, color: AppColors.teal), const SizedBox(height: 6), Text(val, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), Text(label, style: const TextStyle(fontSize: 11, color: Colors.black45))])));
   @override
@@ -30,7 +37,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
         const SizedBox(height: 16),
         GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), childAspectRatio: 1.6, crossAxisSpacing: 10, mainAxisSpacing: 10, children: [
           _tile(Icons.speed, context.tr('weather.pressure'), '${_w!['pressure_hpa']} hPa'),
-          _tile(Icons.air, context.tr('weather.wind'), '${(_w!['wind_speed_ms'] as num?)?.toStringAsFixed(1) ?? '–'} m/s'),
+          _tile(Icons.air, context.tr('weather.wind'), '${(_w!['wind_speed_ms'] as num?)?.toStringAsFixed(1) ?? '–'} m/s ${_compass(context, _w!['wind_deg'])}'.trim()),
+          _tile(Icons.explore, context.tr('weather.direction'), _compass(context, _w!['wind_deg'])),
           _tile(Icons.cloud, context.tr('weather.clouds'), '${_w!['clouds_pct']}%'),
           _tile(Icons.water_drop, context.tr('weather.humidity'), '${_w!['humidity']}%'),
         ]),

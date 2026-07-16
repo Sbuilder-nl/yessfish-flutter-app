@@ -55,3 +55,9 @@ google-services.json
 *.pem
 .env
 .env.*
+
+# lokale backups
+*.bak
+*.bak-*
+*.bak.*
+lib/**/*.bak-*

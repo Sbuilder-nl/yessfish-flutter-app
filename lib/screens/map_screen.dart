@@ -16,9 +16,13 @@ import 'catch_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/photo_viewer.dart';
+import '../widgets/fish_rating.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final double? focusLat;
+  final double? focusLng;
+  const MapScreen({super.key, this.focusLat, this.focusLng});
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
@@ -75,7 +79,9 @@ class _MapScreenState extends State<MapScreen> {
     try { final st = await Api.get('/profile/settings'); _autoOn = !(st is Map && st['auto_checkin'] == false); } catch (_) {}
     await _load();
     setState(() => _loading = false);
-    _maybeShowHelpOnce(); // eerste keer: toon het uitleg-boekje automatisch
+    if (widget.focusLat != null && widget.focusLng != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) { try { _map.move(LatLng(widget.focusLat!, widget.focusLng!), 15); } catch (_) {} });
+    } else { _maybeShowHelpOnce(); }
     _maybeAskCheckin();
     _timer = Timer.periodic(const Duration(seconds: 150), (_) async { await _load(); _maybeAskCheckin(); });
   }
@@ -336,7 +342,7 @@ class _MapScreenState extends State<MapScreen> {
         if (full is Map) {
           final ring = _ringFromGeo(full['polygon']);
           if (mounted && _shapeWaterId == w['id']) setState(() => _selWaterPoly = ring);
-          meta.value = {'has_shape': full['has_shape'] == true || ring.isNotEmpty, 'count': (full['shape_request_count'] is num) ? (full['shape_request_count'] as num).toInt() : 0};
+          meta.value = {'has_shape': full['has_shape'] == true || ring.isNotEmpty, 'count': (full['shape_request_count'] is num) ? (full['shape_request_count'] as num).toInt() : 0, 'rating': full['rating']};
         }
       } catch (_) {}
     }();
@@ -370,6 +376,35 @@ class _MapScreenState extends State<MapScreen> {
         const SizedBox(height: 10),
         Row(children: [Icon(Icons.local_fire_department, size: 16, color: _waterColor(level)), const SizedBox(width: 6),
           Text('${mui(context, 'busy')}: ${level == 'none' ? mui(context, 'busy_none') : busyLevelLabel(context, level)}${count > 0 ? ' ($count)' : ''}', style: const TextStyle(color: Colors.black87))]),
+        // Visjes-beoordeling van dit water (gemiddelde + jouw score).
+        ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
+          final rating = m?['rating'] as Map?;
+          final avg = (rating?['avg'] as num?)?.toDouble() ?? 0;
+          final rc = (rating?['count'] as num?)?.toInt() ?? 0;
+          final mine = (rating?['mine'] as num?)?.toInt();
+          return Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.black12)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(mui(context, 'rate_title'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54)),
+                rc > 0 ? Row(children: [FishRating(value: avg, size: 16), const SizedBox(width: 6), Text('${avg.toStringAsFixed(1)} ($rc)', style: const TextStyle(fontSize: 12, color: Colors.black45))])
+                       : Text(mui(context, 'rate_none'), style: const TextStyle(fontSize: 11, color: Colors.black38)),
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [Text('${mui(context, 'rate_ask')} ', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                FishRating(size: 26, mine: mine, onRate: (score) async {
+                  try {
+                    final r = await Api.post('/waters/${w['id']}/rate', {'score': score});
+                    if (r is Map) meta.value = {...?meta.value, 'rating': r};
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'rate_thanks'))));
+                  } catch (_) {}
+                }),
+              ]),
+            ]),
+          );
+        }),
         // Vorm-knoppen werken bij zodra de info geladen is (venster zelf opent meteen).
         ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
           final hasShape = m?['has_shape'] == true;
@@ -482,6 +517,18 @@ class _MapScreenState extends State<MapScreen> {
             statusRow(Icons.badge_outlined, mui(context, 'rules_license'), '${r['license_required'] ?? 'unknown'}', true),
             statusRow(Icons.nightlight_round, mui(context, 'rules_night'), '${r['night_fishing'] ?? 'unknown'}', false),
             statusRow(Icons.event_busy, mui(context, 'rules_season'), '${r['closed_season'] ?? 'unknown'}', false),
+            if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend') Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Container(padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFFF0F7F5), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFCADFDA))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(mui(context, 'permit_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black54)),
+                  const SizedBox(height: 2),
+                  Text(mui(context, 'permit_${w['permit_type']}'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (w['permit_url'] != null && '${w['permit_url']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+                    child: InkWell(onTap: () => launchUrl(Uri.parse('${w['permit_url']}'), mode: LaunchMode.externalApplication),
+                      child: Text(mui(context, 'permit_arrange'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
+                ]))),
             section('', r['summary']),
             section(mui(context, 'rules_license'), r['license_info']),
             section(mui(context, 'rules_night'), r['night_info']),
@@ -493,6 +540,11 @@ class _MapScreenState extends State<MapScreen> {
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: Text(mui(context, 'rules_official')))),
             ],
+            if (r['updated_at'] != null || r['verified_at'] != null) Padding(padding: const EdgeInsets.only(top: 12),
+              child: Text([
+                if (r['updated_at'] != null) '${mui(context, 'rules_changed')}: ${r['updated_at']}',
+                if (r['verified_at'] != null) '${mui(context, 'rules_checked')}: ${r['verified_at']}',
+              ].join('  ·  '), style: const TextStyle(fontSize: 11, color: Colors.black38))),
             const SizedBox(height: 16),
             Container(padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: const Color(0xFFFFF7E6), borderRadius: BorderRadius.circular(8)),
@@ -587,7 +639,11 @@ class _MapScreenState extends State<MapScreen> {
               final isVideo = m['type'] == 'video';
               final thumb = isVideo ? m['thumb'] : m['url'];
               return GestureDetector(
-                onTap: () { if (isVideo && m['url'] != null) launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); },
+                onTap: () {
+                  if (isVideo && m['url'] != null) { launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); return; }
+                  final ph = items!.where((x) => (x as Map)['type'] != 'video' && x['url'] != null).map((x) => (x as Map)['url'].toString()).toList();
+                  if (m['url'] != null) PhotoViewer.open(context, ph, ph.indexOf(m['url'].toString()));
+                },
                 child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Stack(fit: StackFit.expand, children: [
                   if (thumb != null) Image.network('$thumb', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.black12, child: const Icon(Icons.broken_image, color: Colors.black26)))
                   else Container(color: Colors.black87, child: const Icon(Icons.play_circle_outline, color: Colors.white70, size: 40)),
@@ -724,13 +780,24 @@ class _MapScreenState extends State<MapScreen> {
     )));
     if (ok != true || name.text.trim().isEmpty) return;
     try {
-      await Api.post('/waters', {
+      final created = await Api.post('/waters', {
         'name': name.text.trim(), 'type': type, 'latitude': pos.latitude, 'longitude': pos.longitude,
         if (canMod && isPaid) 'is_paid': true,
         if (canMod && isPaid && booking.text.trim().isNotEmpty) 'booking_url': booking.text.trim(),
       });
       Analytics.log('water_created');
+      // Waters-laag verversen (zat er niet in → nieuw water verscheen pas na slepen/zoomen)
+      // en het verse water meteen openen zodat duidelijk is dat het gelukt is.
+      await _loadWaters();
       await _load();
+      if (mounted && created is Map && created['id'] != null) {
+        // Laravel geeft decimalen als strings terug → altijd via tryParse.
+        final la = double.tryParse('${created['latitude']}');
+        final lo = double.tryParse('${created['longitude']}');
+        if (la != null && lo != null) _map.move(LatLng(la, lo), 15);
+        final fresh = _waters.firstWhere((x) => x is Map && x['id'] == created['id'], orElse: () => created);
+        _showWater(Map<String, dynamic>.from(fresh is Map ? fresh : created));
+      }
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'water_added'))));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : mui(context, 'no_water_here'))));
@@ -884,7 +951,11 @@ class _MapScreenState extends State<MapScreen> {
               final m = media[i] as Map; final isVideo = m['type'] == 'video';
               final thumb = isVideo ? m['thumb'] : m['url'];
               return GestureDetector(
-                onTap: () { if (isVideo && m['url'] != null) launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); },
+                onTap: () {
+                  if (isVideo && m['url'] != null) { launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); return; }
+                  final ph = media.where((x) => (x as Map)['type'] != 'video' && x['url'] != null).map((x) => (x as Map)['url'].toString()).toList();
+                  if (m['url'] != null) PhotoViewer.open(context, ph, ph.indexOf(m['url'].toString()));
+                },
                 onLongPress: mine ? () => delMedia(m, setSheet) : null,
                 child: Stack(alignment: Alignment.center, children: [
                   ClipRRect(borderRadius: BorderRadius.circular(10), child: thumb != null

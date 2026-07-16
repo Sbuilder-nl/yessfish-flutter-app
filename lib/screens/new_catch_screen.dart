@@ -23,6 +23,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   final _length = TextEditingController();
   final _bait = TextEditingController();
   String _privacy = 'public';
+  bool _showInFeed = true;
   bool _addLocation = true;
   DateTime _caughtAt = DateTime.now();
   int? _waterId;
@@ -188,6 +189,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       final body = <String, dynamic>{
         'species_text': _species.text.trim(),
         'privacy': _privacy,
+        'show_in_feed': _privacy == 'public' && _showInFeed,
         'caught_at': _caughtAt.toIso8601String(),
         if (_waterId != null) 'water_id': _waterId,
         if (_weight.text.isNotEmpty) 'weight_kg': Units.toKg(_weight.text),
@@ -214,7 +216,8 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('newcatch.title'))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: Column(children: [
+        Expanded(child: ListView(padding: const EdgeInsets.all(16), children: [
         if (_photos.isNotEmpty)
           SizedBox(height: 96, child: ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -290,6 +293,15 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           ],
           onChanged: (v) => setState(() => _privacy = v!),
         ),
+        if (_privacy == 'public')
+          CheckboxListTile(
+            value: _showInFeed,
+            onChanged: (v) => setState(() => _showInFeed = v ?? true),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(context.tr('newcatch.showInFeed')),
+          ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: _addLocation,
@@ -299,8 +311,11 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           subtitle: Text(context.tr('newcatch.addLocationSub')),
         ),
         const SizedBox(height: 12),
-        FilledButton(onPressed: _saving ? null : _save,
-          child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('newcatch.save'))),
+        ])),
+        // Opslaan-knop schuift mee boven het toetsenbord — altijd bereikbaar, ook tijdens invullen.
+        SafeArea(top: false, minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: SizedBox(width: double.infinity, child: FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('newcatch.save'))))),
       ]),
     );
   }

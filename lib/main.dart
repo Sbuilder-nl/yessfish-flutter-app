@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/analytics.dart';
 import 'core/auth.dart';
+import 'core/config.dart';
 import 'core/realtime_service.dart';
 import 'core/i18n.dart';
 import 'core/theme.dart';
@@ -15,12 +16,13 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Config.loadVersion();
   // Edge-to-edge (Android 15+): app tekent tot achter de systeembalken, transparante balken
   // → geen verouderde systeembalk-API's meer + moderne weergave op nieuwe toestellen.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    systemNavigationBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.dark,
   ));
   try {
     await Firebase.initializeApp().timeout(const Duration(seconds: 10));

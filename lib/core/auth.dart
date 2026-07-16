@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'api.dart';
+import 'i18n.dart';
 import 'push.dart';
 import 'units.dart';
 
@@ -38,8 +39,15 @@ class AuthState extends ChangeNotifier {
   Future<void> _loadUnitPref() async {
     try {
       final s = await Api.get('/profile/settings');
-      if (s is Map && (s['weight_unit'] == 'kg' || s['weight_unit'] == 'lb')) {
-        Units.unit = s['weight_unit'] as String;
+      if (s is Map) {
+        if (s['weight_unit'] == 'kg' || s['weight_unit'] == 'lb') {
+          Units.unit = s['weight_unit'] as String;
+        }
+        // Eenmaal ingelogd: pas de accountvoorkeur toe. Bewust gekozen (locked) wint van de
+        // apparaat-taal; anders blijft de apparaat-taal leidend en synct die naar de server.
+        if (s['language'] is String) {
+          I18n.instance?.applyServerLocale(s['language'] as String, locked: s['language_locked'] == true);
+        }
       }
     } catch (_) {}
   }
@@ -63,9 +71,9 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password, {bool remember = true}) async {
     final r = await Api.post('/auth/login', {'email': email, 'password': password});
-    await Api.setToken(r['token']);
+    await Api.setToken(r['token'], persist: remember);
     user = User.fromJson(r['user']);
     _afterAuth();
     notifyListeners();

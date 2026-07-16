@@ -27,9 +27,12 @@ class Api {
       try { await _storage.delete(key: 'yf_token'); } catch (_) {}
     }
   }
-  static Future<void> setToken(String t) async {
+  static Future<void> setToken(String t, {bool persist = true}) async {
     _token = t;
-    try { await _storage.write(key: 'yf_token', value: t); } catch (_) {}
+    try {
+      if (persist) { await _storage.write(key: 'yf_token', value: t); }
+      else { await _storage.delete(key: 'yf_token'); }
+    } catch (_) {}
   }
   static Future<void> clearToken() async {
     _token = null;
