@@ -51,6 +51,8 @@
 	<string>YessFish heeft toegang tot je fotobibliotheek nodig om foto&#39;s bij je vangsten, posts en albums te kiezen.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>YessFish kan foto&#39;s bewaren in je fotobibliotheek.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>YessFish gebruikt je locatie om wateren en stekken bij jou in de buurt te tonen en je vangstlocatie vast te leggen. Je locatie wordt alleen gebruikt terwijl je de app gebruikt.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>YessFish gebruikt je locatie om wateren en stekken bij jou in de buurt te tonen en je vangstlocatie vast te leggen.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
