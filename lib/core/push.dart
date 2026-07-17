@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -33,23 +35,31 @@ class Push {
   );
 
   /// Eenmalig: kanalen aanmaken (met geluid), notificatie-permissie vragen, listeners zetten.
+  /// LET OP volgorde: permissie EERST — de Android-only lokale-notificatie-init gooit op
+  /// iOS een fout, en die mag de permissievraag niet blokkeren (iOS-bug 1.0.20).
   static Future<void> init() async {
     if (_inited) return;
     _inited = true;
     try {
-      const InitializationSettings initSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      );
-      await _local.initialize(
-        settings: initSettings,
-        onDidReceiveNotificationResponse: (_) => _openNotifications(),
-      );
-      final AndroidFlutterLocalNotificationsPlugin? android =
-          _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      await android?.createNotificationChannel(_messages);
-      await android?.createNotificationChannel(_updates);
-
       await FirebaseMessaging.instance.requestPermission();
+      // iOS: laat het systeem meldingen ook tonen als de app op de voorgrond staat.
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true, badge: true, sound: true,
+      );
+
+      if (Platform.isAndroid) {
+        const InitializationSettings initSettings = InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        );
+        await _local.initialize(
+          settings: initSettings,
+          onDidReceiveNotificationResponse: (_) => _openNotifications(),
+        );
+        final AndroidFlutterLocalNotificationsPlugin? android =
+            _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        await android?.createNotificationChannel(_messages);
+        await android?.createNotificationChannel(_updates);
+      }
 
       FirebaseMessaging.onMessage.listen(_showForeground);
       FirebaseMessaging.onMessageOpenedApp.listen((_) => _openNotifications());
@@ -59,8 +69,10 @@ class Push {
     } catch (_) {/* push mag de app nooit breken */}
   }
 
-  /// Voorgrond: FCM toont zelf niets, dus tonen we de melding lokaal op het juiste kanaal.
+  /// Voorgrond: op Android toont FCM zelf niets, dus tonen we de melding lokaal op het
+  /// juiste kanaal. Op iOS doet het systeem dit al (presentation options) → niets doen.
   static void _showForeground(RemoteMessage m) {
+    if (!Platform.isAndroid) return;
     final RemoteNotification? n = m.notification;
     if (n == null) return;
     final bool isUpdate = m.data['channel'] == 'updates';
@@ -108,7 +120,7 @@ class Push {
 
   static Future<void> _send(String token) async {
     try {
-      await Api.post('/device-tokens', {'token': token, 'platform': 'android'});
+      await Api.post('/device-tokens', {'token': token, 'platform': Platform.isIOS ? 'ios' : 'android'});
     } catch (_) {}
   }
 
