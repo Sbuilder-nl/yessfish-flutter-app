@@ -1,6 +1,9 @@
+import "dart:io" show Platform;
+
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:google_sign_in/google_sign_in.dart";
+import "package:sign_in_with_apple/sign_in_with_apple.dart";
 import "../core/auth.dart";
 import "../core/api.dart";
 import "../core/config.dart";
@@ -19,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pw = TextEditingController();
   bool _busy = false;
   bool _gbusy = false;
+  bool _abusy = false;
   String? _err;
   bool _remember = true;
   bool _showPw = false;
@@ -63,6 +67,38 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _err = context.tr("login.google_failed"));
     } finally {
       if (mounted) setState(() => _gbusy = false);
+    }
+  }
+
+  // Native Sign in with Apple (alleen iOS, verplicht van Apple naast Google-login).
+  // Naam komt ALLEEN bij de allereerste autorisatie mee → direct doorsturen naar de server.
+  Future<void> _apple() async {
+    setState(() { _abusy = true; _err = null; });
+    try {
+      final cred = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+      );
+      final idToken = cred.identityToken;
+      if (idToken == null) {
+        if (mounted) setState(() => _err = context.tr("login.apple_failed"));
+        return;
+      }
+      final r = await Api.post("/auth/apple/token", {
+        "identity_token": idToken,
+        if (cred.givenName != null) "first_name": cred.givenName,
+        if (cred.familyName != null) "last_name": cred.familyName,
+      });
+      if (mounted) await context.read<AuthState>().loginWithToken(r["token"]);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code != AuthorizationErrorCode.canceled && mounted) {
+        setState(() => _err = context.tr("login.apple_failed"));
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _err = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _err = context.tr("login.apple_failed"));
+    } finally {
+      if (mounted) setState(() => _abusy = false);
     }
   }
 
@@ -114,6 +150,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _gbusy ? null : _google,
                   icon: _gbusy ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.g_mobiledata, size: 28),
                   label: Text(context.tr("login.login_google")))),
+                if (Platform.isIOS) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(width: double.infinity, height: 44, child: IgnorePointer(
+                    ignoring: _abusy,
+                    child: SignInWithAppleButton(
+                      onPressed: _apple,
+                      text: context.tr("login.login_apple"),
+                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                    ),
+                  )),
+                ],
                 TextButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
                   child: Text(context.tr("login.no_account")),

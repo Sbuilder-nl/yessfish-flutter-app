@@ -39,6 +39,7 @@ dependencies:
   path_provider: ^2.1.6
   quick_actions: ^1.1.0
   home_widget: ^0.7.0
+  sign_in_with_apple: ^7.0.1
 
 dev_dependencies:
   flutter_test:
