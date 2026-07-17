@@ -37,6 +37,7 @@ class _MapScreenState extends State<MapScreen> {
   List _catches = [];
   List _busy = [];
   List _waters = [];
+  List _permitRegions = []; // vergunning-zones (gekleurd per vergunning)
   List _activeSpots = []; // stekken van het aangetikte water — als pins op de kaart
   dynamic _activeWaterId; // welk water nu open/getikt is — om pins te herberekenen bij filterwissel
   String _spotFilter = 'all'; // all | public | friends
@@ -522,7 +523,7 @@ class _MapScreenState extends State<MapScreen> {
             statusRow(Icons.badge_outlined, mui(context, 'rules_license'), '${r['license_required'] ?? 'unknown'}', true),
             statusRow(Icons.nightlight_round, mui(context, 'rules_night'), '${r['night_fishing'] ?? 'unknown'}', false),
             statusRow(Icons.event_busy, mui(context, 'rules_season'), '${r['closed_season'] ?? 'unknown'}', false),
-            if (w['permit_type'] == null && _inNL(w)) Padding(
+            if (w['permit_type'] == null || '${w['permit_type']}' == 'onbekend') Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: const Color(0xFFF2F4F6), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFD6DDE2))),
@@ -530,24 +531,29 @@ class _MapScreenState extends State<MapScreen> {
                   Text(mui(context, 'permit_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black54)),
                   const SizedBox(height: 2),
                   Text(mui(context, 'permit_onbekend_lang'), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Padding(padding: const EdgeInsets.only(top: 4),
-                    child: InkWell(onTap: () => launchUrl(Uri.parse('https://www.visplanner.nl/'), mode: LaunchMode.externalApplication),
-                      child: Text(mui(context, 'permit_visplanner'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
-                  const SizedBox(height: 8),
-                  Text(mui(context, 'permit_claim_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                  const SizedBox(height: 6),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.check, size: 16),
-                    label: Text(mui(context, 'permit_claim_btn')),
-                    onPressed: () async {
-                      final m = ScaffoldMessenger.of(context);
-                      try {
-                        final r = await Api.post('/waters/${w['id']}/permit-report', {'claim': 'vispas'});
-                        m.showSnackBar(SnackBar(content: Text(r is Map ? '${r['message']}' : 'OK')));
-                        if (r is Map && r['applied'] == true) { w['permit_type'] = 'landelijk'; _loadWaters(); }
-                      } catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
-                    },
-                  ),
+                  if (mapCountryLicence(context, w['country'] as String?).isNotEmpty) Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(mapCountryLicence(context, w['country'] as String?), style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.35))),
+                  if (_inNL(w)) ...[
+                    Padding(padding: const EdgeInsets.only(top: 6),
+                      child: InkWell(onTap: () => launchUrl(Uri.parse('https://www.visplanner.nl/'), mode: LaunchMode.externalApplication),
+                        child: Text(mui(context, 'permit_visplanner'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
+                    const SizedBox(height: 8),
+                    Text(mui(context, 'permit_claim_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    const SizedBox(height: 6),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.check, size: 16),
+                      label: Text(mui(context, 'permit_claim_btn')),
+                      onPressed: () async {
+                        final m = ScaffoldMessenger.of(context);
+                        try {
+                          final r = await Api.post('/waters/${w['id']}/permit-report', {'claim': 'vispas'});
+                          m.showSnackBar(SnackBar(content: Text(r is Map ? '${r['message']}' : 'OK')));
+                          if (r is Map && r['applied'] == true) { w['permit_type'] = 'landelijk'; _loadWaters(); }
+                        } catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
+                      },
+                    ),
+                  ],
                 ]))),
             if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend') Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -1099,6 +1105,41 @@ class _MapScreenState extends State<MapScreen> {
   bool get _canMod => context.read<AuthState>().user?.canModerate ?? false;
 
   // GeoJSON Polygon ([lng,lat]) → ring van LatLng.
+  // '#rrggbb' -> Color.
+  Color _hexColor(String h) {
+    final s = h.replaceAll('#', '');
+    if (s.length == 6) { final v = int.tryParse(s, radix: 16); if (v != null) return Color(0xFF000000 | v); }
+    return const Color(0xFF94A3B8);
+  }
+  // GeoJSON Polygon/MultiPolygon -> lijst ringen (buitenring per deel).
+  List<List<LatLng>> _geoRings(dynamic g) {
+    if (g is! Map) return [];
+    List<LatLng> toRing(dynamic ring) {
+      final out = <LatLng>[];
+      if (ring is List) for (final p in ring) {
+        if (p is List && p.length >= 2 && p[0] is num && p[1] is num) {
+          final lat = (p[1] as num).toDouble(), lng = (p[0] as num).toDouble();
+          if (lat.abs() <= 90 && lng.abs() <= 180) out.add(LatLng(lat, lng));
+        }
+      }
+      return out;
+    }
+    final t = g['type'], c = g['coordinates'];
+    if (t == 'Polygon' && c is List && c.isNotEmpty) return [toRing(c.first)];
+    if (t == 'MultiPolygon' && c is List) {
+      return [for (final poly in c) if (poly is List && poly.isNotEmpty) toRing(poly.first)].where((r) => r.length >= 3).toList();
+    }
+    return [];
+  }
+  // Vergunning-regio's van alle landen ophalen (klein; app tekent wat in beeld is).
+  Future<void> _loadRegions() async {
+    try {
+      final r = await Api.get('/permit-regions');
+      final list = r is Map ? r['regions'] : null;
+      if (mounted) setState(() => _permitRegions = list is List ? list : []);
+    } catch (_) {}
+  }
+
   List<LatLng> _ringFromGeo(dynamic g) {
     if (g is Map && g['type'] == 'Polygon' && g['coordinates'] is List && (g['coordinates'] as List).isNotEmpty) {
       final ring = (g['coordinates'] as List).first;
@@ -1351,7 +1392,7 @@ class _MapScreenState extends State<MapScreen> {
             cameraConstraint: CameraConstraint.contain(
               bounds: LatLngBounds(const LatLng(34.0, -15.0), const LatLng(71.5, 42.0)),
             ),
-            onMapReady: _loadWaters,
+            onMapReady: () { _loadWaters(); _loadRegions(); },
             onTap: (_, latlng) {
               if (_editShape) { setState(() => _draftPts = [..._draftPts, latlng]); return; } // intekenen: punt toevoegen
               if (_placing != null) return; // in plaats-modus richt je met het kruis; tik doet niets
@@ -1380,6 +1421,15 @@ class _MapScreenState extends State<MapScreen> {
             TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'nl.sbuilder.yessfish',
               tileProvider: CancellableNetworkTileProvider()), // annuleert off-screen tegels tijdens slepen = vloeiender
             CircleLayer(circles: circles),
+            // Vergunning-regio's: gekleurde zones (elke zone = eigen vergunning), onder de wateren.
+            if (!_editShape)
+              PolygonLayer(polygons: [
+                for (final reg in _permitRegions)
+                  for (final ring in _geoRings(reg is Map ? reg['polygon'] : null))
+                    if (ring.length >= 3)
+                      Polygon(points: ring, color: _hexColor('${reg['color'] ?? '#94a3b8'}').withValues(alpha: 0.13),
+                        borderColor: _hexColor('${reg['color'] ?? '#94a3b8'}'), borderStrokeWidth: 2),
+              ]),
             // Alle ingetekende waters altijd opgelicht (vanaf zoom 11), ingekleurd per watertype.
             if (!_editShape && _zoom >= 11)
               PolygonLayer(polygons: [

@@ -9,6 +9,8 @@ class ApiException implements Exception {
   ApiException(this.status, this.data);
   String get message =>
       (data is Map && data['message'] != null) ? data['message'].toString() : 'Er ging iets mis';
+  @override
+  String toString() => message;
 }
 
 class Api {
