@@ -67,6 +67,13 @@ class _MapScreenState extends State<MapScreen> {
     'Denemarken': LatLng(56.0, 10.0),
   };
 
+  // App-landnaam (NL) -> DB-landnaam (EN) voor de vergunning-regio's.
+  static const Map<String,String> _countryEn = {
+    'Nederland':'Netherlands','België':'Belgium','Duitsland':'Germany','Frankrijk':'France',
+    'Spanje':'Spain','Polen':'Poland','Verenigd Koninkrijk':'United Kingdom','Ierland':'Ireland',
+    'Italië':'Italy','Portugal':'Portugal','Oostenrijk':'Austria','Zwitserland':'Switzerland',
+  };
+
   @override
   void initState() { super.initState(); _init(); }
 
@@ -1167,9 +1174,12 @@ class _MapScreenState extends State<MapScreen> {
     return (m[lang] ?? m['en'] ?? '').toString();
   }
   // Vergunning-regio's van alle landen ophalen (klein; app tekent wat in beeld is).
-  Future<void> _loadRegions() async {
+  // Vergunning-regio's van EEN land (per land laden i.p.v. alles — payload klein houden).
+  Future<void> _loadRegions(String? country) async {
+    final en = country == null ? null : (_countryEn[country] ?? country);
+    if (en == null) { if (mounted) setState(() => _permitRegions = []); return; }
     try {
-      final r = await Api.get('/permit-regions');
+      final r = await Api.get('/permit-regions?country=' + Uri.encodeComponent(en));
       final list = r is Map ? r['regions'] : null;
       if (mounted) setState(() => _permitRegions = list is List ? list : []);
     } catch (_) {}
@@ -1360,7 +1370,7 @@ class _MapScreenState extends State<MapScreen> {
         PopupMenuButton<String>(
           icon: const Icon(Icons.public),
           tooltip: mui(context, 'country'),
-          onSelected: (c) { _map.move(_countries[c]!, _countryZoom(c)); _loadWaters(); }, // naar het land + meteen waters laden
+          onSelected: (c) { _map.move(_countries[c]!, _countryZoom(c)); _loadWaters(); _loadRegions(c); }, // naar het land + meteen waters laden
           itemBuilder: (_) => _countries.keys.map((c) => PopupMenuItem(value: c, child: Text(c))).toList(),
         ),
         TextButton.icon(
@@ -1427,7 +1437,7 @@ class _MapScreenState extends State<MapScreen> {
             cameraConstraint: CameraConstraint.contain(
               bounds: LatLngBounds(const LatLng(34.0, -15.0), const LatLng(71.5, 42.0)),
             ),
-            onMapReady: () { _loadWaters(); _loadRegions(); },
+            onMapReady: _loadWaters,
             onTap: (_, latlng) {
               if (_editShape) { setState(() => _draftPts = [..._draftPts, latlng]); return; } // intekenen: punt toevoegen
               if (_placing != null) return; // in plaats-modus richt je met het kruis; tik doet niets
