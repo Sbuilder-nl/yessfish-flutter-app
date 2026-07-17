@@ -534,6 +534,23 @@ class _MapScreenState extends State<MapScreen> {
                   if (mapCountryLicence(context, w['country'] as String?).isNotEmpty) Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(mapCountryLicence(context, w['country'] as String?), style: const TextStyle(fontSize: 12, color: Colors.black87, height: 1.35))),
+                  // Regio-regels & seizoenen van de vergunning-zone waarin dit water ligt.
+                  ...(() {
+                    final reg = _regionForWater(w);
+                    final rules = reg == null ? '' : _regLoc(reg['rules'] is Map ? Map<String,dynamic>.from(reg['rules']) : null);
+                    final label = reg == null ? '' : _regLoc(reg['permit_label'] is Map ? Map<String,dynamic>.from(reg['permit_label']) : null);
+                    if (reg == null || (rules.isEmpty && label.isEmpty)) return <Widget>[];
+                    return <Widget>[
+                      Padding(padding: const EdgeInsets.only(top: 8),
+                        child: Row(children: [
+                          Container(width: 10, height: 10, decoration: BoxDecoration(color: _hexColor('${reg['color'] ?? '#94a3b8'}'), shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text('${reg['name'] ?? ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black87))),
+                        ])),
+                      if (rules.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+                        child: Text('⚠️ ' + rules, style: const TextStyle(fontSize: 12, color: Color(0xFF8A5A00), height: 1.3))),
+                    ];
+                  })(),
                   if (_inNL(w)) ...[
                     Padding(padding: const EdgeInsets.only(top: 6),
                       child: InkWell(onTap: () => launchUrl(Uri.parse('https://www.visplanner.nl/'), mode: LaunchMode.externalApplication),
@@ -1130,6 +1147,24 @@ class _MapScreenState extends State<MapScreen> {
       return [for (final poly in c) if (poly is List && poly.isNotEmpty) toRing(poly.first)].where((r) => r.length >= 3).toList();
     }
     return [];
+  }
+  // Vergunning-regio waarin dit water valt (voor de regels/seizoenen in het paneel).
+  Map? _regionForWater(Map w) {
+    final la = (w['latitude'] is num) ? (w['latitude'] as num).toDouble() : double.tryParse('${w['latitude']}');
+    final lo = (w['longitude'] is num) ? (w['longitude'] as num).toDouble() : double.tryParse('${w['longitude']}');
+    if (la == null || lo == null) return null;
+    for (final reg in _permitRegions) {
+      if (reg is! Map) continue;
+      for (final ring in _geoRings(reg['polygon'])) {
+        if (ring.length >= 3 && _pointInRing(LatLng(la, lo), ring)) return reg;
+      }
+    }
+    return null;
+  }
+  String _regLoc(Map? m) {
+    if (m == null) return '';
+    final lang = Localizations.localeOf(context).languageCode;
+    return (m[lang] ?? m['en'] ?? '').toString();
   }
   // Vergunning-regio's van alle landen ophalen (klein; app tekent wat in beeld is).
   Future<void> _loadRegions() async {
