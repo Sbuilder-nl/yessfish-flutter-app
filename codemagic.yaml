@@ -1,10 +1,10 @@
 # YessFish iOS-builds via Codemagic (geen Mac nodig)
 # Vereist in de Codemagic-UI (eenmalig):
-#  1. App koppelen aan deze GitHub-repo (Sbuilder-nl/yessfish-flutter-app)
-#  2. Teams > Integrations > App Store Connect: API-key uploaden met de naam "yessfish-asc"
-#     (key aanmaken op appstoreconnect.apple.com > Users and Access > Integrations, rol: App Manager)
-# Signing gaat automatisch: Codemagic maakt zelf het certificaat + provisioning profile
-# aan via de App Store Connect API (distribution_type: app_store).
+#  1. Integrations > Developer Portal: API-key "yessfish-asc" (gedaan 17-07)
+#  2. App > Environment variables: CERTIFICATE_PRIVATE_KEY in groep "appstore_credentials"
+#     (RSA-sleutel; origineel op prod-server /root/.codemagic/yessfish_cert_key.pem)
+# fetch-signing-files --create maakt het distributiecertificaat en provisioning
+# profile automatisch aan in het Apple-developerportaal als ze nog niet bestaan.
 workflows:
   ios-testflight:
     name: YessFish iOS - TestFlight
@@ -13,14 +13,19 @@ workflows:
     integrations:
       app_store_connect: yessfish-asc
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: nl.sbuilder.yessfish
+      groups:
+        - appstore_credentials
       flutter: 3.38.5
     scripts:
       - name: Flutter packages
         script: flutter pub get
-      - name: Signing profiles toepassen
+      - name: Keychain initialiseren
+        script: keychain initialize
+      - name: Signing-bestanden ophalen of aanmaken
+        script: app-store-connect fetch-signing-files "nl.sbuilder.yessfish" --type IOS_APP_STORE --create
+      - name: Certificaten in keychain laden
+        script: keychain add-certificates
+      - name: Signing toepassen op Xcode-project
         script: xcode-project use-profiles
       - name: IPA bouwen
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
