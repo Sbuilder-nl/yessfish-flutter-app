@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'map_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +11,10 @@ import '../core/i18n.dart';
 const Map<String, Map<String, String>> _ml = {
   'tab_reports': {'nl': 'Meldingen', 'en': 'Reports', 'de': 'Meldungen', 'fr': 'Signalements', 'es': 'Reportes', 'pl': 'Zgłoszenia'},
   'tab_media':   {'nl': 'Media', 'en': 'Media', 'de': 'Medien', 'fr': 'Médias', 'es': 'Multimedia', 'pl': 'Media'},
+  'tab_shapes':  {'nl': 'Intekenen', 'en': 'Draw requests', 'de': 'Einzeichnen', 'fr': 'À tracer', 'es': 'Dibujar', 'pl': 'Do naniesienia'},
+  'no_shapes':   {'nl': 'Geen intekenen-aanvragen.', 'en': 'No draw requests.', 'de': 'Keine Einzeichnen-Anfragen.', 'fr': 'Aucune demande de tracé.', 'es': 'Sin solicitudes de dibujo.', 'pl': 'Brak próśb o naniesienie.'},
+  'go_water':    {'nl': 'Ga naar water', 'en': 'Go to water', 'de': 'Zum Gewässer', 'fr': 'Aller à l\'eau', 'es': 'Ir al agua', 'pl': 'Do wody'},
+  'times_asked': {'nl': 'x gevraagd', 'en': 'x asked', 'de': 'x angefragt', 'fr': 'x demandé', 'es': 'x pedido', 'pl': 'x proszono'},
   'tab_members': {'nl': 'Leden', 'en': 'Members', 'de': 'Mitglieder', 'fr': 'Membres', 'es': 'Miembros', 'pl': 'Członkowie'},
   'online':      {'nl': 'online', 'en': 'online', 'de': 'online', 'fr': 'en ligne', 'es': 'en línea', 'pl': 'online'},
   'total':       {'nl': 'leden', 'en': 'members', 'de': 'Mitglieder', 'fr': 'membres', 'es': 'miembros', 'pl': 'członków'},
@@ -48,6 +53,7 @@ class ModerationScreen extends StatefulWidget {
 class _ModerationScreenState extends State<ModerationScreen> {
   List _reports = [];
   List _media = [];
+  List _shapeReqs = [];
   List _members = [];
   List _log = [];
   Map _overview = {};
@@ -72,6 +78,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('moderation.no_access'))));
     }
     try { final m = await Api.get('/admin/media?status=$_mediaStatus'); _media = m is List ? m : []; } catch (_) {}
+    try { final sq = await Api.get('/admin/shape-requests'); _shapeReqs = (sq is Map && sq['requests'] is List) ? sq['requests'] : []; } catch (_) {}
     try { final u = await Api.get('/admin/users'); _members = u is List ? u : []; } catch (_) {}
     try { final l = await Api.get('/admin/moderation/log'); _log = l is List ? l : []; } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -201,10 +208,11 @@ class _ModerationScreenState extends State<ModerationScreen> {
     if (_loading) return Scaffold(appBar: AppBar(title: Text(context.tr('moderation.title'))), body: const Center(child: CircularProgressIndicator()));
     final openReports = _reports.where((r) => r['status'] == 'open').toList();
     final restReports = _reports.where((r) => r['status'] != 'open').toList();
-    return DefaultTabController(length: 4, child: Scaffold(
+    return DefaultTabController(length: 5, child: Scaffold(
       appBar: AppBar(title: Text(context.tr('moderation.title')), bottom: TabBar(tabs: [
         Tab(text: '${_lbl('tab_reports')}${openReports.isNotEmpty ? ' (${openReports.length})' : ''}'),
         Tab(text: '${_lbl('tab_media')}${_media.isNotEmpty ? ' (${_media.length})' : ''}'),
+        Tab(text: '${_lbl('tab_shapes')}${_shapeReqs.isNotEmpty ? ' (${_shapeReqs.length})' : ''}'),
         Tab(text: _lbl('tab_members')),
         Tab(text: _lbl('tab_log')),
       ])),
@@ -229,6 +237,18 @@ class _ModerationScreenState extends State<ModerationScreen> {
             Expanded(child: _media.isEmpty ? Center(child: Text(_lbl('no_media'), style: const TextStyle(color: Colors.black45)))
               : RefreshIndicator(onRefresh: _loadMedia, child: ListView(padding: const EdgeInsets.all(12), children: _media.map<Widget>((m) => _mediaCard(m as Map)).toList()))),
           ]),
+          // Intekenen-aanvragen
+          _shapeReqs.isEmpty ? Center(child: Text(_lbl('no_shapes'), style: const TextStyle(color: Colors.black45)))
+            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: _shapeReqs.map<Widget>((r) {
+                final m = r as Map;
+                return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
+                  title: Text('${m['name'] ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('${m['place'] ?? ''}  •  ${m['count'] ?? 0} ${_lbl('times_asked')}'),
+                  trailing: FilledButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(focusWaterId: (m['id'] is num) ? (m['id'] as num).toInt() : int.tryParse('${m['id']}')))),
+                    child: Text(_lbl('go_water'))),
+                ));
+              }).toList())),
           // Leden
           Column(children: [
             Padding(padding: const EdgeInsets.all(10), child: TextField(controller: _searchCtrl, decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 20), hintText: _lbl('search'), isDense: true, border: const OutlineInputBorder()), onChanged: _loadMembers)),

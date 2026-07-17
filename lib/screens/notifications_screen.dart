@@ -6,6 +6,7 @@ import '../core/i18n.dart';
 import '../core/realtime_service.dart';
 import 'friends_screen.dart';
 import 'messages_screen.dart';
+import 'map_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -37,6 +38,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Widget? target;
             if (link.contains('vrienden') || event == 'friend_request') target = const FriendsScreen();
             else if (link.contains('berichten') || event == 'message') target = const MessagesScreen();
+            else if (link.contains('kaart') && link.contains('w=')) {
+              final wid = int.tryParse(RegExp(r'w=(\d+)').firstMatch(link)?.group(1) ?? '');
+              if (wid != null) target = MapScreen(focusWaterId: wid);
+            }
             return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
               leading: const CircleAvatar(backgroundColor: AppColors.bg, child: Icon(Icons.notifications, color: AppColors.teal)),
               title: Text(data['message'] ?? ''),

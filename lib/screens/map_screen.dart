@@ -22,7 +22,8 @@ import '../widgets/fish_rating.dart';
 class MapScreen extends StatefulWidget {
   final double? focusLat;
   final double? focusLng;
-  const MapScreen({super.key, this.focusLat, this.focusLng});
+  final int? focusWaterId; // moderator: open direct dit water (intekenen-aanvraag)
+  const MapScreen({super.key, this.focusLat, this.focusLng, this.focusWaterId});
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
@@ -87,7 +88,9 @@ class _MapScreenState extends State<MapScreen> {
     try { final st = await Api.get('/profile/settings'); _autoOn = !(st is Map && st['auto_checkin'] == false); } catch (_) {}
     await _load();
     setState(() => _loading = false);
-    if (widget.focusLat != null && widget.focusLng != null) {
+    if (widget.focusWaterId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openWaterById(widget.focusWaterId!));
+    } else if (widget.focusLat != null && widget.focusLng != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) { try { _map.move(LatLng(widget.focusLat!, widget.focusLng!), 15); } catch (_) {} });
     } else { _maybeShowHelpOnce(); }
     _maybeAskCheckin();
@@ -337,6 +340,20 @@ class _MapScreenState extends State<MapScreen> {
   bool _inNL(Map w) {
     final la = double.tryParse('${w['latitude']}') ?? 0, lo = double.tryParse('${w['longitude']}') ?? 0;
     return la > 50.7 && la < 53.6 && lo > 3.2 && lo < 7.3;
+  }
+
+  // Open een water op id (deeplink/moderatie): kaart erheen + info-venster + zones van dat land.
+  Future<void> _openWaterById(int id) async {
+    try {
+      final full = await Api.get('/waters/$id');
+      if (full is! Map) return;
+      final la = (full['latitude'] is num) ? (full['latitude'] as num).toDouble() : double.tryParse('${full['latitude']}');
+      final lo = (full['longitude'] is num) ? (full['longitude'] as num).toDouble() : double.tryParse('${full['longitude']}');
+      if (la != null && lo != null) { try { _map.move(LatLng(la, lo), 15); } catch (_) {} }
+      if (full['country'] != null) _loadRegions('${full['country']}');
+      await _loadWaters();
+      if (mounted) _showWater(Map<String, dynamic>.from(full));
+    } catch (_) {}
   }
 
   void _showWater(Map w) {
