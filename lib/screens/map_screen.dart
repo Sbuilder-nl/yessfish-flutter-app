@@ -294,6 +294,8 @@ class _MapScreenState extends State<MapScreen> {
     const types = ['meer', 'rivier', 'kanaal', 'zee', 'vijver', 'overig'];
     String type = types.contains('${w['type']}') ? '${w['type']}' : 'overig';
     bool paid = w['is_paid'] == true;
+    const permits = ['onbekend','landelijk','club','vrij','betaald','verboden','fiskfergunning','nho','onduidelijk'];
+    String permit = permits.contains('${w['permit_type']}') ? '${w['permit_type']}' : 'onbekend';
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (sheetCtx) => StatefulBuilder(builder: (sheetCtx, setS) => Padding(
       padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -307,6 +309,12 @@ class _MapScreenState extends State<MapScreen> {
           items: [for (final t in types) DropdownMenuItem(value: t, child: Text(mui(sheetCtx, 'type_$t')))],
           onChanged: (v) => setS(() => type = v ?? type)),
         const SizedBox(height: 4),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: permit,
+          decoration: InputDecoration(labelText: mui(sheetCtx, 'permit_pick'), border: const OutlineInputBorder()),
+          items: [for (final pt in permits) DropdownMenuItem(value: pt, child: Text(mui(sheetCtx, 'permit_$pt')))],
+          onChanged: (v) => setS(() => permit = v ?? permit)),
         SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(mui(sheetCtx, 'water_is_paid')), value: paid, onChanged: (v) => setS(() => paid = v)),
         if (paid) TextField(controller: bookC, keyboardType: TextInputType.url,
           decoration: InputDecoration(labelText: mui(sheetCtx, 'water_booking_url'), hintText: 'https://...', border: const OutlineInputBorder())),
@@ -324,6 +332,7 @@ class _MapScreenState extends State<MapScreen> {
                 'type': type,
                 'is_paid': paid,
                 'booking_url': paid ? bookC.text.trim() : null,
+                'permit_type': permit,
               });
               if (sheetCtx.mounted) Navigator.pop(sheetCtx);
               await _load();
