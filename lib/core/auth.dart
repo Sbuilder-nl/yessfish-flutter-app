@@ -12,7 +12,8 @@ class User {
   final bool isAdmin;
   final bool canModerate;
   final bool emailVerified;
-  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false, this.emailVerified = true});
+  final bool needsOnboarding;
+  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false, this.emailVerified = true, this.needsOnboarding = false});
   factory User.fromJson(Map<String, dynamic> j) => User(
         id: j['id'] as int,
         username: (j['username'] ?? '') as String,
@@ -21,6 +22,7 @@ class User {
         isAdmin: (j['is_admin'] ?? false) as bool,
         canModerate: (j['can_moderate'] ?? j['is_admin'] ?? false) as bool,
         emailVerified: (j['email_verified'] ?? true) as bool,
+        needsOnboarding: (j['needs_onboarding'] ?? false) as bool,
       );
 }
 

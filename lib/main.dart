@@ -12,6 +12,7 @@ import 'core/i18n.dart';
 import 'core/theme.dart';
 import 'core/push.dart';
 import 'screens/login_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -67,6 +68,7 @@ class RootGate extends StatelessWidget {
     final auth = context.watch<AuthState>();
     if (auth.loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (auth.user == null) { context.read<RealtimeService>().stop(); return const LoginScreen(); }
+    if (auth.user!.needsOnboarding) return const OnboardingScreen();
     return const HomeScreen();
   }
 }
