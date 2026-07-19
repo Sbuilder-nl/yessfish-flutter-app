@@ -46,6 +46,8 @@ class Api {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     'X-App-Lang': lang,
+    // Versie meesturen zodat de backend weet dat deze app sponsored posts aankan (feed-injectie).
+    'X-App-Build': '${Config.buildNumber}',
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
@@ -71,6 +73,20 @@ class Api {
     if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
     req.files.add(await http.MultipartFile.fromPath('file', filePath));
     final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 60)));
+    final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+    if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data);
+    throw ApiException(res.statusCode, data);
+  }
+
+  // Feed-video-upload: stuurt de rauwe video; de server transcodeert async (poster + web-MP4).
+  static Future<Map<String, dynamic>> uploadVideo(String filePath) async {
+    final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}/uploads/video'));
+    req.headers['Accept'] = 'application/json';
+    req.headers['X-App-Lang'] = lang;
+    req.headers['X-App-Build'] = '${Config.buildNumber}';
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    req.files.add(await http.MultipartFile.fromPath('file', filePath));
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 120)));
     final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
     if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data);
     throw ApiException(res.statusCode, data);

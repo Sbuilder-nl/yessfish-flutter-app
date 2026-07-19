@@ -12,6 +12,8 @@ import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/report.dart';
+import '../widgets/feed_video.dart';
+import '../widgets/sponsored_feed_card.dart';
 import 'user_profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -25,6 +27,9 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _loading = true;
   final _composer = TextEditingController();
   String? _photoPath, _photoUrl;
+  String? _videoPath;          // geüploade MP4 (transcodeert async)
+  String? _youtube;            // YouTube-link/ID
+  bool _videoUploading = false;
   bool _posting = false;
   final Map<int, Map> _trans = {}; // post-id → {content, shown, busy}
   StreamSubscription? _liveSub;
@@ -51,17 +56,50 @@ class _FeedScreenState extends State<FeedScreen> {
     try { x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${src == ImageSource.camera ? context.tr('feed.openCameraFail') : context.tr('feed.openGalleryFail')}: $e'))); return; }
     if (x == null) return;
-    try { final r = await Api.uploadImage(x.path); setState(() { _photoPath = r['path']; _photoUrl = r['url']; }); }
+    try { final r = await Api.uploadImage(x.path); setState(() { _photoPath = r['path']; _photoUrl = r['url']; _videoPath = null; _youtube = null; }); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
   }
 
+  Future<void> _pickVideo() async {
+    XFile? x;
+    try { x = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 90)); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${context.tr('feed.uploadFail')}: $e'))); return; }
+    if (x == null) return;
+    setState(() => _videoUploading = true);
+    try {
+      final r = await Api.uploadVideo(x.path);
+      setState(() { _videoPath = r['path']; _photoPath = null; _photoUrl = null; _youtube = null; });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '${context.tr('feed.uploadFail')}: $e')));
+    } finally { if (mounted) setState(() => _videoUploading = false); }
+  }
+
+  Future<void> _addYoutube() async {
+    final c = TextEditingController(text: _youtube ?? '');
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text(context.tr('feed.youtube')),
+      content: TextField(controller: c, autofocus: true, decoration: InputDecoration(hintText: context.tr('feed.youtubeHint'))),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('feed.cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('feed.save'))),
+      ],
+    ));
+    if (ok == true) setState(() { final v = c.text.trim(); _youtube = v.isEmpty ? null : v; if (v.isNotEmpty) { _photoPath = null; _photoUrl = null; _videoPath = null; } });
+  }
+
   Future<void> _post() async {
-    if (_composer.text.trim().isEmpty && _photoPath == null) return;
+    if (_composer.text.trim().isEmpty && _photoPath == null && _videoPath == null && (_youtube == null || _youtube!.isEmpty)) return;
+    if (_videoUploading) return;
     setState(() => _posting = true);
     try {
-      await Api.post('/posts', {'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': 'public', if (_photoPath != null) 'image_path': _photoPath});
+      await Api.post('/posts', {
+        'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': 'public',
+        if (_photoPath != null) 'image_path': _photoPath,
+        if (_videoPath != null) 'video_path': _videoPath,
+        if (_youtube != null && _youtube!.isNotEmpty) 'youtube_id': _youtube,
+      });
       _composer.clear();
-      setState(() { _photoPath = null; _photoUrl = null; });
+      setState(() { _photoPath = null; _photoUrl = null; _videoPath = null; _youtube = null; });
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
@@ -126,6 +164,17 @@ class _FeedScreenState extends State<FeedScreen> {
     ));
   }
 
+  Widget _mediaChip(IconData icon, String label, VoidCallback onRemove) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(color: const Color(0xFFECF1F4), borderRadius: BorderRadius.circular(8)),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 16, color: AppColors.teal), const SizedBox(width: 6),
+      Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+      const SizedBox(width: 6),
+      InkWell(onTap: onRemove, child: const Icon(Icons.close, size: 16, color: Colors.black38)),
+    ]),
+  );
+
   Widget _onlineBar(BuildContext context) {
     final rt = context.watch<RealtimeService>();
     if (rt.onlineCount == 0) return const SizedBox.shrink();
@@ -160,15 +209,20 @@ class _FeedScreenState extends State<FeedScreen> {
                 Expanded(child: TextField(controller: _composer, maxLines: null, textCapitalization: TextCapitalization.sentences, decoration: InputDecoration(hintText: context.tr('feed.composerHint'), border: InputBorder.none, filled: false))),
               ]),
               if (_photoUrl != null) Padding(padding: const EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: CachedNetworkImage(imageUrl: _photoUrl!, height: 140, width: double.infinity, fit: BoxFit.cover))),
+              if (_videoPath != null) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.videocam, context.tr('feed.videoSelected'), () => setState(() => _videoPath = null))),
+              if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
               Row(children: [
                 IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera')),
                 IconButton(onPressed: () => _pickPhoto(ImageSource.gallery), icon: const Icon(Icons.photo, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
+                IconButton(onPressed: _videoUploading ? null : _pickVideo, icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.video')),
+                IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
                 const Spacer(),
                 FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post'))),
               ]),
             ])));
           }
           final p = _posts[idx - 2] as Map;
+          if (p['is_sponsored'] == true) return SponsoredFeedCard(p);
           final u = p['user'] as Map?;
           final mine = u?['username'] == me?.username;
           return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -200,6 +254,7 @@ class _FeedScreenState extends State<FeedScreen> {
               ]))),
             ],
             if (p['image_path'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: GestureDetector(onTap: () => PhotoViewer.open(context, [p['image_path'].toString()]), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: p['image_path'], width: double.infinity, fit: BoxFit.cover)))),
+            if (p['video_path'] != null || p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(), youtubeId: p['youtube_id']?.toString(), ready: p['video_ready'] != false)),
             const Divider(height: 22),
             Row(children: [
               InkWell(onTap: () => _toggleLike(p), child: Row(children: [Icon(Icons.thumb_up, size: 18, color: p['liked_by_me'] == true ? AppColors.teal : Colors.black38), const SizedBox(width: 5), Text('${p['likes_count'] ?? 0}')])),

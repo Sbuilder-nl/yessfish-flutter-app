@@ -1,7 +1,7 @@
 name: yessfish
 description: "YessFish - het sociale netwerk voor sportvissers"
 publish_to: 'none'
-version: 1.0.23+133
+version: 1.0.24+134
 
 environment:
   sdk: ^3.9.0
@@ -40,6 +40,8 @@ dependencies:
   quick_actions: ^1.1.0
   home_widget: ^0.7.0
   sign_in_with_apple: ^7.0.1
+  video_player: ^2.9.2
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
