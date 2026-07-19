@@ -27,6 +27,8 @@ import '../core/app_config.dart';
 import 'moderation_screen.dart';
 import 'settings_screen.dart';
 import 'discipline_dashboards_screen.dart';
+import 'vistijl_tools_screen.dart';
+import '../core/vistijl_tools_i18n.dart';
 import '../core/disciplines_i18n.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -133,6 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ]),
       _section(context.tr('sec.fishing'), [
         _tile(Icons.style_outlined, dui(context, 'title'), const DisciplineDashboardsScreen()),
+        _tile(Icons.handyman_outlined, vtt(context, 'title'), const VistijlToolsScreen()),
         _tile(Icons.photo_album_outlined, context.tr('p.albums'), const AlbumsScreen()),
         _tile(Icons.phishing, context.tr('p.tackle'), const TackleScreen()),
         _tile(Icons.military_tech_outlined, context.tr('p.tournaments'), const TournamentsScreen()),
