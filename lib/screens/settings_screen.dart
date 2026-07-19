@@ -122,6 +122,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ])),
         const SizedBox(height: 16),
         Card(child: ListTile(
+          leading: const Icon(Icons.gavel_outlined, color: AppColors.teal),
+          title: Text(context.tr('settings.huisregels')),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => launchUrl(Uri.parse('https://yessfish.com/huisregels'), mode: LaunchMode.externalApplication),
+        )),
+        const SizedBox(height: 8),
+        Card(child: ListTile(
           leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.teal),
           title: Text(context.tr('priv.title')),
           trailing: const Icon(Icons.open_in_new, size: 18),

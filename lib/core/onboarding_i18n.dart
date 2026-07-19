@@ -31,6 +31,9 @@ const Map<String, Map<String, String>> kOnbUi = {
   'save':           {'nl': 'Opslaan en beginnen', 'en': 'Save and start', 'de': 'Speichern und loslegen', 'fr': 'Enregistrer et commencer', 'es': 'Guardar y empezar', 'pl': 'Zapisz i zacznij'},
   'saving':         {'nl': 'Bezig met opslaan…', 'en': 'Saving…', 'de': 'Wird gespeichert…', 'fr': 'Enregistrement…', 'es': 'Guardando…', 'pl': 'Zapisywanie…'},
   'err_required':   {'nl': 'Vul je geboortedatum, land en minstens één visstijl in.', 'en': 'Please fill in your date of birth, country and at least one fishing style.', 'de': 'Bitte gib dein Geburtsdatum, Land und mindestens eine Angelart an.', 'fr': 'Renseigne ta date de naissance, ton pays et au moins une technique de pêche.', 'es': 'Indica tu fecha de nacimiento, país y al menos un estilo de pesca.', 'pl': 'Podaj datę urodzenia, kraj i co najmniej jeden styl wędkowania.'},
+  'hr_accept':      {'nl': 'Ik ga akkoord met de huisregels', 'en': 'I agree to the community guidelines', 'de': 'Ich stimme den Verhaltensregeln zu', 'fr': 'J’accepte les règles de la communauté', 'es': 'Acepto las normas de la comunidad', 'pl': 'Akceptuję zasady społeczności'},
+  'hr_link':        {'nl': 'lezen', 'en': 'read', 'de': 'lesen', 'fr': 'lire', 'es': 'leer', 'pl': 'przeczytaj'},
+  'hr_required':    {'nl': 'Je moet akkoord gaan met de huisregels.', 'en': 'You must agree to the community guidelines.', 'de': 'Du musst den Verhaltensregeln zustimmen.', 'fr': 'Tu dois accepter les règles de la communauté.', 'es': 'Debes aceptar las normas de la comunidad.', 'pl': 'Musisz zaakceptować zasady społeczności.'},
   'err_generic':    {'nl': 'Er ging iets mis. Probeer het opnieuw.', 'en': 'Something went wrong. Please try again.', 'de': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.', 'fr': "Une erreur s'est produite. Réessaie.", 'es': 'Algo salió mal. Inténtalo de nuevo.', 'pl': 'Coś poszło nie tak. Spróbuj ponownie.'},
 };
 

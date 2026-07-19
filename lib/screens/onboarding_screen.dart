@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/auth.dart';
@@ -26,6 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _city = TextEditingController();
   bool _loading = true;
   bool _saving = false;
+  bool _agreed = false;
   String? _err;
 
   @override
@@ -67,6 +69,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _err = null);
     if (_birthday == null || _country == null || _picked.isEmpty) {
       setState(() => _err = oui(context, 'err_required'));
+      return;
+    }
+    if (!_agreed) {
+      setState(() => _err = oui(context, 'hr_required'));
       return;
     }
     setState(() => _saving = true);
@@ -244,6 +250,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               child: Text(_err!,
                                   style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
                             ),
+                          const SizedBox(height: 4),
+                          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                            Checkbox(value: _agreed, activeColor: AppColors.teal,
+                              onChanged: (v) => setState(() => _agreed = v ?? false)),
+                            Expanded(child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+                              Text(oui(context, 'hr_accept'), style: const TextStyle(fontSize: 13.5)),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () => launchUrl(Uri.parse('https://yessfish.com/huisregels'), mode: LaunchMode.externalApplication),
+                                child: Text('(${oui(context, 'hr_link')})', style: const TextStyle(fontSize: 13.5, color: AppColors.teal, fontWeight: FontWeight.w600, decoration: TextDecoration.underline)),
+                              ),
+                            ])),
+                          ]),
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
@@ -252,7 +271,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 backgroundColor: AppColors.teal,
                                 minimumSize: const Size(double.infinity, 50),
                               ),
-                              onPressed: _saving ? null : _submit,
+                              onPressed: (_saving || !_agreed) ? null : _submit,
                               child: Text(_saving ? oui(context, 'saving') : oui(context, 'save'),
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                             ),
