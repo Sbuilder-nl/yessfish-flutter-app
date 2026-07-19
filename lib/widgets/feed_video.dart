@@ -4,6 +4,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/config.dart';
+import '../core/i18n.dart';
 
 /// Rendert de video van een feed-post:
 ///  - YouTube (youtubeId): thumbnail + play → opent YouTube (url_launcher).
@@ -72,9 +73,9 @@ class _FeedVideoState extends State<FeedVideo> {
 
     // MP4 nog aan het verwerken
     if (!widget.ready) {
-      return _frame(Container(color: const Color(0xFFECF1F4), child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: const [
-        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)),
-        SizedBox(width: 8), Text('Video wordt verwerkt…', style: TextStyle(color: Colors.black45, fontSize: 13)),
+      return _frame(Container(color: const Color(0xFFECF1F4), child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)),
+        const SizedBox(width: 8), Text(context.tr('feed.video_processing'), style: const TextStyle(color: Colors.black45, fontSize: 13)),
       ]))));
     }
 
