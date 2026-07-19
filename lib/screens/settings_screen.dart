@@ -7,7 +7,9 @@ import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/disciplines_i18n.dart';
+import '../core/parental_i18n.dart';
 import 'disciplines_screen.dart';
+import 'parental_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -101,6 +103,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: Text(dui(context, 'hint')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DisciplinesScreen())),
+        )),
+        const SizedBox(height: 12),
+        Card(child: ListTile(
+          leading: const Icon(Icons.family_restroom, color: AppColors.teal),
+          title: Text(pt(context, 'title')),
+          subtitle: Text(pt(context, 'intro'), maxLines: 2, overflow: TextOverflow.ellipsis),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParentalScreen())),
         )),
         const SizedBox(height: 12),
         Card(child: Column(children: [
