@@ -158,7 +158,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   void _openComments(Map p) {
     final meId = context.read<AuthState>().user?.id;
-    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => _CommentsSheet(
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => CommentsSheet(
       postId: p['id'], meId: meId,
       onCount: (d) => setState(() => p['comments_count'] = (((p['comments_count'] ?? 0) as num).toInt() + d).clamp(0, 1 << 31)),
     ));
@@ -275,16 +275,16 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 }
 
-class _CommentsSheet extends StatefulWidget {
+class CommentsSheet extends StatefulWidget {
   final int postId;
   final int? meId;
   final void Function(int delta) onCount;
-  const _CommentsSheet({required this.postId, required this.meId, required this.onCount});
+  const CommentsSheet({super.key, required this.postId, required this.meId, required this.onCount});
   @override
-  State<_CommentsSheet> createState() => _CommentsSheetState();
+  State<CommentsSheet> createState() => CommentsSheetState();
 }
 
-class _CommentsSheetState extends State<_CommentsSheet> {
+class CommentsSheetState extends State<CommentsSheet> {
   List _comments = [];
   final _input = TextEditingController();
   bool _loading = true;

@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api.dart';
+import 'notif_nav.dart';
 import '../screens/notifications_screen.dart';
 
 /// Achtergrond-handler MOET top-level + @pragma zijn (draait in een aparte isolate).
@@ -53,7 +54,11 @@ class Push {
         );
         await _local.initialize(
           settings: initSettings,
-          onDidReceiveNotificationResponse: (_) => _openNotifications(),
+          // Tik op een voorgrond-melding → naar het doel (payload = "type|link").
+          onDidReceiveNotificationResponse: (resp) {
+            final parts = (resp.payload ?? '').split('|');
+            _navigate(parts.length > 1 ? parts.sublist(1).join('|') : '', parts.isNotEmpty ? parts[0] : null);
+          },
         );
         final AndroidFlutterLocalNotificationsPlugin? android =
             _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -62,9 +67,9 @@ class Push {
       }
 
       FirebaseMessaging.onMessage.listen(_showForeground);
-      FirebaseMessaging.onMessageOpenedApp.listen((_) => _openNotifications());
+      FirebaseMessaging.onMessageOpenedApp.listen(_openFromMessage);
       final RemoteMessage? initial = await FirebaseMessaging.instance.getInitialMessage();
-      if (initial != null) _openNotifications();
+      if (initial != null) _openFromMessage(initial);
       FirebaseMessaging.instance.onTokenRefresh.listen(_send);
     } catch (_) {/* push mag de app nooit breken */}
   }
@@ -81,6 +86,7 @@ class Push {
       id: n.hashCode,
       title: n.title,
       body: n.body,
+      payload: '${m.data['type'] ?? ''}|${m.data['link'] ?? ''}',   // voor tik-navigatie
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           ch.id,
@@ -97,10 +103,15 @@ class Push {
     );
   }
 
-  static void _openNotifications() {
+  static void _openFromMessage(RemoteMessage m) =>
+      _navigate(m.data['link']?.toString(), m.data['type']?.toString());
+
+  /// Navigeer naar het doel van een melding (post/gesprek/vrienden/kaart), of anders de meldingenlijst.
+  static void _navigate(String? link, String? event) {
     final NavigatorState? nav = navKey.currentState;
     if (nav == null) return;
-    nav.push(MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()));
+    final Widget? target = screenForLink(link ?? '', event: event);
+    nav.push(MaterialPageRoute<void>(builder: (_) => target ?? const NotificationsScreen()));
   }
 
   /// Toestel-token bij de server registreren (na login of bij opstart als al ingelogd).

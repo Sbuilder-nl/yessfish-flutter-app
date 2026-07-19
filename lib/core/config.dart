@@ -10,7 +10,7 @@ class Config {
   static const int reverbPort = 443;
   static const String googleServerClientId = "722347151371-ht0f8ekdrb3e5p2k61ugb6jck8d42upm.apps.googleusercontent.com";
   static String appVersion = "1.0.11 (118)"; // wordt bij opstart bijgewerkt uit de echte build
-  static int buildNumber = 134;               // fallback = deze release; wordt bij opstart geüpdatet
+  static int buildNumber = 136;               // fallback = deze release; wordt bij opstart geüpdatet
   static Future<void> loadVersion() async {
     try { final i = await PackageInfo.fromPlatform(); appVersion = "${i.version} (${i.buildNumber})"; buildNumber = int.tryParse(i.buildNumber) ?? buildNumber; } catch (_) {}
   }
