@@ -46,7 +46,9 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>YessFish gebruikt je camera om foto&#39;s van je vangsten en stekken te maken.</string>
+	<string>YessFish gebruikt je camera om foto&#39;s en video&#39;s van je vangsten en stekken te maken.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>YessFish gebruikt de microfoon om geluid op te nemen bij het filmen van je vangsten.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>YessFish heeft toegang tot je fotobibliotheek nodig om foto&#39;s bij je vangsten, posts en albums te kiezen.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

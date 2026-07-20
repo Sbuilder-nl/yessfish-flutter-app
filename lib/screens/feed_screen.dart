@@ -60,11 +60,28 @@ class _FeedScreenState extends State<FeedScreen> {
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
   }
 
-  Future<void> _pickVideo() async {
+  // Video: bron = camera → filmen, gallery → bestaande video kiezen.
+  Future<void> _pickVideo(ImageSource source) async {
     XFile? x;
-    try { x = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 90)); }
+    try { x = await ImagePicker().pickVideo(source: source, maxDuration: const Duration(seconds: 90)); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${context.tr('feed.uploadFail')}: $e'))); return; }
+    if (x != null) await _uploadPickedVideo(x);
+  }
+
+  // Galerij: kies een foto ÓF video uit de telefoon (pickMedia toont beide).
+  Future<void> _pickMedia() async {
+    XFile? x;
+    try { x = await ImagePicker().pickMedia(imageQuality: 85, maxWidth: 1600); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${context.tr('feed.openGalleryFail')}: $e'))); return; }
     if (x == null) return;
+    final p = x.path.toLowerCase();
+    final isVideo = ['.mp4', '.mov', '.m4v', '.avi', '.webm', '.mkv', '.3gp'].any(p.endsWith);
+    if (isVideo) { await _uploadPickedVideo(x); return; }
+    try { final r = await Api.uploadImage(x.path); setState(() { _photoPath = r['path']; _photoUrl = r['url']; _videoPath = null; _youtube = null; }); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
+  }
+
+  Future<void> _uploadPickedVideo(XFile x) async {
     setState(() => _videoUploading = true);
     try {
       final r = await Api.uploadVideo(x.path);
@@ -213,8 +230,8 @@ class _FeedScreenState extends State<FeedScreen> {
               if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
               Row(children: [
                 IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera')),
-                IconButton(onPressed: () => _pickPhoto(ImageSource.gallery), icon: const Icon(Icons.photo, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
-                IconButton(onPressed: _videoUploading ? null : _pickVideo, icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.video')),
+                IconButton(onPressed: _videoUploading ? null : () => _pickVideo(ImageSource.camera), icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.record')),
+                IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
                 IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
                 const Spacer(),
                 FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post'))),
