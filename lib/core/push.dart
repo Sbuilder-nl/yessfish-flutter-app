@@ -107,9 +107,13 @@ class Push {
       _navigate(m.data['link']?.toString(), m.data['type']?.toString());
 
   /// Navigeer naar het doel van een melding (post/gesprek/vrienden/kaart), of anders de meldingenlijst.
-  static void _navigate(String? link, String? event) {
+  static void _navigate(String? link, String? event, [int attempt = 0]) {
     final NavigatorState? nav = navKey.currentState;
-    if (nav == null) return;
+    if (nav == null) {
+      // App net koud gestart vanaf een push-tik → navigator nog niet klaar. Even opnieuw proberen.
+      if (attempt < 12) Future.delayed(const Duration(milliseconds: 400), () => _navigate(link, event, attempt + 1));
+      return;
+    }
     final Widget? target = screenForLink(link ?? '', event: event);
     nav.push(MaterialPageRoute<void>(builder: (_) => target ?? const NotificationsScreen()));
   }

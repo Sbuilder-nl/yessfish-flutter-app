@@ -69,6 +69,14 @@ class _ChatScreenState extends State<ChatScreen> {
       final r = await Api.get('/messages/with/$_otherId');
       _convId = r['conversation_id'];
       final data = (r['data'] ?? []) as List;
+      // Titel = naam van de ander (uit een bericht van hem/haar) als die nog niet bekend is
+      // (bv. geopend vanuit een bericht-melding, waar alleen het user-id bekend is).
+      if (_title == null) {
+        for (final m in data) {
+          final sn = (m as Map)['sender'] as Map?;
+          if (sn != null && sn['id'] == _otherId) { _title = sn['username']?.toString(); break; }
+        }
+      }
       setState(() { _messages.addAll(data.reversed); _loading = false; });
       if (_convId != null) {
         _subscribe();
