@@ -1492,15 +1492,8 @@ class _MapScreenState extends State<MapScreen> {
             TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'nl.sbuilder.yessfish',
               tileProvider: CancellableNetworkTileProvider()), // annuleert off-screen tegels tijdens slepen = vloeiender
             CircleLayer(circles: circles),
-            // Vergunning-regio's: gekleurde zones (elke zone = eigen vergunning), onder de wateren.
-            if (!_editShape)
-              PolygonLayer(polygons: [
-                for (final reg in _permitRegions)
-                  for (final ring in _geoRings(reg is Map ? reg['polygon'] : null))
-                    if (ring.length >= 3)
-                      Polygon(points: ring, color: _hexColor('${reg['color'] ?? '#94a3b8'}').withValues(alpha: 0.13),
-                        borderColor: _hexColor('${reg['color'] ?? '#94a3b8'}'), borderStrokeWidth: 2),
-              ]),
+            // Vergunning-regio's (kleur per vereniging) bewust NIET meer getekend —
+            // schone kaart; vergunning-info komt via tik op het water zelf.
             // Alle ingetekende waters altijd opgelicht (vanaf zoom 11), ingekleurd per watertype.
             if (!_editShape && _zoom >= 11)
               PolygonLayer(polygons: [
