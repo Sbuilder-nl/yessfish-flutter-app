@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:async';
 import 'core/analytics.dart';
 import 'core/auth.dart';
 import 'core/config.dart';
@@ -15,21 +16,26 @@ import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Config.loadVersion();
-  // Edge-to-edge (Android 15+): app tekent tot achter de systeembalken, transparante balken
-  // → geen verouderde systeembalk-API's meer + moderne weergave op nieuwe toestellen.
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
-  try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
-    FirebaseMessaging.onBackgroundMessage(firebaseBgHandler);
-  } catch (_) {/* push (of een trage init) mag het opstarten nooit blokkeren */}
-  runApp(const YessFishApp());
+void main() {
+  // Globale error-guard: onafgevangen (async) fouten — bv. een netwerkfout zonder
+  // internet — mogen de app nooit laten crashen. Binding + runApp in dezelfde zone.
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (d) => FlutterError.presentError(d);
+    await Config.loadVersion();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+    try {
+      await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+      FirebaseMessaging.onBackgroundMessage(firebaseBgHandler);
+    } catch (_) {/* push (of een trage init) mag het opstarten nooit blokkeren */}
+    runApp(const YessFishApp());
+  }, (error, stack) {
+    debugPrint('Onafgevangen fout (opgevangen, geen crash): \$error');
+  });
 }
 
 class YessFishApp extends StatelessWidget {

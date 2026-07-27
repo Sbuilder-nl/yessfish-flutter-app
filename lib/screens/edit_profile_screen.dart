@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import '../core/pick_image_source.dart';
 import '../core/api.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
@@ -28,7 +29,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickAvatar() async {
-    final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 85);
+    final src = await pickImageSource(context); if (src == null) return;
+    final x = await ImagePicker().pickImage(source: src, maxWidth: 800, imageQuality: 85);
     if (x == null) return;
     try { final r = await Api.uploadImage(x.path); setState(() => _avatar = r['url']); _avatarPath = r['path']; } catch (_) {}
   }

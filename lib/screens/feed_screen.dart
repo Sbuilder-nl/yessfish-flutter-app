@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_compress/video_compress.dart';
+import '../widgets/dobber_loader.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../core/api.dart';
@@ -83,12 +85,22 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Future<void> _uploadPickedVideo(XFile x) async {
     setState(() => _videoUploading = true);
+    final info = ValueNotifier<UploadState>(const UploadState('compress', 0));
+    if (mounted) showDialog(context: context, barrierDismissible: false, builder: (_) => UploadOverlay(info));
+    final sub = VideoCompress.compressProgress$.subscribe((p) => info.value = UploadState('compress', p / 100.0));
     try {
-      final r = await Api.uploadVideo(x.path);
+      final mi = await VideoCompress.compressVideo(x.path, quality: VideoQuality.MediumQuality, deleteOrigin: false, includeAudio: true);
+      final path = mi?.path ?? x.path;
+      info.value = const UploadState('upload', 0);
+      final r = await Api.uploadVideo(path);
       setState(() { _videoPath = r['path']; _photoPath = null; _photoUrl = null; _youtube = null; });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '${context.tr('feed.uploadFail')}: $e')));
-    } finally { if (mounted) setState(() => _videoUploading = false); }
+    } finally {
+      sub.unsubscribe();
+      try { await VideoCompress.cancelCompression(); } catch (_) {}
+      if (mounted) { Navigator.of(context, rootNavigator: true).pop(); setState(() => _videoUploading = false); }
+    }
   }
 
   Future<void> _addYoutube() async {

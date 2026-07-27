@@ -168,7 +168,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
   Widget _dateChip(BuildContext context, dynamic caughtAt) {
     final dt = DateTime.tryParse('$caughtAt')?.toLocal();
     if (dt == null) return const SizedBox.shrink();
-    final s = '${MaterialLocalizations.of(context).formatMediumDate(dt)} · ${TimeOfDay.fromDateTime(dt).format(context)}';
+    final s = '${MaterialLocalizations.of(context).formatMediumDate(dt)} ${dt.year} · ${TimeOfDay.fromDateTime(dt).format(context)}';
     return Chip(avatar: const Icon(Icons.event, size: 16, color: AppColors.teal), label: Text(s), backgroundColor: AppColors.bg, visualDensity: VisualDensity.compact);
   }
 

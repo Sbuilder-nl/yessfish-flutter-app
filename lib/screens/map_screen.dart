@@ -15,6 +15,7 @@ import '../core/map_l10n.dart';
 import 'catch_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
+import '../core/pick_image_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/fish_rating.dart';
@@ -36,7 +37,6 @@ class _MapScreenState extends State<MapScreen> {
   String? _placing; // null | 'water' | 'spot' — plaats-modus (richtkruis verschijnt alleen dan)
   List _spots = [];
   List _catches = [];
-  List _busy = [];
   List _waters = [];
   List _permitRegions = []; // vergunning-zones (gekleurd per vergunning)
   List _activeSpots = []; // stekken van het aangetikte water — als pins op de kaart
@@ -209,7 +209,6 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _load() async {
     try { final s = await Api.get('/spots'); _spots = s is List ? s : (s['data'] ?? []); } catch (_) {}
     try { final c = await Api.get('/catches/map'); _catches = c is List ? c : (c['data'] ?? []); } catch (_) {}
-    try { final b = await Api.get('/map/busyness'); _busy = b is Map ? (b['data'] ?? []) : (b is List ? b : []); } catch (_) {}
     try { final ci = await Api.get('/checkin'); _checkedIn = ci is Map && ci['active'] == true; } catch (_) {}
     if (mounted) setState(() {});
   }
@@ -246,19 +245,6 @@ class _MapScreenState extends State<MapScreen> {
       : level == 'medium' ? const Color(0xFFF59E0B) : const Color(0xFF22C55E);
   Color _waterColor(String level) => level == 'none' ? AppColors.shared : _busyColor(level);
 
-  void _showBusy(Map cell) {
-    final level = '${cell['level'] ?? 'low'}';
-    showModalBottomSheet(context: context, builder: (_) => Padding(padding: const EdgeInsets.all(20),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.local_fire_department, color: _busyColor(level)), const SizedBox(width: 8),
-          Text('${mui(context, 'busy')}: ${busyLevelLabel(context, level)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
-        const SizedBox(height: 8),
-        Text('${cell['count'] ?? 0} ${mui(context, 'anglers_here')}', style: const TextStyle(color: Colors.black54)),
-        const SizedBox(height: 10),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.lock_outline, size: 14, color: Colors.black38), const SizedBox(width: 6),
-          Expanded(child: Text(mui(context, 'anonymous'), style: const TextStyle(color: Colors.black38, fontSize: 12)))]),
-      ])));
-  }
 
   Future<void> _requestShape(dynamic id) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -664,7 +650,8 @@ class _MapScreenState extends State<MapScreen> {
 
         Future<void> addPhoto() async {
           try {
-            final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+            final src = await pickImageSource(ctx); if (src == null) return;
+            final x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85);
             if (x == null) return;
             final up = await Api.uploadImage(x.path);
             await Api.post('/waters/$wid/media', {'type': 'photo', 'path': up['path']});
@@ -998,7 +985,8 @@ class _MapScreenState extends State<MapScreen> {
     final failMsg = mui(context, 'gps_fail');
     Future<void> addPhoto(StateSetter setSheet) async {
       try {
-        final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+        final src = await pickImageSource(context); if (src == null) return;
+        final x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85);
         if (x == null) return;
         final up = await Api.uploadImage(x.path);
         final r = await Api.post('/spots/${s['id']}/media', {'type': 'photo', 'path': up['path']});
@@ -1084,12 +1072,6 @@ class _MapScreenState extends State<MapScreen> {
       if (c['length_cm'] != null) Text('${context.tr('map.length')}: ${c['length_cm']} cm', style: const TextStyle(color: Colors.black54)),
     ])));
   }
-
-  Widget _busyBadge(String level, dynamic count) => Container(
-    decoration: BoxDecoration(color: _busyColor(level).withValues(alpha: 0.88), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-    alignment: Alignment.center,
-    child: Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-  );
 
   // Duidelijk tikbare water-pin: gevulde druppel-vorm met witte rand + schaduw,
   // zodat het herkenbaar is als aan te tikken marker (i.p.v. een plat icoontje).
@@ -1362,26 +1344,18 @@ class _MapScreenState extends State<MapScreen> {
       }
     }
 
-    // Drukte-kleurzones over de kaart.
-    final circles = _busy.where((b) => b['lat'] != null).map((b) {
-      final level = '${b['level'] ?? 'low'}';
-      final r = level == 'high' ? 1500.0 : level == 'medium' ? 1000.0 : 600.0;
-      return CircleMarker(point: LatLng(double.parse('${b['lat']}'), double.parse('${b['lng']}')),
-        radius: r, useRadiusInMeter: true, color: _busyColor(level).withValues(alpha: 0.22), borderColor: _busyColor(level).withValues(alpha: 0.6), borderStrokeWidth: 1.5);
-    }).toList();
+    // Drukte-ringen/zones bewust NIET meer getekend — de drukte lees je af aan de
+    // kleur van de dobber zelf (per water). Losse ring was overbodig en kon misstaan.
+    final circles = <CircleMarker>[];
 
     final markers = <Marker>[
       // (alle water-dobbers staan in de CLUSTER-laag, zie hieronder)
-      // Drukte-badges met aantal.
-      ..._busy.where((b) => b['lat'] != null).map((b) => Marker(
-        point: LatLng(double.parse('${b['lat']}'), double.parse('${b['lng']}')),
-        width: 44, height: 44,
-        child: GestureDetector(onTap: () => _showBusy(b as Map), child: _busyBadge('${b['level'] ?? 'low'}', b['count'] ?? 0)))),
+      // Drukte-badges (aantal) weggehaald — drukte staat in de dobber-kleur.
       // Stekken verschijnen pas als pins zodra je een dobber tikt (= het aangetikte water).
       ..._activeSpots.where((s) => s['latitude'] != null).map((s) => Marker(
         point: LatLng(double.parse('${s['latitude']}'), double.parse('${s['longitude']}')),
         width: 40, height: 40,
-        child: GestureDetector(onTap: () => _showSpot(s as Map), child: Icon(Icons.place, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared, size: 38)))),
+        child: GestureDetector(onTap: () => _showSpot(s as Map), child: Container(width: 20, height: 20, decoration: BoxDecoration(color: s['is_mine'] == true ? AppColors.teal : AppColors.shared, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1))]))))),
       // Vangsten (alleen bij inzoomen).
       if (detail) ..._catches.where((c) => c['latitude'] != null).map((c) => Marker(
         point: LatLng(double.parse('${c['latitude']}'), double.parse('${c['longitude']}')),
