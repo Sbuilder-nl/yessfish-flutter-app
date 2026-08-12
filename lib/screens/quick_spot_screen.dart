@@ -27,6 +27,11 @@ class _QuickSpotScreenState extends State<QuickSpotScreen> {
   String get _lang => Localizations.localeOf(context).languageCode;
   String _t(Map<String, String> m) => m[_lang] ?? m['en'] ?? m['nl'] ?? '';
 
+  // Stek-plaatsing moet PRECIES zijn: boven deze nauwkeurigheid (m) blokkeren we opslaan.
+  static const double _maxAccM = 15;
+  bool get _accOk => _loc != null && (_loc!.accuracy ?? -1) >= 0 && _loc!.accuracy! <= _maxAccM;
+  String get _accTxt => _loc?.accuracy == null || _loc!.accuracy! < 0 ? '' : ' (±${_loc!.accuracy!.round()} m)';
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +40,9 @@ class _QuickSpotScreenState extends State<QuickSpotScreen> {
 
   Future<void> _getLoc() async {
     setState(() { _locating = true; _waterName = null; _spotAllowed = null; });
-    try { final l = await currentLocation(); if (l.isReal) _loc = l; } catch (_) {}
+    // Scherpe fix: stream enkele seconden en pak de beste meting — een stek
+    // die meters verkeerd staat is erger dan even wachten.
+    try { final l = await preciseLocation(); if (l.isReal) _loc = l; } catch (_) {}
     if (mounted) setState(() => _locating = false);
     // Meteen checken of hier een bekend viswater is — zo weet je het VOOR het invullen.
     if (_loc != null) {
@@ -75,6 +82,10 @@ class _QuickSpotScreenState extends State<QuickSpotScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_t(_noLoc))));
       return;
     }
+    if (!_accOk) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_t(_tooRough)}$_accTxt')));
+      return;
+    }
     setState(() => _saving = true);
     try {
       final r = await Api.post('/spots', {
@@ -108,15 +119,16 @@ class _QuickSpotScreenState extends State<QuickSpotScreen> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
           child: Row(children: [
-            Icon(_locating ? Icons.gps_not_fixed : (_loc == null || _spotAllowed == false ? Icons.gps_off : Icons.gps_fixed),
-                color: _loc == null || _spotAllowed == false ? Colors.orange : AppColors.teal),
+            Icon(_locating ? Icons.gps_not_fixed : (_loc == null || _spotAllowed == false || !_accOk ? Icons.gps_off : Icons.gps_fixed),
+                color: _loc == null || _spotAllowed == false || !_accOk ? Colors.orange : AppColors.teal),
             const SizedBox(width: 8),
             Expanded(child: Text(
               _locating ? _t(_locating2)
                 : _loc == null ? _t(_noLocHint)
                 : _spotAllowed == false ? _t(_noWaterHere)
-                : _waterName != null ? '${_t(_atWater)} $_waterName'
-                : _t(_locOk),
+                : !_accOk ? '${_t(_badAcc)}$_accTxt'
+                : _waterName != null ? '${_t(_atWater)} $_waterName$_accTxt'
+                : '${_t(_locOk)}$_accTxt',
               style: const TextStyle(fontSize: 12.5))),
             if (!_locating) IconButton(icon: const Icon(Icons.refresh, size: 18, color: AppColors.teal), tooltip: _t(_retryL), onPressed: _getLoc),
           ]),
@@ -173,6 +185,8 @@ const _friL = {'nl': 'Vrienden', 'en': 'Friends', 'de': 'Freunde', 'fr': 'Amis',
 const _pubL = {'nl': 'Openbaar', 'en': 'Public', 'de': 'Öffentlich', 'fr': 'Public', 'es': 'Público', 'pl': 'Publiczny'};
 const _camL = {'nl': 'Camera', 'en': 'Camera', 'de': 'Kamera', 'fr': 'Caméra', 'es': 'Cámara', 'pl': 'Aparat'};
 const _galL = {'nl': 'Galerij', 'en': 'Gallery', 'de': 'Galerie', 'fr': 'Galerie', 'es': 'Galería', 'pl': 'Galeria'};
+const _badAcc = {'nl': 'GPS nog niet scherp genoeg. Blijf even stilstaan met vrij zicht op de lucht en tik op vernieuwen.', 'en': 'GPS not sharp enough yet. Stand still with a clear view of the sky and tap refresh.', 'de': 'GPS noch nicht genau genug. Kurz stillstehen mit freier Sicht zum Himmel und aktualisieren.', 'fr': 'GPS pas encore assez précis. Restez immobile avec vue dégagée sur le ciel et actualisez.', 'es': 'GPS aún no es preciso. Quédate quieto con vista despejada al cielo y actualiza.', 'pl': 'GPS jeszcze niedokładny. Stań nieruchomo z widokiem na niebo i odśwież.'};
+const _tooRough = {'nl': 'GPS te onnauwkeurig om de stek precies te zetten — vernieuw de locatie.', 'en': 'GPS too inaccurate to place the spot precisely — refresh the location.', 'de': 'GPS zu ungenau, um die Stelle präzise zu setzen — Standort aktualisieren.', 'fr': 'GPS trop imprécis pour placer le spot précisément — actualisez la position.', 'es': 'GPS demasiado impreciso para colocar el spot con exactitud — actualiza la ubicación.', 'pl': 'GPS zbyt niedokładny, aby precyzyjnie ustawić miejsce — odśwież lokalizację.'};
 const _needName = {'nl': 'Geef de stek een naam.', 'en': 'Give the spot a name.', 'de': 'Gib der Stelle einen Namen.', 'fr': 'Donne un nom au spot.', 'es': 'Ponle nombre al spot.', 'pl': 'Nadaj nazwę miejscu.'};
 const _saved = {'nl': 'Stek opgeslagen ✓', 'en': 'Spot saved ✓', 'de': 'Stelle gespeichert ✓', 'fr': 'Spot enregistré ✓', 'es': 'Spot guardado ✓', 'pl': 'Miejsce zapisane ✓'};
 const _saveL = {'nl': 'Stek opslaan', 'en': 'Save spot', 'de': 'Stelle speichern', 'fr': 'Enregistrer', 'es': 'Guardar spot', 'pl': 'Zapisz miejsce'};

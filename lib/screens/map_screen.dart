@@ -262,8 +262,15 @@ class _MapScreenState extends State<MapScreen> {
     if (useGps) {
       final messenger = ScaffoldMessenger.of(context);
       final failMsg = mui(context, 'gps_fail');
-      final p = await loc.currentLocation();
-      if (!p.isReal || (p.accuracy ?? 9999) > 75) { messenger.showSnackBar(SnackBar(content: Text(failMsg))); return; }
+      final roughMsg = mui(context, 'gps_rough');
+      final waitMsg = mui(context, 'gps_sharpening');
+      // Een stek moet PRECIES staan → scherpe stream-fix (≤15 m); een water-dobber mag ruimer.
+      final maxAcc = mode == 'spot' ? 15.0 : 75.0;
+      messenger.showSnackBar(SnackBar(content: Text(waitMsg), duration: const Duration(seconds: 12)));
+      final p = await loc.preciseLocation();
+      messenger.hideCurrentSnackBar();
+      if (!p.isReal) { messenger.showSnackBar(SnackBar(content: Text(failMsg))); return; }
+      if ((p.accuracy ?? 9999) > maxAcc) { messenger.showSnackBar(SnackBar(content: Text('$roughMsg (±${p.accuracy!.round()} m)'))); return; }
       target = LatLng(p.lat, p.lng);
     } else {
       target = _map.camera.center;
@@ -885,6 +892,7 @@ class _MapScreenState extends State<MapScreen> {
     String privacy = 'private';
     LatLng target = pos;     // standaard: het aangetikte punt / kaartmidden
     bool gps = false;
+    double? gpsAcc;          // nauwkeurigheid (m) van de gebruikte GPS-fix — tonen zodat je wéét hoe strak hij staat
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
       title: Text(context.tr('map.add_spot')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -900,18 +908,21 @@ class _MapScreenState extends State<MapScreen> {
           ],
           onChanged: (v) => setS(() => privacy = v!)),
         const SizedBox(height: 10),
-        // Stek op je eigen GPS-locatie zetten (i.p.v. het kaartpunt).
+        // Stek op je eigen GPS-locatie zetten (i.p.v. het kaartpunt) — alleen met een scherpe fix (≤15 m).
         Align(alignment: Alignment.centerLeft, child: OutlinedButton.icon(
           onPressed: () async {
-            final p = await loc.currentLocation();
-            final ok = p.isReal && (p.accuracy ?? 9999) <= 75;
-            if (ok) { setS(() { target = LatLng(p.lat, p.lng); gps = true; }); }
-            else if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'gps_fail')))); }
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.showSnackBar(SnackBar(content: Text(mui(context, 'gps_sharpening')), duration: const Duration(seconds: 12)));
+            final p = await loc.preciseLocation();
+            messenger.hideCurrentSnackBar();
+            final ok = p.isReal && (p.accuracy ?? 9999) <= 15;
+            if (ok) { setS(() { target = LatLng(p.lat, p.lng); gps = true; gpsAcc = p.accuracy; }); }
+            else if (mounted) { messenger.showSnackBar(SnackBar(content: Text(p.isReal ? '${mui(context, 'gps_rough')} (±${(p.accuracy ?? 0).round()} m)' : mui(context, 'gps_fail')))); }
           },
           icon: const Icon(Icons.my_location, size: 18),
           label: Text(mui(context, 'use_gps')))),
         if (gps) Padding(padding: const EdgeInsets.only(top: 4),
-          child: Text(mui(context, 'gps_set'), style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600))),
+          child: Text('${mui(context, 'gps_set')}${gpsAcc != null ? ' ±${gpsAcc!.round()} m' : ''}', style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600))),
       ]),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('map.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('map.save')))],
     )));

@@ -37,3 +37,34 @@ Future<LatLng> currentLocation() async {
     return kFallback;
   }
 }
+
+/// Scherpe GPS-fix voor plekken die ECHT moeten kloppen (stek plaatsen).
+/// Luistert enkele seconden naar de GPS-stream en houdt de beste meting bij:
+/// klaar zodra de fix <= [goodEnough] m is, anders na [timeout] de beste die
+/// er was. GEEN terugval op een laatst-bekende positie — liever geen fix dan
+/// een stek die meters verkeerd staat.
+Future<LatLng> preciseLocation({double goodEnough = 8, Duration timeout = const Duration(seconds: 15)}) async {
+  try {
+    if (!await Geolocator.isLocationServiceEnabled()) return kFallback;
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return kFallback;
+    Position? best;
+    final stream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.best, distanceFilter: 0),
+    ).timeout(timeout, onTimeout: (sink) => sink.close());
+    await for (final p in stream) {
+      if (p.accuracy <= 0) continue;
+      if (best == null || p.accuracy < best.accuracy) best = p;
+      if (p.accuracy <= goodEnough) break;
+    }
+    if (best != null) return LatLng(best.latitude, best.longitude, accuracy: best.accuracy);
+    // Stream gaf niets → één losse verse poging (nog steeds geen oude cache).
+    final pos = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
+    ).timeout(const Duration(seconds: 10));
+    return LatLng(pos.latitude, pos.longitude, accuracy: pos.accuracy);
+  } catch (_) {
+    return kFallback;
+  }
+}
