@@ -19,6 +19,9 @@ import '../core/pick_image_source.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/fish_rating.dart';
+import 'package:video_compress/video_compress.dart';
+import '../widgets/dobber_loader.dart';
+import '../widgets/feed_video.dart';
 
 class MapScreen extends StatefulWidget {
   final double? focusLat;
@@ -34,7 +37,8 @@ class _MapScreenState extends State<MapScreen> {
   final _map = MapController();
   LatLng _center = const LatLng(52.78, 6.12);
   LatLng? _userPos; // "hier ben jij" — alleen bij een echte GPS-fix
-  String? _placing; // null | 'water' | 'spot' — plaats-modus (richtkruis verschijnt alleen dan)
+  String? _placing; // null | 'water' | 'spot' | 'move' — plaats-modus (richtkruis verschijnt alleen dan)
+  Map? _movingSpot; // de eigen stek die via 'Verplaatsen' een nieuwe plek krijgt
   List _spots = [];
   List _catches = [];
   List _waters = [];
@@ -265,7 +269,7 @@ class _MapScreenState extends State<MapScreen> {
       final roughMsg = mui(context, 'gps_rough');
       final waitMsg = mui(context, 'gps_sharpening');
       // Een stek moet PRECIES staan → scherpe stream-fix (≤15 m); een water-dobber mag ruimer.
-      final maxAcc = mode == 'spot' ? 15.0 : 75.0;
+      final maxAcc = mode == 'water' ? 75.0 : 15.0;
       messenger.showSnackBar(SnackBar(content: Text(waitMsg), duration: const Duration(seconds: 12)));
       final p = await loc.preciseLocation();
       messenger.hideCurrentSnackBar();
@@ -277,7 +281,32 @@ class _MapScreenState extends State<MapScreen> {
     }
     if (!mounted) return;
     setState(() => _placing = null);
-    if (mode == 'water') { _addWater(target); } else { _addSpot(target); }
+    if (mode == 'water') { _addWater(target); } else if (mode == 'move') { _moveSpot(target); } else { _addSpot(target); }
+  }
+
+  // 'Verplaatsen': plaats-modus openen, ingezoomd op de huidige stek-plek —
+  // mik met het kruis (of Mijn GPS) en bevestig; de stek schuift naar dat punt.
+  void _startMoveSpot(Map s) {
+    // Laravel-decimalen zijn strings → tryParse, nooit 'as num'.
+    final lat = double.tryParse('${s['latitude']}'), lng = double.tryParse('${s['longitude']}');
+    if (lat != null && lng != null) _map.move(LatLng(lat, lng), 17);
+    setState(() { _placing = 'move'; _movingSpot = s; });
+  }
+
+  Future<void> _moveSpot(LatLng pos) async {
+    final s = _movingSpot;
+    _movingSpot = null;
+    if (s == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final okMsg = mui(context, 'spot_moved');
+    final failMsg = context.tr('map.place_on_water');
+    try {
+      await Api.put('/spots/${s['id']}', {'latitude': pos.latitude, 'longitude': pos.longitude});
+      await _load();
+      messenger.showSnackBar(SnackBar(content: Text(okMsg)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : failMsg)));
+    }
   }
 
   // Moderator: bestaand water bewerken (naam, type, betaalwater + boekingslink).
@@ -1004,7 +1033,7 @@ class _MapScreenState extends State<MapScreen> {
         if (r is Map && r['media'] != null) { media.add(r['media']); setSheet(() {}); _load(); }
       } catch (e) { messenger.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : failMsg))); }
     }
-    Future<void> addVideo(StateSetter setSheet) async {
+    Future<void> addVideoLink(StateSetter setSheet) async {
       final ctrl = TextEditingController();
       final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
         title: Text(mui(c, 'spot_add_video')),
@@ -1016,6 +1045,40 @@ class _MapScreenState extends State<MapScreen> {
         final r = await Api.post('/spots/${s['id']}/media', {'type': 'video', 'url': ctrl.text.trim()});
         if (r is Map && r['media'] != null) { media.add(r['media']); setSheet(() {}); _load(); }
       } catch (e) { messenger.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : failMsg))); }
+    }
+    // Zelf filmen of een eigen video kiezen — zelfde pijplijn als de feed:
+    // comprimeren → uploaden → server transcodeert async (poster + web-MP4).
+    Future<void> addVideoFile(ImageSource src, StateSetter setSheet) async {
+      XFile? x;
+      try { x = await ImagePicker().pickVideo(source: src, maxDuration: const Duration(seconds: 90)); }
+      catch (e) { messenger.showSnackBar(SnackBar(content: Text('$e'))); return; }
+      if (x == null) return;
+      final info = ValueNotifier<UploadState>(const UploadState('compress', 0));
+      if (mounted) showDialog(context: context, barrierDismissible: false, builder: (_) => UploadOverlay(info));
+      final sub = VideoCompress.compressProgress$.subscribe((p) => info.value = UploadState('compress', p / 100.0));
+      try {
+        final mi = await VideoCompress.compressVideo(x.path, quality: VideoQuality.MediumQuality, deleteOrigin: false, includeAudio: true);
+        info.value = const UploadState('upload', 0);
+        final up = await Api.uploadVideo(mi?.path ?? x.path);
+        final r = await Api.post('/spots/${s['id']}/media', {'type': 'video', 'path': up['path']});
+        if (r is Map && r['media'] != null) { media.add(r['media']); setSheet(() {}); _load(); }
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : failMsg)));
+      } finally {
+        sub.unsubscribe();
+        try { await VideoCompress.cancelCompression(); } catch (_) {}
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+    Future<void> addVideo(StateSetter setSheet) async {
+      final choice = await showModalBottomSheet<String>(context: context, builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(leading: const Icon(Icons.videocam, color: AppColors.teal), title: Text(mui(c, 'video_record')), onTap: () => Navigator.pop(c, 'camera')),
+        ListTile(leading: const Icon(Icons.video_library, color: AppColors.teal), title: Text(mui(c, 'video_gallery')), onTap: () => Navigator.pop(c, 'gallery')),
+        ListTile(leading: const Icon(Icons.link, color: AppColors.teal), title: Text(mui(c, 'video_link')), onTap: () => Navigator.pop(c, 'link')),
+      ])));
+      if (choice == 'camera') { await addVideoFile(ImageSource.camera, setSheet); }
+      else if (choice == 'gallery') { await addVideoFile(ImageSource.gallery, setSheet); }
+      else if (choice == 'link') { await addVideoLink(setSheet); }
     }
     Future<void> delMedia(Map mItem, StateSetter setSheet) async {
       try { await Api.delete('/spots/${s['id']}/media/${mItem['id']}'); media.removeWhere((x) => x['id'] == mItem['id']); setSheet(() {}); _load(); } catch (_) {}
@@ -1039,7 +1102,16 @@ class _MapScreenState extends State<MapScreen> {
               final thumb = isVideo ? m['thumb'] : m['url'];
               return GestureDetector(
                 onTap: () {
-                  if (isVideo && m['url'] != null) { launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); return; }
+                  if (isVideo) {
+                    // Eigen geüploade video → in-app afspelen; nog aan het transcoderen → melding.
+                    if (m['provider'] == 'file') {
+                      if (m['ready'] == false || m['url'] == null) { messenger.showSnackBar(SnackBar(content: Text(mui(context, 'video_processing')))); return; }
+                      showDialog(context: context, builder: (_) => Dialog(insetPadding: const EdgeInsets.all(12), backgroundColor: Colors.black, child: FeedVideo(videoUrl: '${m['url']}', poster: m['thumb']?.toString())));
+                      return;
+                    }
+                    if (m['url'] != null) { launchUrl(Uri.parse('${m['url']}'), mode: LaunchMode.externalApplication); }
+                    return;
+                  }
                   final ph = media.where((x) => (x as Map)['type'] != 'video' && x['url'] != null).map((x) => (x as Map)['url'].toString()).toList();
                   if (m['url'] != null) PhotoViewer.open(context, ph, ph.indexOf(m['url'].toString()));
                 },
@@ -1070,6 +1142,12 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(width: 8),
             Expanded(child: OutlinedButton.icon(onPressed: () => addVideo(setSheet), icon: const Icon(Icons.video_call, size: 18), label: Text(mui(ctx, 'spot_add_video')))),
           ]),
+          const SizedBox(height: 8),
+          // Staat de stek verkeerd? Verplaatsen met het richtkruis (of Mijn GPS).
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(
+            onPressed: () { Navigator.pop(ctx); _startMoveSpot(s); },
+            icon: const Icon(Icons.open_with, size: 18),
+            label: Text(mui(ctx, 'move_spot')))),
         ],
       ])),
     )));
@@ -1526,14 +1604,14 @@ class _MapScreenState extends State<MapScreen> {
           // Plaats-modus bevestig-balk: schuif de kaart → Bevestig (of Mijn GPS / Annuleer).
           if (_placing != null) Positioned(left: 8, right: 8, bottom: 8, child: Card(
             child: Padding(padding: const EdgeInsets.all(12), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(_placing == 'water' ? mui(context, 'place_water_hint') : mui(context, 'place_spot_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              Text(_placing == 'water' ? mui(context, 'place_water_hint') : _placing == 'move' ? mui(context, 'place_move_hint') : mui(context, 'place_spot_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
               const SizedBox(height: 8),
               Row(children: [
                 Expanded(child: FilledButton.icon(onPressed: () => _confirmPlacement(false), icon: const Icon(Icons.check, size: 18), label: Text(mui(context, 'place_confirm')))),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(onPressed: () => _confirmPlacement(true), icon: const Icon(Icons.my_location, size: 16), label: Text(mui(context, 'place_gps'))),
                 const SizedBox(width: 4),
-                TextButton(onPressed: () => setState(() => _placing = null), child: Text(mui(context, 'shape_cancel'))),
+                TextButton(onPressed: () => setState(() { _placing = null; _movingSpot = null; }), child: Text(mui(context, 'shape_cancel'))),
               ]),
             ])),
           )),
