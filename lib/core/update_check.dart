@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -12,6 +13,8 @@ class UpdateInfo {
 /// Test-fase update-check (sideload). Vergelijkt versionCode met /app-version.json.
 /// Voor de Play Store-release verwijderen — Play levert updates dan zelf.
 Future<UpdateInfo?> checkForUpdate() async {
+  // iOS-updates lopen via de App Store; de melding (met Play-link) is Android-only.
+  if (Platform.isIOS) return null;
   try {
     final info = await PackageInfo.fromPlatform();
     final current = int.tryParse(info.buildNumber) ?? 0;
