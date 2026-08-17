@@ -1084,7 +1084,11 @@ class _MapScreenState extends State<MapScreen> {
       try { await Api.delete('/spots/${s['id']}/media/${mItem['id']}'); media.removeWhere((x) => x['id'] == mItem['id']); setSheet(() {}); _load(); } catch (_) {}
     }
 
-    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => StatefulBuilder(builder: (ctx, setSheet) => Padding(
+    // Sheet begrensd op 85% schermhoogte zodat de inhoud ECHT scrolt — voorheen viel de
+    // onderste knop buiten beeld en sloot omlaag-slepen de sheet (Richards melding 15-08).
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => StatefulBuilder(builder: (ctx, setSheet) => ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+      child: Padding(
       padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(Icons.place, color: mine ? AppColors.teal : AppColors.shared), const SizedBox(width: 8), Expanded(child: Text(s['name'] ?? context.tr('map.spot'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
@@ -1150,7 +1154,7 @@ class _MapScreenState extends State<MapScreen> {
             label: Text(mui(ctx, 'move_spot')))),
         ],
       ])),
-    )));
+    ))));
   }
 
   void _showCatch(Map c) {
