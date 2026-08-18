@@ -249,7 +249,7 @@ class _MapScreenState extends State<MapScreen> {
   // "52.1234, 6.5678" of DMS (52°41'24.5"N 6°11'02.1"E) → LatLng. Zelfde logica als de website.
   static LatLng? _parseCoords(String input) {
     final t = input.trim();
-    final dec = RegExp(r'^(-?\d{1,2}[.,]\d+)[,;\s]+(-?\d{1,3}[.,]\d+)\$').firstMatch(t);
+    final dec = RegExp(r'^(-?\d{1,2}[.,]\d+)[,;\s]+(-?\d{1,3}[.,]\d+)$').firstMatch(t);
     if (dec != null) {
       final la = double.tryParse(dec.group(1)!.replaceAll(',', '.'));
       final lo = double.tryParse(dec.group(2)!.replaceAll(',', '.'));
