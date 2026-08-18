@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
@@ -22,6 +23,7 @@ import '../widgets/fish_rating.dart';
 import 'package:video_compress/video_compress.dart';
 import '../widgets/dobber_loader.dart';
 import '../widgets/feed_video.dart';
+import '../widgets/water_depth_panel.dart';
 
 class MapScreen extends StatefulWidget {
   final double? focusLat;
@@ -33,7 +35,11 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  static const double _kMinZoom = 8.0; // harde uitzoom-grens (één bron: MapOptions + de muur in onPositionChanged)
+  static const double _kMinZoom = 8.0; // harde uitzoom-grens
+  // Zelfde grenzen als de cameraConstraint in MapOptions — een positie hierbuiten mag
+  // NOOIT het kaartmiddelpunt worden (flutter_map assert → rood scherm).
+  static bool _inKaart(double lat, double lng) => lat >= 34.0 && lat <= 71.5 && lng >= -15.0 && lng <= 42.0;
+ // harde uitzoom-grens (één bron: MapOptions + de muur in onPositionChanged)
   final _map = MapController();
   LatLng _center = const LatLng(52.78, 6.12);
   LatLng? _userPos; // "hier ben jij" — alleen bij een echte GPS-fix
@@ -87,8 +93,8 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _init() async {
     final p = await loc.currentLocation();
-    _center = LatLng(p.lat, p.lng);
-    if (p.isReal) _userPos = LatLng(p.lat, p.lng);
+    if (_inKaart(p.lat, p.lng)) _center = LatLng(p.lat, p.lng); // buiten Europa → standaard-middelpunt
+    if (p.isReal && _inKaart(p.lat, p.lng)) _userPos = LatLng(p.lat, p.lng);
     try { final st = await Api.get('/profile/settings'); _autoOn = !(st is Map && st['auto_checkin'] == false); } catch (_) {}
     await _load();
     setState(() => _loading = false);
@@ -167,7 +173,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _centerOnUser() async {
     final p = await loc.currentLocation();
     if (!mounted) return;
-    if (p.isReal) {
+    if (p.isReal && _inKaart(p.lat, p.lng)) {
       setState(() => _userPos = LatLng(p.lat, p.lng));
       _map.move(LatLng(p.lat, p.lng), 14);
       _loadWaters();
@@ -218,6 +224,76 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // Waters voor het zichtbare gebied (bbox) in de ingestelde taal.
+  // Dieptelaag (community, zelfde kleurschaal als de website).
+  bool _depthOn = false;
+  List<dynamic> _depthCells = [];
+
+  static Color _depthColor(double d) {
+    final t = (d / 8).clamp(0.0, 1.0);
+    if (t <= 0.25) return const Color(0xFF60A5FA);
+    if (t <= 0.5) return const Color(0xFF2563EB);
+    if (t <= 0.75) return const Color(0xFF1E40AF);
+    return const Color(0xFF172554);
+  }
+
+  Future<void> _loadDepth() async {
+    if (!_depthOn) return;
+    if (_zoom < 13) { if (_depthCells.isNotEmpty && mounted) setState(() => _depthCells = []); return; }
+    try {
+      final b = _map.camera.visibleBounds;
+      final r = await Api.get('/depth/grid?minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}');
+      if (r is Map && r['data'] is List) { _depthCells = r['data']; if (mounted) setState(() {}); }
+    } catch (_) {}
+  }
+
+  // "52.1234, 6.5678" of DMS (52°41'24.5"N 6°11'02.1"E) → LatLng. Zelfde logica als de website.
+  static LatLng? _parseCoords(String input) {
+    final t = input.trim();
+    final dec = RegExp(r'^(-?\d{1,2}[.,]\d+)[,;\s]+(-?\d{1,3}[.,]\d+)\$').firstMatch(t);
+    if (dec != null) {
+      final la = double.tryParse(dec.group(1)!.replaceAll(',', '.'));
+      final lo = double.tryParse(dec.group(2)!.replaceAll(',', '.'));
+      if (la != null && lo != null && la.abs() <= 90 && lo.abs() <= 180) return LatLng(la, lo);
+    }
+    final dms = RegExp(r'(\d{1,3})[°\s]+(\d{1,2})[\x27\u2019\s]+([\d.,]+)["\u201d\s]*([NSEWOns])', caseSensitive: false).allMatches(t).toList();
+    if (dms.length >= 2) {
+      double conv(RegExpMatch m) {
+        final v = int.parse(m.group(1)!) + int.parse(m.group(2)!) / 60 + double.parse(m.group(3)!.replaceAll(',', '.')) / 3600;
+        final h = m.group(4)!.toUpperCase();
+        return (h == 'S' || h == 'W') ? -v : v; // O = Oost = positief
+      }
+      final la = conv(dms[0]), lo = conv(dms[1]);
+      if (la.abs() <= 90 && lo.abs() <= 180) return LatLng(la, lo);
+    }
+    return null;
+  }
+
+  void _copyCoords(double la, double lo) {
+    Clipboard.setData(ClipboardData(text: '${la.toStringAsFixed(6)}, ${lo.toStringAsFixed(6)}'));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'coords_copied')), duration: const Duration(seconds: 1)));
+  }
+
+  // Coördinaten intypen → kaart vliegt er precies naartoe (handig in plaats-modus: mik + bevestig).
+  Future<void> _askCoords() async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      title: Text(mui(c, 'coords_input')),
+      content: TextField(controller: ctrl, autofocus: true, keyboardType: TextInputType.text,
+        decoration: InputDecoration(hintText: mui(c, 'coords_hint'))),
+      actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: Text(context.tr('map.cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(mui(c, 'coords_go')))],
+    ));
+    if (ok != true) return;
+    final p = _parseCoords(ctrl.text);
+    if (p == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'coords_invalid'))));
+      return;
+    }
+    _map.move(p, 17);
+    _loadWaters(); _loadDepth();
+    if (mounted) setState(() {});
+  }
+
   Future<void> _loadWaters() async {
     // Heel ver uit (zoom < 5): niet herladen — clustering houdt de laatst geladen waters
     // overzichtelijk; we WISSEN ze niet meer (anders verdwenen ze en kwamen niet terug).
@@ -466,6 +542,8 @@ class _MapScreenState extends State<MapScreen> {
             ]),
           );
         }),
+        // Dieptelaag + AI-analyse van dit water (sterren-model).
+        WaterDepthPanel(waterId: (w['id'] as num).toInt()),
         // Vorm-knoppen werken bij zodra de info geladen is (venster zelf opent meteen).
         ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
           final hasShape = m?['has_shape'] == true;
@@ -1095,6 +1173,14 @@ class _MapScreenState extends State<MapScreen> {
         const SizedBox(height: 6),
         if (!mine && owner != null) Text('${context.tr('map.shared_by')} @$owner', style: const TextStyle(color: Colors.black54)),
         if (waterName != null) Text('${context.tr('map.water')}: $waterName', style: const TextStyle(color: Colors.black54)),
+        if (s['latitude'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Row(children: [
+          const Icon(Icons.gps_fixed, size: 13, color: Colors.black38), const SizedBox(width: 4),
+          Text('${double.tryParse('${s['latitude']}')?.toStringAsFixed(6)}, ${double.tryParse('${s['longitude']}')?.toStringAsFixed(6)}',
+            style: const TextStyle(fontSize: 12, color: Colors.black54, fontFamily: 'monospace')),
+          const SizedBox(width: 6),
+          InkWell(onTap: () => _copyCoords(double.parse('${s['latitude']}'), double.parse('${s['longitude']}')),
+            child: const Icon(Icons.copy, size: 14, color: AppColors.teal)),
+        ])),
         if (s['notes'] != null && '${s['notes']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('${s['notes']}')),
         if (media.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -1482,6 +1568,13 @@ class _MapScreenState extends State<MapScreen> {
         ),
         const SizedBox(height: 10),
         FloatingActionButton.small(
+          heroTag: 'depthtoggle', backgroundColor: _depthOn ? const Color(0xFF2563EB) : Colors.white,
+          onPressed: () { setState(() => _depthOn = !_depthOn); if (_depthOn) { _loadDepth(); } else { setState(() => _depthCells = []); } },
+          tooltip: mui(context, 'depth_layer'),
+          child: Text('m', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _depthOn ? Colors.white : const Color(0xFF2563EB))),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.small(
           heroTag: 'addwater', backgroundColor: AppColors.shared,
           onPressed: () => setState(() => _placing = 'water'),
           tooltip: mui(context, 'add_water'),
@@ -1550,9 +1643,10 @@ class _MapScreenState extends State<MapScreen> {
               // anders lopen de markers achter op je zoom.
               final crossed = (z >= 12.5) != (_zoom >= 12.5) || (z >= 12) != (_zoom >= 12) || (z >= 11) != (_zoom >= 11);
               _zoom = z;
-              if (crossed && mounted) setState(() {});
+              // In plaats-modus altijd hertekenen: de balk toont live de kruis-coördinaten.
+              if ((crossed || _placing != null) && mounted) setState(() {});
               _moveDebounce?.cancel();
-              _moveDebounce = Timer(const Duration(milliseconds: 600), _loadWaters);
+              _moveDebounce = Timer(const Duration(milliseconds: 600), () { _loadWaters(); _loadDepth(); });
             },
           ),
           children: [
@@ -1569,6 +1663,13 @@ class _MapScreenState extends State<MapScreen> {
                     () { final ring = _ringFromGeo(w['polygon']); final c = _typeColor('${w['type']}');
                       return Polygon(points: ring, color: c.withValues(alpha: 0.50), borderColor: c, borderStrokeWidth: 2.5); }(),
               ].where((p) => p.points.length >= 3).toList()),
+            // Dieptelaag: per ~40 m-vak de (gewogen) gemiddelde diepte, boven de watervormen.
+            if (_depthOn && _depthCells.isNotEmpty)
+              CircleLayer(circles: [
+                for (final c in _depthCells)
+                  CircleMarker(point: LatLng(double.parse('${c['lat']}'), double.parse('${c['lng']}')),
+                    radius: 11, color: _depthColor(double.parse('${c['depth']}')).withValues(alpha: 0.75)),
+              ]),
             // Concept-vorm tijdens intekenen (oranje).
             if (_editShape && _draftPts.length >= 2)
               PolygonLayer(polygons: [Polygon(points: _draftPts, color: AppColors.accent.withValues(alpha: 0.10), borderColor: AppColors.accent, borderStrokeWidth: 2)]),
@@ -1578,11 +1679,19 @@ class _MapScreenState extends State<MapScreen> {
             MarkerLayer(markers: markers),
             // "Hier ben jij" — blauwe stip op de eigen GPS-locatie.
             if (_userPos != null)
-              MarkerLayer(markers: [Marker(point: _userPos!, width: 24, height: 24, child: Container(
+              MarkerLayer(markers: [Marker(point: _userPos!, width: 24, height: 24, child: GestureDetector(
+                onTap: () { // tik op jezelf → jouw coördinaten (aflezen/kopiëren)
+                  final p = _userPos!;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('${mui(context, 'your_position')}: ${p.latitude.toStringAsFixed(6)}, ${p.longitude.toStringAsFixed(6)}'),
+                    action: SnackBarAction(label: mui(context, 'coords_copy'), onPressed: () => _copyCoords(p.latitude, p.longitude)),
+                    duration: const Duration(seconds: 6)));
+                },
+                child: Container(
                 decoration: BoxDecoration(color: const Color(0xFF2563EB), shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4)]),
-              ))]),
+              )))]),
             // Hoekpunten tijdens intekenen — tik om te verwijderen.
             if (_editShape)
               MarkerLayer(markers: [
@@ -1595,6 +1704,21 @@ class _MapScreenState extends State<MapScreen> {
               ]),
           ],
           ),
+          // Legenda van de dieptelaag (m) — alleen zichtbaar als de laag aan staat.
+          if (_depthOn) Positioned(left: 8, bottom: 8, child: IgnorePointer(child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(8),
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)]),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(_zoom >= 13 ? '${mui(context, 'depth_layer')}: ' : mui(context, 'depth_zoom_hint'), style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              if (_zoom >= 13) ...[
+                for (final d in const [1.0, 3.0, 5.0, 8.0]) ...[
+                  Container(width: 11, height: 11, margin: const EdgeInsets.only(left: 5), decoration: BoxDecoration(color: _depthColor(d), borderRadius: BorderRadius.circular(2))),
+                  Text(' ${d.toInt()}m', style: const TextStyle(fontSize: 10, color: Colors.black54)),
+                ],
+              ],
+            ]),
+          ))),
           // Midden-richtkruis: ALLEEN in plaats-modus (water/stek toevoegen). Schuif de kaart om te mikken.
           if (_placing != null) IgnorePointer(child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Stack(alignment: Alignment.center, children: const [
@@ -1609,7 +1733,19 @@ class _MapScreenState extends State<MapScreen> {
           if (_placing != null) Positioned(left: 8, right: 8, bottom: 8, child: Card(
             child: Padding(padding: const EdgeInsets.all(12), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(_placing == 'water' ? mui(context, 'place_water_hint') : _placing == 'move' ? mui(context, 'place_move_hint') : mui(context, 'place_spot_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              // Live coördinaten van het richtkruis + intypen om exact te mikken (fishfinder-plek).
+              Row(children: [
+                const Icon(Icons.gps_fixed, size: 13, color: Colors.black38), const SizedBox(width: 4),
+                Text('${_map.camera.center.latitude.toStringAsFixed(6)}, ${_map.camera.center.longitude.toStringAsFixed(6)}',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54, fontFamily: 'monospace')),
+                const SizedBox(width: 6),
+                InkWell(onTap: () => _copyCoords(_map.camera.center.latitude, _map.camera.center.longitude), child: const Icon(Icons.copy, size: 14, color: AppColors.teal)),
+                const Spacer(),
+                TextButton.icon(onPressed: _askCoords, style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  icon: const Icon(Icons.edit_location_alt, size: 15), label: Text(mui(context, 'coords_input'), style: const TextStyle(fontSize: 12))),
+              ]),
+              const SizedBox(height: 6),
               Row(children: [
                 Expanded(child: FilledButton.icon(onPressed: () => _confirmPlacement(false), icon: const Icon(Icons.check, size: 18), label: Text(mui(context, 'place_confirm')))),
                 const SizedBox(width: 8),

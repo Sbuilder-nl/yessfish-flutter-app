@@ -91,4 +91,19 @@ class Api {
     if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data);
     throw ApiException(res.statusCode, data);
   }
+
+  // Fishfinder-import (CSV/GPX) → /imports. dry_run=1 geeft alleen het voorbeeld terug.
+  static Future<Map<String, dynamic>> uploadImport(String filePath, {String visibility = 'public', bool dryRun = false}) async {
+    final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}/imports'));
+    req.headers['Accept'] = 'application/json';
+    req.headers['X-App-Lang'] = lang;
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    req.fields['visibility'] = visibility;
+    if (dryRun) req.fields['dry_run'] = '1';
+    req.files.add(await http.MultipartFile.fromPath('file', filePath));
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 90)));
+    final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+    if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data);
+    throw ApiException(res.statusCode, data);
+  }
 }

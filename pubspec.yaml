@@ -43,6 +43,7 @@ dependencies:
   sign_in_with_apple: ^7.0.1
   video_player: ^2.9.2
   visibility_detector: ^0.4.0+2
+  file_picker: ^11.0.3
 
 dev_dependencies:
   flutter_test:

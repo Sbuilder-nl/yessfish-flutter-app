@@ -26,6 +26,7 @@ import 'vis_ai_screen.dart';
 import '../core/app_config.dart';
 import 'moderation_screen.dart';
 import 'settings_screen.dart';
+import 'mijn_data_screen.dart';
 import 'discipline_dashboards_screen.dart';
 import 'vistijl_tools_screen.dart';
 import '../core/vistijl_tools_i18n.dart';
@@ -38,10 +39,17 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  int? _stars; // AI-sterren-saldo (⭐) — zichtbaar in de kop, tik = Mijn data
+
+  Future<void> _loadStars() async {
+    try { final c = await Api.get('/coins'); if (c is Map && mounted) setState(() => _stars = (c['ai_points'] as num?)?.toInt()); } catch (_) {}
+  }
+
   Map? _stats;
   @override
   void initState() {
     super.initState();
+    _loadStars();
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<RealtimeService>().refreshCounts());
     _loadStats();
   }
@@ -122,6 +130,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       const SizedBox(height: 10),
       Center(child: Text(u?.firstName ?? u?.username ?? '', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.navy))),
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
+      if (_stars != null) Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: InkWell(
+        onTap: () => _open(const MijnDataScreen()),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(color: const Color(0xFFFFF7E0), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF0DFA8))),
+          child: Text('⭐ $_stars ${mdt(context, 'stars')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF8a6d1f))))))),
       const SizedBox(height: 12),
       Center(child: OutlinedButton.icon(onPressed: () => _open(const EditProfileScreen()), icon: const Icon(Icons.edit, size: 16), label: Text(context.tr('p.edit')))),
       _statsCard(),
@@ -147,6 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.menu_book_outlined, context.tr('p.species'), const SpeciesScreen()),
         _tile(Icons.cloud_outlined, context.tr('p.weather'), const WeatherScreen()),
         _tile(Icons.badge_outlined, context.tr('p.docs'), const LicensesScreen()),
+        _tile(Icons.upload_file_outlined, mdt(context, 'title'), const MijnDataScreen()),
       ]),
       _section(context.tr('sec.account'), [
         _tile(Icons.settings_outlined, context.tr('p.settings'), const SettingsScreen()),
