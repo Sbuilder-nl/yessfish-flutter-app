@@ -48,9 +48,42 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   void dispose() { _liveSub?.cancel(); super.dispose(); }
 
+  int _page = 1;
+  bool _hasMore = true;
+  bool _loadingMore = false;
+
   Future<void> _load() async {
-    try { final r = await Api.get('/feed'); setState(() { _posts = r['data'] ?? []; _loading = false; }); }
+    try {
+      final r = await Api.get('/feed');
+      final meta = r is Map ? r['meta'] : null;
+      setState(() {
+        _posts = r['data'] ?? [];
+        _loading = false;
+        _page = 1;
+        _hasMore = meta is Map ? ((meta['current_page'] ?? 1) as num) < ((meta['last_page'] ?? 1) as num) : false;
+      });
+    }
     catch (_) { setState(() { _loading = false; }); }
+  }
+
+  // Volgende pagina ophalen zodra je bijna onderaan bent (oneindig scrollen zoals de site).
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    _loadingMore = true;
+    if (mounted) setState(() {});
+    try {
+      final r = await Api.get('/feed?page=${_page + 1}');
+      final meta = r is Map ? r['meta'] : null;
+      final nieuwe = (r['data'] ?? []) as List;
+      if (mounted) setState(() {
+        // dubbelen eruit (live-stream kan een post al toegevoegd hebben)
+        _posts.addAll(nieuwe.where((n) => !_posts.any((p) => p['id'] == n['id'])));
+        _page += 1;
+        _hasMore = meta is Map ? ((meta['current_page'] ?? _page) as num) < ((meta['last_page'] ?? _page) as num) : false;
+      });
+    } catch (_) {}
+    _loadingMore = false;
+    if (mounted) setState(() {});
   }
 
   Future<void> _pickPhoto(ImageSource src) async {
@@ -226,10 +259,21 @@ class _FeedScreenState extends State<FeedScreen> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          if (n.metrics.pixels > n.metrics.maxScrollExtent - 600) _loadMore();
+          return false;
+        },
+        child: ListView.builder(
         padding: const EdgeInsets.all(12),
-        itemCount: _posts.length + 2,
+        itemCount: _posts.length + 3,
         itemBuilder: (_, idx) {
+          if (idx == _posts.length + 2) {
+            // Onderste rij: spinner tijdens bijladen, of een nette afsluiting aan het einde.
+            if (_loadingMore) return const Padding(padding: EdgeInsets.all(16), child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))));
+            if (!_hasMore && _posts.isNotEmpty) return Padding(padding: const EdgeInsets.all(16), child: Center(child: Text('🎣', style: const TextStyle(fontSize: 20))));
+            return const SizedBox(height: 24);
+          }
           if (idx == 0) return _onlineBar(context);
           if (idx == 1) {
             return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
@@ -299,6 +343,7 @@ class _FeedScreenState extends State<FeedScreen> {
             ]),
           ])));
         },
+      ),
       ),
     );
   }
