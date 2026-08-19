@@ -150,7 +150,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
     final feedBanned = du['feed_banned_until'] != null;
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
       expand: false, initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.95,
-      builder: (_, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(16), children: [
+      builder: (mctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(mctx).padding.bottom), children: [
         Text('${du['username'] ?? ''}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
         Text('${du['email'] ?? ''}', style: const TextStyle(fontSize: 12, color: Colors.black45)),
         const SizedBox(height: 6),

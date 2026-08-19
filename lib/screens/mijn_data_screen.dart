@@ -154,7 +154,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
     try { final r = await Api.get('/imports/${b['id']}/points'); if (r is Map) d = r; } catch (e) { _fail(e); return; }
     if (!mounted) return;
     final stats = d['stats'] is Map ? d['stats'] as Map : null;
-    showModalBottomSheet(context: context, builder: (ctx) => Padding(padding: const EdgeInsets.all(20),
+    showModalBottomSheet(context: context, builder: (ctx) => Padding(padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx).padding.bottom),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('${b['filename']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
         const SizedBox(height: 8),

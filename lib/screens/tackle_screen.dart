@@ -481,7 +481,7 @@ class _SlotPickerSheetState extends State<_SlotPickerSheet> {
   Widget build(BuildContext context) {
     final String q = _q.text.trim();
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * .72,
         child: Column(

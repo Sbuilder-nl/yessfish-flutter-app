@@ -134,7 +134,7 @@ class _MapScreenState extends State<MapScreen> {
             });
           }
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 12, left: 12, right: 12, top: 12),
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom + 12, left: 12, right: 12, top: 12),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextField(
                 autofocus: true, controller: ctrl, textInputAction: TextInputAction.search,
@@ -395,7 +395,7 @@ class _MapScreenState extends State<MapScreen> {
     const permits = ['onbekend','landelijk','club','vrij','betaald','verboden','fiskfergunning','nho','onduidelijk'];
     String permit = permits.contains('${w['permit_type']}') ? '${w['permit_type']}' : 'onbekend';
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (sheetCtx) => StatefulBuilder(builder: (sheetCtx, setS) => Padding(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
+      padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + MediaQuery.of(sheetCtx).padding.bottom + 16),
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(mui(sheetCtx, 'water_edit'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
         const SizedBox(height: 14),
@@ -485,8 +485,8 @@ class _MapScreenState extends State<MapScreen> {
     }();
 
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
-      expand: false, initialChildSize: 0.5, minChildSize: 0.3, maxChildSize: 0.9,
-      builder: (_, scroll) => ListView(controller: scroll, padding: const EdgeInsets.all(20), children: [
+      expand: false, initialChildSize: 0.5, minChildSize: 0.3, maxChildSize: 0.95,
+      builder: (ctx2, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx2).padding.bottom), children: [
         Row(children: [Icon(w['is_paid'] == true ? Icons.euro : Icons.water, color: w['is_paid'] == true ? const Color(0xFFD4A017) : _waterColor(level)), const SizedBox(width: 8), Expanded(child: Text(w['name'] ?? '', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))]),
         if (sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(sub, style: const TextStyle(color: Colors.black54))),
         if (w['type'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Row(children: [
@@ -648,7 +648,7 @@ class _MapScreenState extends State<MapScreen> {
               Text('$body', style: const TextStyle(color: Colors.black87, height: 1.35)),
             ]));
           }
-          return ListView(controller: scroll, padding: const EdgeInsets.all(20), children: [
+          return ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).padding.bottom), children: [
             Row(children: [const Icon(Icons.gavel, color: AppColors.teal), const SizedBox(width: 8),
               Expanded(child: Text('${mui(context, 'rules_title')}${w['country'] != null ? ' — ${w['country']}' : ''}',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
@@ -791,7 +791,7 @@ class _MapScreenState extends State<MapScreen> {
           ListTile(leading: const Icon(Icons.video_library_outlined), title: Text(mui(context, 'media_add_video')), onTap: () { Navigator.pop(context); addVideo(); }),
         ])));
 
-        return ListView(controller: scroll, padding: const EdgeInsets.all(16), children: [
+        return ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).padding.bottom), children: [
           Row(children: [const Icon(Icons.photo_library_outlined, color: AppColors.teal), const SizedBox(width: 8),
             Expanded(child: Text('${mui(context, 'media_title')} — ${w['name'] ?? ''}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)))]),
           const SizedBox(height: 10),
@@ -927,9 +927,18 @@ class _MapScreenState extends State<MapScreen> {
         ]), mui(ctx, 'legend_busy')),
         row(const Icon(Icons.place, color: AppColors.teal, size: 22), mui(ctx, 'legend_spot')),
         row(const Icon(Icons.set_meal, color: Colors.orange, size: 20), mui(ctx, 'legend_catch')),
-        row(Container(width: 16, height: 16, decoration: BoxDecoration(
-          color: const Color(0xFF2563EB), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3),
-          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 3)])), mui(ctx, 'legend_me')),
+        row(Container(width: 20, height: 20, decoration: BoxDecoration(
+          color: const Color(0xFF2563EB), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 3)]),
+          child: const Icon(Icons.person, color: Colors.white, size: 12)), mui(ctx, 'legend_me')),
+        const Divider(height: 18),
+        row(const Icon(Icons.my_location, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_locate')),
+        row(const Icon(Icons.water, color: AppColors.shared, size: 20), mui(ctx, 'legend_btn_water')),
+        row(const Icon(Icons.add_location_alt, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_spot')),
+        row(Container(width: 22, height: 22, alignment: Alignment.center,
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black12)),
+          child: const Text('m', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)))), mui(ctx, 'legend_btn_depth')),
+        row(const Icon(Icons.waves, color: Color(0xFF2563EB), size: 20), mui(ctx, 'legend_btn_flow')),
         const Divider(height: 18),
         row(const Icon(Icons.lightbulb_outline, size: 18, color: Colors.black45), mui(ctx, 'legend_tip')),
       ])),
@@ -1165,9 +1174,9 @@ class _MapScreenState extends State<MapScreen> {
     // Sheet begrensd op 85% schermhoogte zodat de inhoud ECHT scrolt — voorheen viel de
     // onderste knop buiten beeld en sloot omlaag-slepen de sheet (Richards melding 15-08).
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => StatefulBuilder(builder: (ctx, setSheet) => ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.92),
       child: Padding(
-      padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
+      padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom + 20),
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(Icons.place, color: mine ? AppColors.teal : AppColors.shared), const SizedBox(width: 8), Expanded(child: Text(s['name'] ?? context.tr('map.spot'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
         const SizedBox(height: 6),
@@ -1244,7 +1253,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showCatch(Map c) {
-    showModalBottomSheet(context: context, builder: (_) => Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+    showModalBottomSheet(context: context, builder: (ctx) => Padding(padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx).padding.bottom), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [const Icon(Icons.set_meal, color: Colors.orange), const SizedBox(width: 8), Expanded(child: Text(c['species'] ?? c['species_text'] ?? context.tr('map.catch'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
       const SizedBox(height: 6),
       if (c['weight_kg'] != null) Text('${context.tr('map.weight')}: ${Units.weight(c['weight_kg'])}', style: const TextStyle(color: Colors.black54)),
@@ -1581,11 +1590,11 @@ class _MapScreenState extends State<MapScreen> {
           child: const Icon(Icons.water, color: Colors.white),
         ),
         const SizedBox(height: 10),
-        FloatingActionButton.extended(
+        FloatingActionButton(
           heroTag: 'addspot', backgroundColor: AppColors.teal,
           onPressed: () => setState(() => _placing = 'spot'),
-          icon: const Icon(Icons.add_location_alt, color: Colors.white),
-          label: Text(context.tr('map.spot_here'), style: const TextStyle(color: Colors.white)),
+          tooltip: context.tr('map.spot_here'),
+          child: const Icon(Icons.add_location_alt, color: Colors.white),
         ),
       ]),
       body: Column(children: [
@@ -1679,7 +1688,7 @@ class _MapScreenState extends State<MapScreen> {
             MarkerLayer(markers: markers),
             // "Hier ben jij" — blauwe stip op de eigen GPS-locatie.
             if (_userPos != null)
-              MarkerLayer(markers: [Marker(point: _userPos!, width: 24, height: 24, child: GestureDetector(
+              MarkerLayer(markers: [Marker(point: _userPos!, width: 28, height: 28, child: GestureDetector(
                 onTap: () { // tik op jezelf → jouw coördinaten (aflezen/kopiëren)
                   final p = _userPos!;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1689,8 +1698,9 @@ class _MapScreenState extends State<MapScreen> {
                 },
                 child: Container(
                 decoration: BoxDecoration(color: const Color(0xFF2563EB), shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(color: Colors.white, width: 2.5),
                   boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4)]),
+                child: const Icon(Icons.person, color: Colors.white, size: 16),
               )))]),
             // Hoekpunten tijdens intekenen — tik om te verwijderen.
             if (_editShape)
