@@ -33,6 +33,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _clearAll() async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('notifs.clear_title')),
       content: Text(context.tr('notifs.clear_body')),
       actions: [
@@ -53,7 +54,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ]),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _list.isEmpty
         ? Center(child: Text(context.tr('notifs.empty'), style: const TextStyle(color: Colors.black45)))
-        : ListView.builder(padding: const EdgeInsets.all(12), itemCount: _list.length, itemBuilder: (_, i) {
+        : ListView.builder(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _list.length, itemBuilder: (_, i) {
             final n = _list[i] as Map; final data = (n['data'] ?? n) as Map;
             final link = (data['link'] ?? '').toString();
             final event = (data['event'] ?? '').toString();

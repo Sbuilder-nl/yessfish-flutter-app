@@ -119,7 +119,7 @@ class _TackleScreenState extends State<TackleScreen> {
                       ],
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 90) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
                       itemCount: _sets.length,
                       itemBuilder: (_, i) {
                         final Map set = _sets[i] as Map;
@@ -307,6 +307,7 @@ class _GearSetEditorScreenState extends State<GearSetEditorScreen> {
     final bool? ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(ctx.tr('gear.delete')),
         content: Text(ctx.tr('gear.delete_confirm')),
         actions: [
@@ -336,7 +337,7 @@ class _GearSetEditorScreenState extends State<GearSetEditorScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(14) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         children: [
           TextField(
             controller: _name,

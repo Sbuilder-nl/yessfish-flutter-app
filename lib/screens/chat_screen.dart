@@ -130,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(title: Text(_title ?? context.tr('chat.new_message'))),
       body: Column(children: [
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
-          controller: _scroll, padding: const EdgeInsets.all(12), itemCount: _messages.length,
+          controller: _scroll, padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _messages.length,
           itemBuilder: (_, i) {
             final m = _messages[i] as Map;
             final mine = m['sender_id'] == me;

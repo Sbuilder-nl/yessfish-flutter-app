@@ -202,7 +202,7 @@ class _VisAiScreenState extends State<VisAiScreen> {
                 )
               : ListView.builder(
                   controller: _scroll,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
                   itemCount: _msgs.length + (_busy ? 1 : 0),
                   itemBuilder: (c, i) {
                     if (i >= _msgs.length) {

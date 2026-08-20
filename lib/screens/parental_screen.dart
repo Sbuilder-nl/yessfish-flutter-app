@@ -49,6 +49,7 @@ class _ParentalScreenState extends State<ParentalScreen> {
 
   Future<void> _unlink(Map k) async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       content: Text(pt(context, 'unlink_confirm')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(pt(context, 'cancel'))),
@@ -69,7 +70,7 @@ class _ParentalScreenState extends State<ParentalScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(pt(context, 'title'))),
       body: _loading ? const Center(child: CircularProgressIndicator())
-        : ListView(padding: const EdgeInsets.all(14), children: [
+        : ListView(padding: const EdgeInsets.all(14) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
             Text(pt(context, 'intro'), style: const TextStyle(color: Colors.black54, fontSize: 13.5)),
             const SizedBox(height: 16),
             if (_kids.isEmpty)
@@ -233,7 +234,7 @@ class _ChildThreadScreenState extends State<_ChildThreadScreen> {
       appBar: AppBar(title: Text('@${widget.otherName}')),
       body: _loading ? const Center(child: CircularProgressIndicator())
         : _msgs.isEmpty ? Center(child: Text(pt(context, 'no_msgs'), style: const TextStyle(color: Colors.black45)))
-        : ListView(padding: const EdgeInsets.all(12), children: _msgs.map((m) {
+        : ListView(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: _msgs.map((m) {
             final mm = m as Map;
             final fromChild = mm['sender_id'] == widget.childId;
             return Align(alignment: fromChild ? Alignment.centerRight : Alignment.centerLeft,

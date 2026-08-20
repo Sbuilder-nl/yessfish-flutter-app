@@ -67,7 +67,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Widget _buildPost(BuildContext context, Map p) {
     final u = p['user'] as Map?;
-    return ListView(padding: const EdgeInsets.all(14), children: [
+    return ListView(padding: const EdgeInsets.all(14) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
       Row(children: [
         GestureDetector(
           onTap: u?['id'] != null ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,

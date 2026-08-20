@@ -70,7 +70,7 @@ class _BiteScreenState extends State<BiteScreen> {
     final weather = d['weather'] as Map?;
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(padding: const EdgeInsets.all(16), children: [
+      child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           Text(context.tr('bite.today'), style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 12),

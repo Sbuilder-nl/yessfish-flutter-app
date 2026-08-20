@@ -69,7 +69,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(title: Text(u['username'] ?? context.tr('userprofile.title')), actions: [
         if (status != 'self') IconButton(icon: const Icon(Icons.flag_outlined), tooltip: context.tr('userprofile.report'), onPressed: () => showReportSheet(context, type: 'user', targetId: u['id'])),
       ]),
-      body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
+      body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         const SizedBox(height: 6),
         Center(child: Avatar(name: u['username'], src: u['avatar_path'], size: 84)),
         const SizedBox(height: 10),

@@ -141,6 +141,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
 
   Future<void> _delete(Map b) async {
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       content: Text(mdt(c, 'delete_q')),
       actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: Text(mdt(c, 'cancel'))),
         FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(mdt(c, 'delete')))],
@@ -187,7 +188,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
       ),
       body: _loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load,
-        child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 90), children: [
+        child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 90) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
           Text(mdt(context, 'intro'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
           const SizedBox(height: 12),
           if (_batches.isEmpty) Padding(padding: const EdgeInsets.only(top: 40),

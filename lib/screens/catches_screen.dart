@@ -50,7 +50,7 @@ class _CatchesScreenState extends State<CatchesScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
                     itemCount: _catches.length,
                     itemBuilder: (_, i) {
                       final c = _catches[i] as Map;

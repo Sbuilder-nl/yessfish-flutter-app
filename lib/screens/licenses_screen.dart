@@ -26,6 +26,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
     final number = TextEditingController();
     String country = 'NL';
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('licenses.add_title')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         DropdownButtonFormField<String>(initialValue: country, decoration: InputDecoration(labelText: context.tr('licenses.country')),
@@ -53,7 +54,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       body: _loading ? const Center(child: CircularProgressIndicator()) : Column(children: [
         Padding(padding: const EdgeInsets.all(12), child: Text(context.tr('licenses.hint'), style: const TextStyle(fontSize: 12, color: Colors.black45))),
         Expanded(child: _list.isEmpty ? Center(child: Text(context.tr('licenses.empty'), style: const TextStyle(color: Colors.black45))) : ListView.builder(
-          padding: const EdgeInsets.all(12), itemCount: _list.length,
+          padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _list.length,
           itemBuilder: (_, i) {
             final l = _list[i] as Map;
             return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(

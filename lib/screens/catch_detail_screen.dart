@@ -126,6 +126,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
 
   Future<void> _delete() async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('catchdetail.deleteTitle')), actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('catchdetail.no'))),
         FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.danger), onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('catchdetail.delete'))),
@@ -147,6 +148,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
       if (!mounted) return;
       final ctrl = TextEditingController(text: story);
       final post = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(context.tr('catchdetail.storyTitle')),
         content: TextField(controller: ctrl, maxLines: 6, decoration: const InputDecoration(border: OutlineInputBorder())),
         actions: [
@@ -194,7 +196,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         if (mine) IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _edit),
         if (mine) IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
       ]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         if (_photoUrls(c).length == 1)
           GestureDetector(onTap: () => PhotoViewer.open(context, _photoUrls(c)), child: ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: _photoUrls(c).first, width: double.infinity, fit: BoxFit.cover)))
         else if (_photoUrls(c).length > 1)

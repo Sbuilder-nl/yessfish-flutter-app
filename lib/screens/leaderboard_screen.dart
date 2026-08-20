@@ -25,7 +25,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('leaderboard.title'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _rows.isEmpty ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(context.tr('leaderboard.empty'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45)))) : ListView.builder(
-        padding: const EdgeInsets.all(12), itemCount: _rows.length,
+        padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _rows.length,
         itemBuilder: (_, i) {
           final r = _rows[i] as Map; final u = r['user'] as Map?;
           final medal = i == 0 ? const Color(0xFFFBBF24) : i == 1 ? const Color(0xFF9CA3AF) : i == 2 ? const Color(0xFFB45309) : AppColors.bg;

@@ -25,7 +25,7 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('species.title'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : GridView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.82, crossAxisSpacing: 10, mainAxisSpacing: 10),
         itemCount: _list.length,
         itemBuilder: (_, i) {

@@ -154,6 +154,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         setS(() => busy = false);
       }
       return AlertDialog(
+        scrollable: true,
         title: Text(context.tr('newcatch.water')),
         content: SizedBox(width: double.maxFinite, child: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: search, autofocus: true,
@@ -217,7 +218,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('newcatch.title'))),
       body: Column(children: [
-        Expanded(child: ListView(padding: const EdgeInsets.all(16), children: [
+        Expanded(child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         if (_photos.isNotEmpty)
           SizedBox(height: 96, child: ListView.separated(
             scrollDirection: Axis.horizontal,

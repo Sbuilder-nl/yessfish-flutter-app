@@ -31,7 +31,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('weather.title'))),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : _w == null ? Center(child: Text(context.tr('weather.no_data'))) : ListView(padding: const EdgeInsets.all(16), children: [
+      body: _loading ? const Center(child: CircularProgressIndicator()) : _w == null ? Center(child: Text(context.tr('weather.no_data'))) : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Center(child: Text(_w!['location'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy))),
         Center(child: Text('${(_w!['temperature_c'] as num?)?.round()}°C — ${_w!['description'] ?? ''}', style: const TextStyle(fontSize: 16, color: Colors.black54))),
         const SizedBox(height: 16),

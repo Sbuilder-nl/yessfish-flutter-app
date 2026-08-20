@@ -89,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final list = (r is Map ? r['disciplines'] : null) as List?;
       if (list == null || list.isNotEmpty || !mounted) return;
       showDialog(context: context, builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(dui(ctx, 'title')),
         content: Text(dui(ctx, 'prompt')),
         actions: [
@@ -107,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final u = await checkForUpdate();
     if (u == null || !mounted) return;
     showDialog(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(_qt(const {'nl': 'Update beschikbaar', 'en': 'Update available', 'de': 'Update verfügbar', 'fr': 'Mise à jour disponible', 'es': 'Actualización disponible', 'pl': 'Dostępna aktualizacja'})),
       content: Text(_qt(const {'nl': 'Er staat een nieuwe versie klaar in de Google Play Store.', 'en': 'A new version is available in the Google Play Store.', 'de': 'Eine neue Version ist im Google Play Store verfügbar.', 'fr': 'Une nouvelle version est disponible sur le Google Play Store.', 'es': 'Hay una nueva versión en Google Play Store.', 'pl': 'Nowa wersja jest dostępna w Google Play.'})),
       actions: [

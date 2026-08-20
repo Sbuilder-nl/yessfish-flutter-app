@@ -75,7 +75,7 @@ class _DisciplinesScreenState extends State<DisciplinesScreen> {
                   ),
                   Expanded(
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
                       itemCount: _all.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (c, i) {

@@ -44,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _deleteAccount() async {
     final pw = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('settings.delete_title')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(context.tr('settings.delete_body')),
@@ -71,7 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('settings.title'))),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16), children: [
+      body: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Card(child: ListTile(
           leading: const Icon(Icons.language, color: AppColors.teal),
           title: Text(context.tr('settings.language')),

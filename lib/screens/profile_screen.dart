@@ -124,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final u = context.watch<AuthState>().user;
     final rt = context.watch<RealtimeService>();
-    return ListView(padding: const EdgeInsets.all(16), children: [
+    return ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
       const SizedBox(height: 8),
       Center(child: Avatar(name: u?.username, src: u?.avatarPath, size: 84)),
       const SizedBox(height: 10),

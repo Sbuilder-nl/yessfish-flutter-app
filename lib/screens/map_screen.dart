@@ -194,6 +194,7 @@ class _MapScreenState extends State<MapScreen> {
       final atWater = w is Map && w['water'] == true;
       if (!atWater || !mounted) return;
       final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Text(mui(ctx, 'checkin_here')),
         content: Text(mui(ctx, 'ask_fishing')),
         actions: [
@@ -234,6 +235,27 @@ class _MapScreenState extends State<MapScreen> {
     if (t <= 0.5) return const Color(0xFF2563EB);
     if (t <= 0.75) return const Color(0xFF1E40AF);
     return const Color(0xFF172554);
+  }
+
+  // Stromingslaag (rivieren, m3/s via WaterAPI/GloFAS) — zelfde kleuren als de site.
+  bool _flowOn = false;
+  List<dynamic> _flowPoints = [];
+
+  static Color _flowColor(double d) {
+    if (d >= 1000) return const Color(0xFFEF4444);
+    if (d >= 300) return const Color(0xFFF97316);
+    if (d >= 50) return const Color(0xFF0EA5E9);
+    if (d >= 5) return const Color(0xFF38BDF8);
+    return const Color(0xFFA5D8F3);
+  }
+
+  Future<void> _loadFlow() async {
+    if (!_flowOn) return;
+    try {
+      final b = _map.camera.visibleBounds;
+      final r = await Api.get('/map/flow?bbox=${b.west},${b.south},${b.east},${b.north}');
+      if (r is Map && r['data'] is List && mounted) setState(() => _flowPoints = r['data']);
+    } catch (_) {}
   }
 
   Future<void> _loadDepth() async {
@@ -277,6 +299,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _askCoords() async {
     final ctrl = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       title: Text(mui(c, 'coords_input')),
       content: TextField(controller: ctrl, autofocus: true, keyboardType: TextInputType.text,
         decoration: InputDecoration(hintText: mui(c, 'coords_hint'))),
@@ -775,6 +798,7 @@ class _MapScreenState extends State<MapScreen> {
         Future<void> addVideo() async {
           final ctrl = TextEditingController();
           final ok = await showDialog<bool>(context: context, builder: (dctx) => AlertDialog(
+            scrollable: true,
             title: Text(mui(context, 'media_video_title')),
             content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: 'https://youtube.com/...'), keyboardType: TextInputType.url),
             actions: [TextButton(onPressed: () => Navigator.pop(dctx, false), child: Text(context.tr('map.cancel'))),
@@ -872,6 +896,7 @@ class _MapScreenState extends State<MapScreen> {
     final pc = PageController();
     int idx = 0;
     showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+      scrollable: true,
       contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
       content: SizedBox(width: 320, height: 320, child: Column(children: [
         Expanded(child: PageView.builder(
@@ -912,6 +937,7 @@ class _MapScreenState extends State<MapScreen> {
       ]));
     Widget pin(Widget w) => SizedBox(width: 30, height: 42, child: FittedBox(fit: BoxFit.contain, child: w));
     showDialog(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(mui(ctx, 'legend_title')),
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         row(pin(_clusterBubble(5)), mui(ctx, 'legend_cluster')),
@@ -933,7 +959,7 @@ class _MapScreenState extends State<MapScreen> {
           child: const Icon(Icons.person, color: Colors.white, size: 12)), mui(ctx, 'legend_me')),
         const Divider(height: 18),
         row(const Icon(Icons.my_location, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_locate')),
-        row(const Icon(Icons.water, color: AppColors.shared, size: 20), mui(ctx, 'legend_btn_water')),
+        row(const Icon(Icons.water_drop, color: AppColors.shared, size: 20), mui(ctx, 'legend_btn_water')),
         row(const Icon(Icons.add_location_alt, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_spot')),
         row(Container(width: 22, height: 22, alignment: Alignment.center,
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black12)),
@@ -958,6 +984,7 @@ class _MapScreenState extends State<MapScreen> {
     final canMod = _canMod;
     const types = ['meer', 'rivier', 'kanaal', 'zee', 'vijver', 'overig'];
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+      scrollable: true,
       title: Text(mui(ctx, 'add_water')),
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: name, decoration: InputDecoration(labelText: mui(ctx, 'water_name'))),
@@ -1010,6 +1037,7 @@ class _MapScreenState extends State<MapScreen> {
     bool gps = false;
     double? gpsAcc;          // nauwkeurigheid (m) van de gebruikte GPS-fix — tonen zodat je wéét hoe strak hij staat
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('map.add_spot')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: name, decoration: InputDecoration(labelText: context.tr('map.spot_name'))),
@@ -1123,6 +1151,7 @@ class _MapScreenState extends State<MapScreen> {
     Future<void> addVideoLink(StateSetter setSheet) async {
       final ctrl = TextEditingController();
       final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+        scrollable: true,
         title: Text(mui(c, 'spot_add_video')),
         content: TextField(controller: ctrl, decoration: InputDecoration(hintText: mui(c, 'spot_video_prompt'))),
         actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: Text(context.tr('map.cancel'))), FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(context.tr('map.save')))],
@@ -1484,6 +1513,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _shapeHelp() {
     showDialog(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       title: Text(mui(c, 'shape_help_title')),
       content: SingleChildScrollView(child: Text(mui(c, 'shape_help_body'), style: const TextStyle(height: 1.4))),
       actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(MaterialLocalizations.of(c).closeButtonLabel))],
@@ -1584,10 +1614,20 @@ class _MapScreenState extends State<MapScreen> {
         ),
         const SizedBox(height: 10),
         FloatingActionButton.small(
+          heroTag: 'flowtoggle', backgroundColor: _flowOn ? const Color(0xFF0EA5E9) : Colors.white,
+          onPressed: () { setState(() => _flowOn = !_flowOn); if (_flowOn) { _loadFlow(); } else { setState(() => _flowPoints = []); } },
+          tooltip: mui(context, 'legend_btn_flow'),
+          child: Icon(Icons.waves, color: _flowOn ? Colors.white : const Color(0xFF0EA5E9)),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.small(
           heroTag: 'addwater', backgroundColor: AppColors.shared,
           onPressed: () => setState(() => _placing = 'water'),
           tooltip: mui(context, 'add_water'),
-          child: const Icon(Icons.water, color: Colors.white),
+          child: const Stack(alignment: Alignment.center, children: [
+            Icon(Icons.water_drop, color: Colors.white, size: 20),
+            Positioned(right: 0, top: 0, child: Icon(Icons.add_circle, color: Colors.white, size: 11)),
+          ]),
         ),
         const SizedBox(height: 10),
         FloatingActionButton(
@@ -1655,7 +1695,7 @@ class _MapScreenState extends State<MapScreen> {
               // In plaats-modus altijd hertekenen: de balk toont live de kruis-coördinaten.
               if ((crossed || _placing != null) && mounted) setState(() {});
               _moveDebounce?.cancel();
-              _moveDebounce = Timer(const Duration(milliseconds: 600), () { _loadWaters(); _loadDepth(); });
+              _moveDebounce = Timer(const Duration(milliseconds: 600), () { _loadWaters(); _loadDepth(); _loadFlow(); });
             },
           ),
           children: [
@@ -1678,6 +1718,15 @@ class _MapScreenState extends State<MapScreen> {
                 for (final c in _depthCells)
                   CircleMarker(point: LatLng(double.parse('${c['lat']}'), double.parse('${c['lng']}')),
                     radius: 11, color: _depthColor(double.parse('${c['depth']}')).withValues(alpha: 0.75)),
+              ]),
+            // Stromingslaag: rivierpunten gekleurd op afvoer (m3/s).
+            if (_flowOn && _flowPoints.isNotEmpty)
+              CircleLayer(circles: [
+                for (final f in _flowPoints)
+                  if (f['lat'] != null && f['lng'] != null)
+                    CircleMarker(point: LatLng(double.parse('${f['lat']}'), double.parse('${f['lng']}')),
+                      radius: 7, color: _flowColor(double.tryParse('${f['discharge_m3s']}') ?? 0),
+                      borderColor: Colors.white, borderStrokeWidth: 1),
               ]),
             // Concept-vorm tijdens intekenen (oranje).
             if (_editShape && _draftPts.length >= 2)
@@ -1714,8 +1763,21 @@ class _MapScreenState extends State<MapScreen> {
               ]),
           ],
           ),
+          // Legenda van de stromingslaag — schuift omhoog als de diepte-legenda ook aan staat.
+          if (_flowOn) Positioned(left: 8, bottom: (_depthOn ? 46 : 8) + MediaQuery.of(context).padding.bottom, child: IgnorePointer(child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(8),
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)]),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('\u{1F30A} m\u00b3/s: ', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              for (final e in const [['<5', Color(0xFFA5D8F3)], ['50', Color(0xFF38BDF8)], ['300', Color(0xFF0EA5E9)], ['1000+', Color(0xFFEF4444)]]) ...[
+                Container(width: 10, height: 10, margin: const EdgeInsets.only(left: 5), decoration: BoxDecoration(color: e[1] as Color, shape: BoxShape.circle)),
+                Text(' ${e[0]}', style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              ],
+            ]),
+          ))),
           // Legenda van de dieptelaag (m) — alleen zichtbaar als de laag aan staat.
-          if (_depthOn) Positioned(left: 8, bottom: 8, child: IgnorePointer(child: Container(
+          if (_depthOn) Positioned(left: 8, bottom: 8 + MediaQuery.of(context).padding.bottom, child: IgnorePointer(child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(8),
               boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)]),
@@ -1740,7 +1802,7 @@ class _MapScreenState extends State<MapScreen> {
               child: Text(mui(context, 'center_hint'), style: const TextStyle(fontSize: 10, color: AppColors.accent, fontWeight: FontWeight.w600))),
           ]))),
           // Plaats-modus bevestig-balk: schuif de kaart → Bevestig (of Mijn GPS / Annuleer).
-          if (_placing != null) Positioned(left: 8, right: 8, bottom: 8, child: Card(
+          if (_placing != null) Positioned(left: 8, right: 8, bottom: 8 + MediaQuery.of(context).padding.bottom, child: Card(
             child: Padding(padding: const EdgeInsets.all(12), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(_placing == 'water' ? mui(context, 'place_water_hint') : _placing == 'move' ? mui(context, 'place_move_hint') : mui(context, 'place_spot_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
               const SizedBox(height: 4),
@@ -1766,7 +1828,7 @@ class _MapScreenState extends State<MapScreen> {
             ])),
           )),
           // Teken-/bewerk-werkbalk (moderator) — tik op de kaart om punten te zetten, tik op een punt om 'm te wissen.
-          if (_editShape) Positioned(left: 8, right: 8, bottom: 8, child: Card(
+          if (_editShape) Positioned(left: 8, right: 8, bottom: 8 + MediaQuery.of(context).padding.bottom, child: Card(
             child: Padding(padding: const EdgeInsets.all(10), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(_shapeMsg.isNotEmpty ? _shapeMsg : mui(context, 'shape_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
               const SizedBox(height: 6),

@@ -35,7 +35,7 @@ class _ToplistScreenState extends State<ToplistScreen> {
         : empty
           ? Center(child: Padding(padding: const EdgeInsets.all(32),
               child: Text(context.tr('toplist.empty'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45))))
-          : ListView(padding: const EdgeInsets.all(16), children: [
+          : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
               Text(context.tr('toplist.intro'), style: const TextStyle(color: Colors.black54)),
               if (waters.isNotEmpty) ...[
                 const SizedBox(height: 18),

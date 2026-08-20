@@ -139,6 +139,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _addYoutube() async {
     final c = TextEditingController(text: _youtube ?? '');
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('feed.youtube')),
       content: TextField(controller: c, autofocus: true, decoration: InputDecoration(hintText: context.tr('feed.youtubeHint'))),
       actions: [
@@ -170,6 +171,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Future<void> _deletePost(Map p) async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('feed.deleteTitle')),
       content: Text(context.tr('feed.deleteBody')),
       actions: [
@@ -203,6 +205,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _editPost(Map p) async {
     final c = TextEditingController(text: (p['content'] ?? '').toString());
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(context.tr('feed.edit_title')),
       content: TextField(controller: c, maxLines: 5, autofocus: true, textCapitalization: TextCapitalization.sentences),
       actions: [
@@ -265,7 +268,7 @@ class _FeedScreenState extends State<FeedScreen> {
           return false;
         },
         child: ListView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         itemCount: _posts.length + 3,
         itemBuilder: (_, idx) {
           if (idx == _posts.length + 2) {
@@ -400,6 +403,7 @@ class CommentsSheetState extends State<CommentsSheet> {
 
   Future<void> _del(Map c) async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       content: Text(context.tr('feed.comment_del_confirm')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('feed.cancel'))),
@@ -425,7 +429,7 @@ class CommentsSheetState extends State<CommentsSheet> {
     return Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SizedBox(height: MediaQuery.of(context).size.height * 0.7, child: Column(children: [
         Padding(padding: const EdgeInsets.all(12), child: Text(context.tr('feed.comments'), style: const TextStyle(fontWeight: FontWeight.bold))),
-        Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.symmetric(horizontal: 12), children: _grouped(context))),
+        Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.symmetric(horizontal: 12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: _grouped(context))),
         if (_replyTo != null) Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Row(children: [
           Expanded(child: Text('${context.tr('feed.replying_to')} ${(_replyTo!['user'] as Map?)?['username'] ?? ''}', style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
           IconButton(icon: const Icon(Icons.close, size: 16, color: Colors.black38), onPressed: () => setState(() => _replyTo = null)),

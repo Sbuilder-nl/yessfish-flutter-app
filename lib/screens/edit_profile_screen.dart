@@ -53,7 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final u = context.read<AuthState>().user;
     return Scaffold(appBar: AppBar(title: Text(context.tr('editprofile.title'))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Center(child: GestureDetector(onTap: _pickAvatar, child: Stack(children: [
           Avatar(name: u?.username, src: _avatar, size: 90),
           const Positioned(bottom: 0, right: 0, child: CircleAvatar(radius: 14, backgroundColor: AppColors.teal, child: Icon(Icons.camera_alt, size: 15, color: Colors.white))),

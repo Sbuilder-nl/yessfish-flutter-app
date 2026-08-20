@@ -106,6 +106,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
   Future<void> _moderateUser(String path, int userId, Map<String, dynamic> extra) async {
     final reason = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(_actionTitle(context, path, extra)),
       content: TextField(controller: reason, maxLines: 2, decoration: InputDecoration(labelText: context.tr('moderation.reason_optional'))),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('moderation.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('moderation.confirm')))],
@@ -182,6 +183,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
   Future<void> _moderate(String path, int userId, int reportId, Map<String, dynamic> extra) async {
     final reason = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(_actionTitle(context, path, extra)),
       content: TextField(controller: reason, maxLines: 2, decoration: InputDecoration(labelText: context.tr('moderation.reason_optional'))),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('moderation.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('moderation.confirm')))],
@@ -221,7 +223,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
         Expanded(child: TabBarView(children: [
           // Meldingen
           _reports.isEmpty ? Center(child: Text(context.tr('moderation.empty'), style: const TextStyle(color: Colors.black45)))
-            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: [
+            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
                 ...openReports.map((r) => _card(context, r)),
                 if (restReports.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(2, 16, 0, 6), child: Text(context.tr('moderation.handled'), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black45))),
                 ...restReports.map((r) => _card(context, r)),
@@ -235,11 +237,11 @@ class _ModerationScreenState extends State<ModerationScreen> {
                   onSelected: (_) { setState(() => _mediaStatus = s); _loadMedia(); })),
             ])),
             Expanded(child: _media.isEmpty ? Center(child: Text(_lbl('no_media'), style: const TextStyle(color: Colors.black45)))
-              : RefreshIndicator(onRefresh: _loadMedia, child: ListView(padding: const EdgeInsets.all(12), children: _media.map<Widget>((m) => _mediaCard(m as Map)).toList()))),
+              : RefreshIndicator(onRefresh: _loadMedia, child: ListView(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: _media.map<Widget>((m) => _mediaCard(m as Map)).toList()))),
           ]),
           // Intekenen-aanvragen
           _shapeReqs.isEmpty ? Center(child: Text(_lbl('no_shapes'), style: const TextStyle(color: Colors.black45)))
-            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: _shapeReqs.map<Widget>((r) {
+            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: _shapeReqs.map<Widget>((r) {
                 final m = r as Map;
                 return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
                   title: Text('${m['name'] ?? '—'}', style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -257,7 +259,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
           ]),
           // Logboek
           _log.isEmpty ? Center(child: Text(_lbl('no_log'), style: const TextStyle(color: Colors.black45)))
-            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12), children: _log.map<Widget>((a) => _logTile(a as Map)).toList())),
+            : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: _log.map<Widget>((a) => _logTile(a as Map)).toList())),
         ])),
       ]),
     ));

@@ -27,6 +27,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
     final city = TextEditingController();
     String country = 'NL';
     final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+      scrollable: true,
       title: Text(ctx.tr('clubs.create_title')),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: name, decoration: InputDecoration(labelText: ctx.tr('clubs.name_label'))),
@@ -54,7 +55,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
         child: _clubs.isEmpty
             ? ListView(children: [const SizedBox(height: 120), Center(child: Text(context.tr('clubs.empty'), style: const TextStyle(color: Colors.black45)))])
             : ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
                 itemCount: _clubs.length,
                 itemBuilder: (_, i) {
                   final c = _clubs[i] as Map;

@@ -45,6 +45,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   Future<void> _newCompetition() async {
     final name = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       title: Text(ctx.tr('clubdetail.comp_create_title')),
       content: TextField(controller: name, decoration: InputDecoration(labelText: ctx.tr('clubdetail.name_label'))),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('clubdetail.cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('clubdetail.create')))],
@@ -67,7 +68,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
       appBar: AppBar(title: Text(c['name'] ?? context.tr('clubdetail.title')), actions: [
         if (isMember && role != 'owner') IconButton(icon: const Icon(Icons.logout), tooltip: context.tr('clubdetail.leave'), onPressed: _leave),
       ]),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         if ((c['description'] ?? '').toString().isNotEmpty) Text(c['description'], style: const TextStyle(fontSize: 15)),
         const SizedBox(height: 12),
         Row(children: [

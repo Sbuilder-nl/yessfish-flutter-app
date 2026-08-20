@@ -76,6 +76,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
 
   Future<void> _delPhoto(int id) async {
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
       content: Text(_t(_cDel)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_t(_cancel))),
@@ -113,7 +114,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
         : _photos.isEmpty
           ? Center(child: Text(_t(_emptyL), style: const TextStyle(color: Colors.black45)))
           : RefreshIndicator(onRefresh: _load, child: GridView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 6, mainAxisSpacing: 6),
               itemCount: _photos.length,
               itemBuilder: (_, i) {

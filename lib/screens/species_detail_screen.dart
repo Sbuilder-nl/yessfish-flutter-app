@@ -27,7 +27,7 @@ class _SpeciesDetailScreenState extends State<SpeciesDetailScreen> {
   Widget build(BuildContext context) {
     final s = _s;
     return Scaffold(appBar: AppBar(title: Text(widget.name)),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16), children: [
+      body: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         if (s?['image_path'] != null) ClipRRect(borderRadius: BorderRadius.circular(14), child: CachedNetworkImage(imageUrl: s!['image_path'], width: double.infinity, fit: BoxFit.cover)),
         const SizedBox(height: 14),
         Text(s != null ? speciesName(context, s) : widget.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy)),

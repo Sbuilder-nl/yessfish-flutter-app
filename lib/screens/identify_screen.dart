@@ -43,7 +43,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> {
     final isFish = r?['is_fish'] == true;
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('identify.title'))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Text(context.tr('identify.intro'), style: const TextStyle(color: Colors.black54)),
         const SizedBox(height: 14),
         if (_photoUrl != null)
