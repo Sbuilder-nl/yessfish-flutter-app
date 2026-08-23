@@ -27,6 +27,7 @@ import '../core/app_config.dart';
 import 'moderation_screen.dart';
 import 'settings_screen.dart';
 import 'mijn_data_screen.dart';
+import 'sterren_screen.dart';
 import 'discipline_dashboards_screen.dart';
 import 'vistijl_tools_screen.dart';
 import '../core/vistijl_tools_i18n.dart';
@@ -131,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Center(child: Text(u?.firstName ?? u?.username ?? '', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.navy))),
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
       if (_stars != null) Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: InkWell(
-        onTap: () => _open(const MijnDataScreen()),
+        onTap: () => _open(const SterrenScreen()),
         borderRadius: BorderRadius.circular(20),
         child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFFFF7E0), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF0DFA8))),

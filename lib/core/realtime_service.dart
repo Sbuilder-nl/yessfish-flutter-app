@@ -10,7 +10,7 @@ class RealtimeService extends ChangeNotifier {
   int pendingFriends = 0;  // openstaande vriendverzoeken
   int messagesUnread = 0;  // ongelezen berichten
   final Map<int, Map> _online = {}; // wie is er online (presence-online)
-  List<Map> get online => _online.values.toList();
+  List<Map> get online => _online.entries.map((e) => {'id': e.key, ...e.value}).toList();
   int get onlineCount => _online.length;
   final _feed = StreamController<Map>.broadcast();
   Stream<Map> get feedPosts => _feed.stream;

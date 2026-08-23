@@ -40,6 +40,7 @@ class _FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     _load();
+    _composer.addListener(_composerChanged);
     _liveSub = context.read<RealtimeService>().feedPosts.listen((post) {
       if (mounted && !_posts.any((p) => p['id'] == post['id'])) setState(() => _posts.insert(0, post));
     });
@@ -47,6 +48,17 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   void dispose() { _liveSub?.cancel(); super.dispose(); }
+
+  // Korte plaatsingsdatum bij elk bericht: vandaag = tijd, dit jaar = dag-maand, ouder = met jaar.
+  static String _postDate(dynamic raw) {
+    final dt = DateTime.tryParse('$raw')?.toLocal();
+    if (dt == null) return '';
+    final nu = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    if (dt.year == nu.year && dt.month == nu.month && dt.day == nu.day) return '${two(dt.hour)}:${two(dt.minute)}';
+    if (dt.year == nu.year) return '${dt.day}-${dt.month} ${two(dt.hour)}:${two(dt.minute)}';
+    return '${dt.day}-${dt.month}-${dt.year}';
+  }
 
   int _page = 1;
   bool _hasMore = true;
@@ -150,6 +162,51 @@ class _FeedScreenState extends State<FeedScreen> {
     if (ok == true) setState(() { final v = c.text.trim(); _youtube = v.isEmpty ? null : v; if (v.isNotEmpty) { _photoPath = null; _photoUrl = null; _videoPath = null; } });
   }
 
+  // @-taggen: vriendenlijst (lui geladen) + suggesties zodra je @+letters typt.
+  List<Map> _vrienden = [];
+  bool _vriendenGeladen = false;
+  List<Map> _mentionSuggesties = [];
+
+  Future<void> _laadVrienden() async {
+    if (_vriendenGeladen) return;
+    _vriendenGeladen = true;
+    try {
+      final r = await Api.get('/friends');
+      final data = (r is Map ? r['data'] : r) as List? ?? [];
+      _vrienden = data.map((f) {
+        final u = (f is Map ? (f['user'] ?? f) : {}) as Map;
+        return {'id': u['id'], 'username': u['username'], 'avatar_path': u['avatar_path']};
+      }).where((u) => u['id'] != null && u['username'] != null).toList();
+    } catch (_) {}
+  }
+
+  void _composerChanged() {
+    final text = _composer.text;
+    final sel = _composer.selection.baseOffset;
+    final tot = sel >= 0 && sel <= text.length ? text.substring(0, sel) : text;
+    final m = RegExp(r'@([\w.]{1,20})\$').firstMatch(tot);
+    if (m == null) {
+      if (_mentionSuggesties.isNotEmpty) setState(() => _mentionSuggesties = []);
+      return;
+    }
+    _laadVrienden().then((_) {
+      final q = m.group(1)!.toLowerCase();
+      final sugg = _vrienden.where((f) => '${f['username']}'.toLowerCase().contains(q)).take(6).toList();
+      if (mounted) setState(() => _mentionSuggesties = sugg);
+    });
+  }
+
+  void _kiesMention(Map f) {
+    final text = _composer.text;
+    final sel = _composer.selection.baseOffset;
+    final tot = sel >= 0 && sel <= text.length ? text.substring(0, sel) : text;
+    final rest = sel >= 0 && sel <= text.length ? text.substring(sel) : '';
+    final nieuw = tot.replaceFirst(RegExp(r'@[\w.]{1,20}\$'), '@${f['username']} ');
+    _composer.text = nieuw + rest;
+    _composer.selection = TextSelection.collapsed(offset: nieuw.length);
+    setState(() => _mentionSuggesties = []);
+  }
+
   Future<void> _post() async {
     if (_composer.text.trim().isEmpty && _photoPath == null && _videoPath == null && (_youtube == null || _youtube!.isEmpty)) return;
     if (_videoUploading) return;
@@ -160,6 +217,8 @@ class _FeedScreenState extends State<FeedScreen> {
         if (_photoPath != null) 'image_path': _photoPath,
         if (_videoPath != null) 'video_path': _videoPath,
         if (_youtube != null && _youtube!.isNotEmpty) 'youtube_id': _youtube,
+        // vrienden wiens @naam in de tekst staat als tag meesturen (zoals de site)
+        'tagged_ids': _vrienden.where((f) => RegExp('@' + RegExp.escape('${f['username']}') + r'(?![\w.])').hasMatch(_composer.text)).map((f) => f['id']).toList(),
       });
       _composer.clear();
       setState(() { _photoPath = null; _photoUrl = null; _videoPath = null; _youtube = null; });
@@ -252,7 +311,9 @@ class _FeedScreenState extends State<FeedScreen> {
       Expanded(child: SizedBox(height: 34, child: ListView.separated(
         scrollDirection: Axis.horizontal, itemCount: list.length,
         separatorBuilder: (_, __) => const SizedBox(width: 6),
-        itemBuilder: (_, i) { final u = list[i]; return Avatar(name: u['username'], src: u['avatar_path'], size: 32); }))),
+        itemBuilder: (_, i) { final u = list[i]; return GestureDetector(
+          onTap: u['id'] != null ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u['id']))) : null,
+          child: Avatar(name: u['username'], src: u['avatar_path'], size: 32)); }))),
     ])));
   }
 
@@ -284,6 +345,13 @@ class _FeedScreenState extends State<FeedScreen> {
                 Avatar(name: me?.username, src: me?.avatarPath, size: 38), const SizedBox(width: 10),
                 Expanded(child: TextField(controller: _composer, maxLines: null, textCapitalization: TextCapitalization.sentences, decoration: InputDecoration(hintText: context.tr('feed.composerHint'), border: InputBorder.none, filled: false))),
               ]),
+              if (_mentionSuggesties.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: Wrap(spacing: 6, runSpacing: 6, children: [
+                for (final f in _mentionSuggesties) ActionChip(
+                  avatar: Avatar(name: f['username'], src: f['avatar_path'], size: 22),
+                  label: Text('@${f['username']}', style: const TextStyle(fontSize: 12)),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _kiesMention(f)),
+              ]))),
               if (_photoUrl != null) Padding(padding: const EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: CachedNetworkImage(imageUrl: _photoUrl!, height: 140, width: double.infinity, fit: BoxFit.cover))),
               if (_videoPath != null) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.videocam, context.tr('feed.videoSelected'), () => setState(() => _videoPath = null))),
               if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
@@ -306,7 +374,10 @@ class _FeedScreenState extends State<FeedScreen> {
               GestureDetector(onTap: (!mine && u?['id'] != null) ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,
                 child: Avatar(name: u?['username'], src: u?['avatar_path'], size: 38)), const SizedBox(width: 10),
               Expanded(child: GestureDetector(onTap: (!mine && u?['id'] != null) ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,
-                child: Text(u?['username'] ?? context.tr('feed.angler'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(u?['username'] ?? context.tr('feed.angler'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+                  Text(_postDate(p['created_at']), style: const TextStyle(fontSize: 11, color: Colors.black38)),
+                ]))),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, size: 20, color: Colors.black26),
                 onSelected: (v) {
