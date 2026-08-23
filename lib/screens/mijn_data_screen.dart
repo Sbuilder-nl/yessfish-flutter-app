@@ -7,7 +7,7 @@ import '../core/config.dart';
 /// batches bekijken, publiek/privé omzetten en verwijderen. Zelfde flow als de website.
 const Map<String, Map<String, String>> _L = {
   'title': {'nl': 'Mijn data', 'en': 'My data', 'de': 'Meine Daten', 'fr': 'Mes données', 'es': 'Mis datos', 'pl': 'Moje dane'},
-  'intro': {'nl': 'Importeer diepte- en stekdata van je fishfinder of voerboot (CSV of GPX). Publiek delen is gratis; privé houden kost 5 sterren.', 'en': 'Import depth and spot data from your fishfinder or bait boat (CSV or GPX). Sharing publicly is free; keeping it private costs 5 stars.', 'de': 'Importiere Tiefen- und Stellen-Daten von Echolot oder Futterboot (CSV oder GPX). Öffentlich teilen ist gratis; privat halten kostet 5 Sterne.', 'fr': 'Importe les données de profondeur et de spots de ton sondeur ou bateau amorceur (CSV ou GPX). Partager en public est gratuit ; garder privé coûte 5 étoiles.', 'es': 'Importa datos de profundidad y puntos de tu sonda o barco cebador (CSV o GPX). Compartir en público es gratis; mantenerlo privado cuesta 5 estrellas.', 'pl': 'Importuj dane głębokości i stanowisk z echosondy lub łodzi zanętowej (CSV lub GPX). Udostępnianie publiczne jest darmowe; prywatność kosztuje 5 gwiazdek.'},
+  'intro': {'nl': 'Importeer diepte- en stekdata van je fishfinder of voerboot (CSV of GPX). Publiek delen is gratis; privé houden kost 5 dobbers.', 'en': 'Import depth and spot data from your fishfinder or bait boat (CSV or GPX). Sharing publicly is free; keeping it private costs 5 bobbers.', 'de': 'Importiere Tiefen- und Stellen-Daten von Echolot oder Futterboot (CSV oder GPX). Öffentlich teilen ist gratis; privat halten kostet 5 Posen.', 'fr': 'Importe les données de profondeur et de spots de ton sondeur ou bateau amorceur (CSV ou GPX). Partager en public est gratuit ; garder privé coûte 5 flotteurs.', 'es': 'Importa datos de profundidad y puntos de tu sonda o barco cebador (CSV o GPX). Compartir en público es gratis; mantenerlo privado cuesta 5 boyas.', 'pl': 'Importuj dane głębokości i stanowisk z echosondy lub łodzi zanętowej (CSV lub GPX). Udostępnianie publiczne jest darmowe; prywatność kosztuje 5 spławików.'},
   'pick': {'nl': 'Bestand kiezen (CSV/GPX)', 'en': 'Choose file (CSV/GPX)', 'de': 'Datei wählen (CSV/GPX)', 'fr': 'Choisir un fichier (CSV/GPX)', 'es': 'Elegir archivo (CSV/GPX)', 'pl': 'Wybierz plik (CSV/GPX)'},
   'busy': {'nl': 'Bezig met verwerken…', 'en': 'Processing…', 'de': 'Wird verarbeitet…', 'fr': 'Traitement…', 'es': 'Procesando…', 'pl': 'Przetwarzanie…'},
   'preview': {'nl': 'Voorbeeld van de import', 'en': 'Import preview', 'de': 'Import-Vorschau', 'fr': 'Aperçu de l’import', 'es': 'Vista previa', 'pl': 'Podgląd importu'},
@@ -30,7 +30,7 @@ const Map<String, Map<String, String>> _L = {
   'delete': {'nl': 'Verwijderen', 'en': 'Delete', 'de': 'Löschen', 'fr': 'Supprimer', 'es': 'Eliminar', 'pl': 'Usuń'},
   'delete_q': {'nl': 'Hele upload verwijderen, inclusief alle metingen/stekken eruit?', 'en': 'Delete this whole upload, including all its soundings/spots?', 'de': 'Ganzen Upload löschen, inklusive aller Messungen/Stellen?', 'fr': 'Supprimer tout l’import, y compris toutes les données ?', 'es': '¿Eliminar toda la subida, con todos sus datos?', 'pl': 'Usunąć cały import wraz ze wszystkimi danymi?'},
   'stats': {'nl': 'Diepte: min %a m · gem %b m · max %c m', 'en': 'Depth: min %a m · avg %b m · max %c m', 'de': 'Tiefe: min %a m · Ø %b m · max %c m', 'fr': 'Profondeur : min %a m · moy %b m · max %c m', 'es': 'Profundidad: mín %a m · med %b m · máx %c m', 'pl': 'Głębokość: min %a m · śr. %b m · maks %c m'},
-  'stars': {'nl': 'Sterren', 'en': 'Stars', 'de': 'Sterne', 'fr': 'Étoiles', 'es': 'Estrellas', 'pl': 'Gwiazdki'},
+  'stars': {'nl': 'Dobbers', 'en': 'Bobbers', 'de': 'Posen', 'fr': 'Flotteurs', 'es': 'Boyas', 'pl': 'Spławiki'},
 };
 
 String mdt(BuildContext c, String k) {
@@ -46,7 +46,7 @@ class MijnDataScreen extends StatefulWidget {
 
 class _MijnDataScreenState extends State<MijnDataScreen> {
   List<dynamic> _batches = [];
-  int? _stars;
+  int? _bobbers;
   bool _loading = true;
   bool _busy = false;
 
@@ -60,7 +60,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
     } catch (_) {}
     try {
       final c = await Api.get('/coins');
-      if (c is Map) _stars = (c['ai_points'] as num?)?.toInt();
+      if (c is Map) _bobbers = (c['ai_points'] as num?)?.toInt();
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -174,10 +174,10 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(mdt(context, 'title')), actions: [
-        if (_stars != null) Padding(padding: const EdgeInsets.only(right: 14), child: Center(child: Container(
+        if (_bobbers != null) Padding(padding: const EdgeInsets.only(right: 14), child: Center(child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-          child: Text('⭐ $_stars', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
+          child: Text('⭐ $_bobbers', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
       ]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _busy ? null : _pickAndImport,

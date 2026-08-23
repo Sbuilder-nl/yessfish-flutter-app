@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 
-/// Dieptelaag + AI-wateranalyse in het waterpaneel (sterren-model, 1.0.30).
+/// Dieptelaag + AI-wateranalyse in het waterpaneel (dobbers-model, 1.0.30).
 /// Zelfstandige widget: haalt /waters/{id}/depth-info en /analysis op en toont
 /// de juiste knoppen (ontgrendelen 10⭐ / update 3⭐ / delers gratis / lege-water-prompt).
 class WaterDepthPanel extends StatefulWidget {

@@ -40,17 +40,17 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int? _stars; // AI-sterren-saldo (⭐) — zichtbaar in de kop, tik = Mijn data
+  int? _bobbers; // AI-dobbers-saldo (⭐) — zichtbaar in de kop, tik = Mijn data
 
-  Future<void> _loadStars() async {
-    try { final c = await Api.get('/coins'); if (c is Map && mounted) setState(() => _stars = (c['ai_points'] as num?)?.toInt()); } catch (_) {}
+  Future<void> _loadBobbers() async {
+    try { final c = await Api.get('/coins'); if (c is Map && mounted) setState(() => _bobbers = (c['ai_points'] as num?)?.toInt()); } catch (_) {}
   }
 
   Map? _stats;
   @override
   void initState() {
     super.initState();
-    _loadStars();
+    _loadBobbers();
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<RealtimeService>().refreshCounts());
     _loadStats();
   }
@@ -131,12 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       const SizedBox(height: 10),
       Center(child: Text(u?.firstName ?? u?.username ?? '', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.navy))),
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
-      if (_stars != null) Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: InkWell(
+      if (_bobbers != null) Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: InkWell(
         onTap: () => _open(const SterrenScreen()),
         borderRadius: BorderRadius.circular(20),
         child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFFFF7E0), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF0DFA8))),
-          child: Text('⭐ $_stars ${mdt(context, 'stars')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF8a6d1f))))))),
+          child: Text('⭐ $_bobbers ${mdt(context, 'stars')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF8a6d1f))))))),
       const SizedBox(height: 12),
       Center(child: OutlinedButton.icon(onPressed: () => _open(const EditProfileScreen()), icon: const Icon(Icons.edit, size: 16), label: Text(context.tr('p.edit')))),
       _statsCard(),
