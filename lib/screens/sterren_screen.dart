@@ -17,6 +17,10 @@ const Map<String, Map<String, String>> _stL = {
   'bought': {'nl': 'Gelukt — je sterren zijn bijgeschreven! ⭐', 'en': 'Done — your stars have been added! ⭐', 'de': 'Geschafft — deine Sterne sind gutgeschrieben! ⭐', 'fr': 'C’est fait — étoiles ajoutées ! ⭐', 'es': '¡Listo — estrellas añadidas! ⭐', 'pl': 'Gotowe — gwiazdki dodane! ⭐'},
   'store_na': {'nl': 'De app store is hier niet beschikbaar. Kopen kan ook op yessfish.com bij ⭐ Sterren.', 'en': 'The app store isn’t available here. You can also buy on yessfish.com under ⭐ Stars.', 'de': 'Der App-Store ist hier nicht verfügbar. Kaufen geht auch auf yessfish.com unter ⭐ Sterne.', 'fr': 'Le store n’est pas disponible ici. Tu peux aussi acheter sur yessfish.com (⭐).', 'es': 'La tienda no está disponible aquí. También puedes comprar en yessfish.com (⭐).', 'pl': 'Sklep jest tu niedostępny. Możesz też kupić na yessfish.com (⭐).'},
   'verify_fail': {'nl': 'De aankoop kon niet worden gecontroleerd. Neem contact op als je wel betaald hebt.', 'en': 'The purchase could not be verified. Contact us if you were charged.', 'de': 'Der Kauf konnte nicht geprüft werden. Melde dich, falls abgebucht wurde.', 'fr': 'Achat non vérifié. Contacte-nous si tu as été débité.', 'es': 'No se pudo verificar la compra. Contáctanos si se te cobró.', 'pl': 'Nie udało się zweryfikować zakupu. Skontaktuj się z nami.'},
+  'don_t': {'nl': 'Sterren doneren aan YessFish', 'en': 'Donate stars to YessFish', 'de': 'Sterne an YessFish spenden', 'fr': 'Donner des \u00e9toiles \u00e0 YessFish', 'es': 'Donar estrellas a YessFish', 'pl': 'Przeka\u017c gwiazdki YessFish'},
+  'don_hint': {'nl': 'YessFish wat gunnen? Doneer sterren uit je saldo!', 'en': 'Want to support YessFish? Donate stars from your balance!', 'de': 'YessFish unterst\u00fctzen? Spende Sterne aus deinem Guthaben!', 'fr': 'Envie de soutenir YessFish ? Donne des \u00e9toiles !', 'es': 'Apoya YessFish: dona estrellas de tu saldo.', 'pl': 'Wesprzyj YessFish \u2014 przeka\u017c gwiazdki!'},
+  'don_ok': {'nl': 'Bedankt voor je donatie! \ud83d\udc9a', 'en': 'Thanks for your donation! \ud83d\udc9a', 'de': 'Danke f\u00fcr deine Spende! \ud83d\udc9a', 'fr': 'Merci pour ton don ! \ud83d\udc9a', 'es': '\u00a1Gracias por tu donaci\u00f3n! \ud83d\udc9a', 'pl': 'Dzi\u0119kujemy za wsparcie! \ud83d\udc9a'},
+  'don_total': {'nl': 'door de community gedoneerd', 'en': 'donated by the community', 'de': 'von der Community gespendet', 'fr': 'donn\u00e9 par la communaut\u00e9', 'es': 'donado por la comunidad', 'pl': 'przekazane przez spo\u0142eczno\u015b\u0107'},
   'earn_t': {'nl': 'Gratis sterren verdienen', 'en': 'Earn stars for free', 'de': 'Gratis Sterne verdienen', 'fr': 'Gagner des étoiles gratuitement', 'es': 'Gana estrellas gratis', 'pl': 'Zdobywaj gwiazdki za darmo'},
   'earn_hint': {'nl': 'Vangsten openbaar delen, dieptedata doorgeven en compleet loggen levert elke dag sterren op.', 'en': 'Sharing catches publicly, reporting depth data and complete logs earn stars every day.', 'de': 'Öffentliche Fänge, Tiefendaten und vollständige Logs bringen täglich Sterne.', 'fr': 'Prises publiques, données de profondeur et logs complets rapportent chaque jour.', 'es': 'Capturas públicas, datos de profundidad y registros completos dan estrellas a diario.', 'pl': 'Publiczne połowy, dane głębokości i pełne wpisy dają gwiazdki codziennie.'},
   'spend_t': {'nl': 'Dit kun je ermee doen', 'en': 'What you can spend them on', 'de': 'Dafür kannst du sie ausgeben', 'fr': 'À quoi les dépenser', 'es': 'En qué gastarlas', 'pl': 'Na co je wydać'},
@@ -39,6 +43,7 @@ class SterrenScreen extends StatefulWidget {
 
 class _SterrenScreenState extends State<SterrenScreen> {
   int _saldo = 0;
+  int _donTotaal = 0;
   List<dynamic> _bundles = [];
   Map<String, ProductDetails> _producten = {};
   bool _storeOk = false;
@@ -60,7 +65,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
   Future<void> _load() async {
     try {
       final r = await Api.get('/store/bundles');
-      if (mounted && r is Map) setState(() { _bundles = r['bundles'] ?? []; _saldo = (r['ai_points'] as num?)?.toInt() ?? 0; });
+      if (mounted && r is Map) setState(() { _bundles = r['bundles'] ?? []; _saldo = (r['ai_points'] as num?)?.toInt() ?? 0; _donTotaal = (r['donated_total'] as num?)?.toInt() ?? 0; });
     } catch (_) {}
   }
 
@@ -75,6 +80,16 @@ class _SterrenScreenState extends State<SterrenScreen> {
         _storeOk = _producten.isNotEmpty;
       });
     } catch (_) { if (mounted) setState(() => _storeOk = false); }
+  }
+
+  Future<void> _doneer(int n) async {
+    try {
+      await Api.post('/store/donate', {'stars': n});
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(stt(context, 'don_ok'))));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '')));
+    }
   }
 
   Future<void> _koop(String productId) async {
@@ -145,6 +160,20 @@ class _SterrenScreenState extends State<SterrenScreen> {
             ],
           ]),
           if (_busy) const Padding(padding: EdgeInsets.only(top: 10), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))),
+          const SizedBox(height: 14),
+          // Doneren aan YessFish (Richards idee: het platform wat gunnen)
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('\ud83d\udc9a ${stt(context, 'don_t')}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(stt(context, 'don_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final n in const [1, 5, 10, 25])
+                ActionChip(label: Text('\u2b50 $n'), onPressed: () => _doneer(n)),
+            ]),
+            const SizedBox(height: 6),
+            Text('\u2b50 $_donTotaal ${stt(context, 'don_total')}', style: const TextStyle(fontSize: 11, color: Colors.black38)),
+          ]))),
           const SizedBox(height: 18),
           // Verdienen + uitgeven (kort)
           Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
