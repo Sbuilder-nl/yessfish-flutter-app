@@ -1,3 +1,4 @@
+import "package:yessfish/widgets/dobber_text.dart";
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/api.dart';
@@ -183,7 +184,7 @@ class _VisAiScreenState extends State<VisAiScreen> {
             width: double.infinity,
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: Text(
+            child: DobberText(
               [
                 if (_remaining != null) '$_remaining ${t['left']}',
                 if ((_points ?? 0) > 0) '⭐ $_points ${t['pts']}',

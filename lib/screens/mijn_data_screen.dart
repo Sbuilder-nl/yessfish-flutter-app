@@ -1,3 +1,4 @@
+import "package:yessfish/widgets/dobber_text.dart";
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
@@ -110,7 +111,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
             RadioListTile<String>(value: 'public', groupValue: vis, dense: true, contentPadding: EdgeInsets.zero,
               title: Text(mdt(ctx, 'vis_public')), onChanged: (v) => setSheet(() => vis = v!)),
             RadioListTile<String>(value: 'private', groupValue: vis, dense: true, contentPadding: EdgeInsets.zero,
-              title: Text(mdt(ctx, 'vis_private')), onChanged: (v) => setSheet(() => vis = v!)),
+              title: DobberText(mdt(ctx, 'vis_private')), onChanged: (v) => setSheet(() => vis = v!)),
           ],
           const SizedBox(height: 12),
           Row(children: [
@@ -177,7 +178,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
         if (_bobbers != null) Padding(padding: const EdgeInsets.only(right: 14), child: Center(child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-          child: Text('⭐ $_bobbers', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
+          child: DobberText('⭐ $_bobbers', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
       ]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _busy ? null : _pickAndImport,
@@ -206,7 +207,7 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
                 onSelected: (v) { if (v == 'vis') { _toggleVisibility(b as Map); } else { _delete(b as Map); } },
                 itemBuilder: (_) => [
                   if (b['kind'] != 'spots') PopupMenuItem(value: 'vis',
-                    child: Text(mdt(context, b['visibility'] == 'public' ? 'make_private' : 'make_public'))),
+                    child: DobberText(mdt(context, b['visibility'] == 'public' ? 'make_private' : 'make_public'))),
                   PopupMenuItem(value: 'del', child: Text(mdt(context, 'delete'))),
                 ]),
             )),

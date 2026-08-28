@@ -1,3 +1,4 @@
+import "package:yessfish/widgets/dobber_text.dart";
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/auth.dart';
@@ -136,7 +137,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(20),
         child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFFFF7E0), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF0DFA8))),
-          child: Text('⭐ $_bobbers ${mdt(context, 'stars')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF8a6d1f))))))),
+          child: DobberText('⭐ $_bobbers ${mdt(context, 'stars')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF8a6d1f))))))),
       const SizedBox(height: 12),
       Center(child: OutlinedButton.icon(onPressed: () => _open(const EditProfileScreen()), icon: const Icon(Icons.edit, size: 16), label: Text(context.tr('p.edit')))),
       _statsCard(),

@@ -1,3 +1,4 @@
+import "package:yessfish/widgets/dobber_text.dart";
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -120,7 +121,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
           }
           if (a.pendingCompletePurchase) await InAppPurchase.instance.completePurchase(a);
           await _load();
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(stt(context, 'bought'))));
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: DobberText(stt(context, 'bought'))));
         } catch (e) {
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : stt(context, 'verify_fail'))));
         }
@@ -134,7 +135,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('⭐ ${stt(context, 'title')}')),
+      appBar: AppBar(title: DobberText('⭐ ${stt(context, 'title')}')),
       body: RefreshIndicator(onRefresh: _load, child: ListView(
         padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom + 16),
         children: [
@@ -142,7 +143,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(children: [
             Text(stt(context, 'balance'), style: const TextStyle(fontSize: 12, color: Colors.black45, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text('⭐ $_saldo', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
+            DobberText('⭐ $_saldo', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
           ]))),
           const SizedBox(height: 14),
           // Kopen
@@ -152,7 +153,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
           const SizedBox(height: 10),
           if (!_storeOk)
             Card(color: const Color(0xFFFFF7E0), child: Padding(padding: const EdgeInsets.all(14),
-              child: Text(stt(context, 'store_na'), style: const TextStyle(fontSize: 13)))),
+              child: DobberText(stt(context, 'store_na'), style: const TextStyle(fontSize: 13)))),
           if (_storeOk) Row(children: [
             for (final b in _bundles) ...[
               Expanded(child: _bundelKaart(b as Map)),
@@ -169,10 +170,10 @@ class _SterrenScreenState extends State<SterrenScreen> {
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final n in const [1, 5, 10, 25])
-                ActionChip(label: Text('\u2b50 $n'), onPressed: () => _doneer(n)),
+                ActionChip(label: DobberText('\u2b50 $n'), onPressed: () => _doneer(n)),
             ]),
             const SizedBox(height: 6),
-            Text('\u2b50 $_donTotaal ${stt(context, 'don_total')}', style: const TextStyle(fontSize: 11, color: Colors.black38)),
+            DobberText('\u2b50 $_donTotaal ${stt(context, 'don_total')}', style: const TextStyle(fontSize: 11, color: Colors.black38)),
           ]))),
           const SizedBox(height: 18),
           // Verdienen + uitgeven (kort)
@@ -207,7 +208,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
       onTap: _busy ? null : () => _koop(pid),
       borderRadius: BorderRadius.circular(12),
       child: Padding(padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6), child: Column(children: [
-        Text('⭐ ${b['bobbers']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
+        DobberText('⭐ ${b['bobbers']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
         const SizedBox(height: 4),
         Text(prijs, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black54)),
       ])),
@@ -219,7 +220,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
     child: Row(children: [
       Text(icoon), const SizedBox(width: 8),
       Expanded(child: Text(tekst, style: const TextStyle(fontSize: 13))),
-      Text(prijs, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
+      DobberText(prijs, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
     ]),
   );
 }

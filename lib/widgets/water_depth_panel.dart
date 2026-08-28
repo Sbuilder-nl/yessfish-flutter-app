@@ -1,3 +1,4 @@
+import "package:yessfish/widgets/dobber_text.dart";
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
@@ -92,14 +93,14 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
               Expanded(child: Text('${i['community_cells']} ${_t(_cellsOf)} ${i['contributors']} ${_t(_fishers)}', style: const TextStyle(fontSize: 13, color: Colors.black54))),
               FilledButton(onPressed: _busy ? null : _unlock,
                 style: FilledButton.styleFrom(backgroundColor: AppColors.teal, visualDensity: VisualDensity.compact),
-                child: Text('${_t(_unlockBtn)} (${i['unlock_cost']} ⭐)', style: const TextStyle(fontSize: 13))),
+                child: DobberText('${_t(_unlockBtn)} (${i['unlock_cost']} ⭐)', style: const TextStyle(fontSize: 13))),
             ])
           else if (i['update_available'] == true)
             Row(children: [
               Expanded(child: Text(_t(_updateAvail), style: const TextStyle(fontSize: 13, color: Colors.black54))),
               FilledButton(onPressed: _busy ? null : _unlock,
                 style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD85C26), visualDensity: VisualDensity.compact),
-                child: Text('${_t(_updateBtn)} (${i['update_cost']} ⭐)', style: const TextStyle(fontSize: 13))),
+                child: DobberText('${_t(_updateBtn)} (${i['update_cost']} ⭐)', style: const TextStyle(fontSize: 13))),
             ])
           else
             Text(_t(_unlockedMsg), style: const TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w600)),
@@ -115,13 +116,13 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
             const Text('🤖 ', style: TextStyle(fontSize: 14)),
             Expanded(child: Text(_t(_aiTitle), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54))),
             TextButton(onPressed: _busy ? null : _runAnalysis,
-              child: Text(_busy ? '…' : (_analysis != null ? _t(_aiAgain) : '${_t(_aiRun)} (5 ⭐)'), style: const TextStyle(fontSize: 12.5))),
+              child: DobberText(_busy ? '…' : (_analysis != null ? _t(_aiAgain) : '${_t(_aiRun)} (5 ⭐)'), style: const TextStyle(fontSize: 12.5))),
           ]),
           if (_analysis != null) ...[
             const SizedBox(height: 4),
             ..._renderMarkdown('${_analysis!['content']}'),
           ] else if (!_busy)
-            Text(_t(_aiHint), style: const TextStyle(fontSize: 12.5, color: Colors.black45)),
+            DobberText(_t(_aiHint), style: const TextStyle(fontSize: 12.5, color: Colors.black45)),
         ]),
       ),
       if (_msg.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
