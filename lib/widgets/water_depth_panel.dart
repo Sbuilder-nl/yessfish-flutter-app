@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../screens/sterren_screen.dart';
+import '../screens/dieptekaart_screen.dart';
 
 /// Dieptelaag + AI-wateranalyse in het waterpaneel (dobbers-model, 1.0.30).
 /// Zelfstandige widget: haalt /waters/{id}/depth-info en /analysis op en toont
@@ -104,8 +105,15 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
                 style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD85C26), visualDensity: VisualDensity.compact),
                 child: DobberText('${_t(_updateBtn)} (${i['update_cost']} ⭐)', style: const TextStyle(fontSize: 13))),
             ])
-          else
+          else ...[
             Text(_t(_unlockedMsg), style: const TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.navy, visualDensity: VisualDensity.compact),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DieptekaartScreen(waterId: widget.waterId))),
+              icon: const Text('🌊', style: TextStyle(fontSize: 15)),
+              label: Text(_t(_viewMap), style: const TextStyle(fontSize: 13))),
+          ],
         ]),
       ),
       // ── AI-wateranalyse ─────────────────────────────────────────────
@@ -169,3 +177,4 @@ const _aiAgain = {'nl': 'Opnieuw (gratis bij zelfde data)', 'en': 'Again (free i
 const _aiHint = {'nl': 'Laat de AI dropoffs, kansrijke plekken en voeradvies uit de diepte-data halen (5 ⭐).', 'en': 'Let the AI find dropoffs, hotspots and bait advice from the depth data (5 ⭐).', 'de': 'Lass die KI Dropoffs, Hotspots und Fütterungstipps aus den Tiefendaten holen (5 ⭐).', 'fr': 'L’IA trouve dropoffs, spots et conseils d’amorçage dans les données (5 ⭐).', 'es': 'La IA encuentra desniveles, zonas y consejos de cebado (5 ⭐).', 'pl': 'AI znajdzie uskoki, miejscówki i porady nęcenia (5 ⭐).'};
 const _fail = {'nl': 'Even niet gelukt — probeer opnieuw.', 'en': 'That didn’t work — try again.', 'de': 'Hat nicht geklappt — versuch es erneut.', 'fr': 'Échec — réessaie.', 'es': 'No funcionó — inténtalo de nuevo.', 'pl': 'Nie udało się — spróbuj ponownie.'};
 const _buy = {'nl': 'Dobbers kopen', 'en': 'Buy bobbers', 'de': 'Posen kaufen', 'fr': 'Acheter des flotteurs', 'es': 'Comprar boyas', 'pl': 'Kup spławiki'};
+const _viewMap = {'nl': 'Dieptekaart bekijken', 'en': 'View depth map', 'de': 'Tiefenkarte ansehen', 'fr': 'Voir la carte', 'es': 'Ver mapa', 'pl': 'Zobacz mapę'};
