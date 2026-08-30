@@ -17,6 +17,8 @@ class DieptekaartScreen extends StatefulWidget {
 }
 
 class _DieptekaartScreenState extends State<DieptekaartScreen> {
+  // API levert coördinaten soms als tekst (Laravel-decimals) — beide aankunnen.
+  static double? _num(dynamic v) => v is num ? v.toDouble() : double.tryParse("$v");
   Uint8List? _png;
   LatLngBounds? _bounds;
   double _min = 0, _max = 0;
@@ -68,7 +70,7 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
       final list = s is List ? s : (s['data'] ?? []);
       if (mounted && _bounds != null) {
         setState(() => _stekken.addAll(List<Map>.from((list as List).whereType<Map>().where((sp) {
-          final la = (sp['latitude'] as num?)?.toDouble(), lo = (sp['longitude'] as num?)?.toDouble();
+          final la = _num(sp['latitude']), lo = _num(sp['longitude']);
           return la != null && lo != null && _bounds!.contains(LatLng(la, lo));
         }))));
       }
@@ -121,7 +123,7 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
                       OverlayImageLayer(overlayImages: [OverlayImage(bounds: _bounds!, imageProvider: MemoryImage(_png!))]),
                       MarkerLayer(markers: [
                         for (final sp in _stekken)
-                          Marker(point: LatLng((sp['latitude'] as num).toDouble(), (sp['longitude'] as num).toDouble()), width: 120, height: 58, alignment: Alignment.topCenter,
+                          Marker(point: LatLng(_num(sp['latitude'])!, _num(sp['longitude'])!), width: 120, height: 58, alignment: Alignment.topCenter,
                             child: Column(mainAxisSize: MainAxisSize.min, children: [
                               Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
                                 child: Text('${sp['name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.navy))),
