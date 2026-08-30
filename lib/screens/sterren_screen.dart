@@ -208,7 +208,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
       onTap: _busy ? null : () => _koop(pid),
       borderRadius: BorderRadius.circular(12),
       child: Padding(padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6), child: Column(children: [
-        DobberText('⭐ ${b['bobbers']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
+        DobberText('⭐ ${b['stars'] ?? b['bobbers']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
         const SizedBox(height: 4),
         Text(prijs, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black54)),
       ])),

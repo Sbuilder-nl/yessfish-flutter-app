@@ -1,8 +1,11 @@
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:async';
 import 'core/analytics.dart';
@@ -28,10 +31,18 @@ void main() {
       statusBarIconBrightness: Brightness.light,
       systemNavigationBarIconBrightness: Brightness.dark,
     ));
+    var crashlytics = false;
     try {
       await Firebase.initializeApp().timeout(const Duration(seconds: 10));
       FirebaseMessaging.onBackgroundMessage(firebaseBgHandler);
+      // Crashlytics: elke crash/onafgevangen fout met scherm + stacktrace zichtbaar in Firebase (iOS én Android).
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(kReleaseMode);
+      crashlytics = kReleaseMode;
     } catch (_) {/* push (of een trage init) mag het opstarten nooit blokkeren */}
+    if (crashlytics) {
+      FlutterError.onError = (d) { FlutterError.presentError(d); FirebaseCrashlytics.instance.recordFlutterFatalError(d); };
+      PlatformDispatcher.instance.onError = (e, st) { FirebaseCrashlytics.instance.recordError(e, st, fatal: true); return true; };
+    }
     runApp(const YessFishApp());
   }, (error, stack) {
     debugPrint('Onafgevangen fout (opgevangen, geen crash): \$error');

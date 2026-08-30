@@ -203,8 +203,24 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         body['latitude'] = loc.lat;
         body['longitude'] = loc.lng;
       }
-      await Api.post('/catches', body);
+      final r = await Api.post('/catches', body);
       Analytics.log('catch_created');
+      // Vriendelijke reminder: niet op de feed gedeeld → +1 dobber als je het alsnog doet.
+      final gedeeld = _privacy == 'public' && _showInFeed;
+      final catchId = (r is Map) ? ((r['data'] is Map ? r['data']['id'] : r['id'])) : null;
+      if (!gedeeld && catchId != null && mounted) {
+        final ja = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(scrollable: true,
+          title: Text(ctx.tr('newcatch.shareYes')),
+          content: SingleChildScrollView(child: Text(ctx.tr('newcatch.shareAsk'))),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('newcatch.shareNo'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('newcatch.shareYes'))),
+          ],
+        ));
+        if (ja == true) {
+          try { await Api.put('/catches/$catchId', {'privacy': 'public', 'show_in_feed': true}); } on ApiException catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message))); }
+        }
+      }
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -302,6 +318,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
             contentPadding: EdgeInsets.zero,
             dense: true,
             title: Text(context.tr('newcatch.showInFeed')),
+            subtitle: Text(context.tr('newcatch.feedBonus'), style: const TextStyle(fontSize: 12, color: Color(0xFF1f8a70), fontWeight: FontWeight.w600)),
           ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,

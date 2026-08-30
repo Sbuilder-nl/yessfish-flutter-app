@@ -133,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Center(child: Text(u?.firstName ?? u?.username ?? '', style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: AppColors.navy))),
       Center(child: Text('@${u?.username ?? ''}', style: const TextStyle(color: Colors.black54))),
       if (_bobbers != null) Padding(padding: const EdgeInsets.only(top: 8), child: Center(child: InkWell(
-        onTap: () => _open(const SterrenScreen()),
+        onTap: () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SterrenScreen())); if (mounted) _loadBobbers(); },
         borderRadius: BorderRadius.circular(20),
         child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(color: const Color(0xFFFFF7E0), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF0DFA8))),
