@@ -2,6 +2,7 @@ import "package:yessfish/widgets/dobber_text.dart";
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/config.dart';
+import '../screens/sterren_screen.dart';
 
 /// Dieptelaag + AI-wateranalyse in het waterpaneel (dobbers-model, 1.0.30).
 /// Zelfstandige widget: haalt /waters/{id}/depth-info en /analysis op en toont
@@ -19,6 +20,7 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
   Map? _analysis;
   bool _busy = false;
   String _msg = '';
+  bool _needBuy = false; // te weinig dobbers → "Dobbers kopen"-knop
 
   String get _lang => Localizations.localeOf(context).languageCode;
   String _t(Map<String, String> m) => m[_lang] ?? m['en'] ?? m['nl'] ?? '';
@@ -48,7 +50,7 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
       widget.onUnlocked?.call();
       await _load();
     } on ApiException catch (e) {
-      setState(() => _msg = e.message);
+      setState(() { _msg = e.message; _needBuy = e.data is Map && e.data['code'] == 'insufficient_bobbers'; });
     } catch (_) {
       setState(() => _msg = _t(_fail));
     } finally {
@@ -62,7 +64,7 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
       final r = await Api.post('/waters/${widget.waterId}/analysis', {});
       if (r is Map && r['analysis'] != null && mounted) setState(() => _analysis = r['analysis']);
     } on ApiException catch (e) {
-      setState(() => _msg = e.message);
+      setState(() { _msg = e.message; _needBuy = e.data is Map && e.data['code'] == 'insufficient_bobbers'; });
     } catch (_) {
       setState(() => _msg = _t(_fail));
     } finally {
@@ -127,6 +129,10 @@ class _WaterDepthPanelState extends State<WaterDepthPanel> {
       ),
       if (_msg.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
         child: Text(_msg, style: const TextStyle(fontSize: 12.5, color: AppColors.teal))),
+      if (_needBuy) Padding(padding: const EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: FilledButton.icon(
+        style: FilledButton.styleFrom(backgroundColor: const Color(0xFFd85c26), visualDensity: VisualDensity.compact),
+        onPressed: () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SterrenScreen())); if (mounted) setState(() { _needBuy = false; _msg = ''; }); },
+        icon: const Icon(Icons.shopping_bag_outlined, size: 18), label: Text(_t(_buy))))),
     ]);
   }
 
@@ -162,3 +168,4 @@ const _aiRun = {'nl': 'Analyseer', 'en': 'Analyse', 'de': 'Analysieren', 'fr': '
 const _aiAgain = {'nl': 'Opnieuw (gratis bij zelfde data)', 'en': 'Again (free if data unchanged)', 'de': 'Erneut (gratis bei gleichen Daten)', 'fr': 'Encore (gratuit si inchangé)', 'es': 'De nuevo (gratis sin datos nuevos)', 'pl': 'Ponownie (gratis bez zmian)'};
 const _aiHint = {'nl': 'Laat de AI dropoffs, kansrijke plekken en voeradvies uit de diepte-data halen (5 ⭐).', 'en': 'Let the AI find dropoffs, hotspots and bait advice from the depth data (5 ⭐).', 'de': 'Lass die KI Dropoffs, Hotspots und Fütterungstipps aus den Tiefendaten holen (5 ⭐).', 'fr': 'L’IA trouve dropoffs, spots et conseils d’amorçage dans les données (5 ⭐).', 'es': 'La IA encuentra desniveles, zonas y consejos de cebado (5 ⭐).', 'pl': 'AI znajdzie uskoki, miejscówki i porady nęcenia (5 ⭐).'};
 const _fail = {'nl': 'Even niet gelukt — probeer opnieuw.', 'en': 'That didn’t work — try again.', 'de': 'Hat nicht geklappt — versuch es erneut.', 'fr': 'Échec — réessaie.', 'es': 'No funcionó — inténtalo de nuevo.', 'pl': 'Nie udało się — spróbuj ponownie.'};
+const _buy = {'nl': 'Dobbers kopen', 'en': 'Buy bobbers', 'de': 'Posen kaufen', 'fr': 'Acheter des flotteurs', 'es': 'Comprar boyas', 'pl': 'Kup spławiki'};
