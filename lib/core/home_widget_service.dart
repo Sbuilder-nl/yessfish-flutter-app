@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:home_widget/home_widget.dart';
@@ -7,12 +8,20 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'api.dart';
 import 'location.dart';
 
-/// Schrijft de laatste openbare vangst (met foto) + het weer naar de Android home-screen widget.
+/// Schrijft de laatste openbare vangst (met foto) + het weer naar de
+/// home-screenwidget: Android (YfWidgetProvider) én iOS (WidgetKit-extensie
+/// YfWidget, data via de App Group).
 class YfHomeWidget {
   static const _name = 'YfWidgetProvider';
   static const _qualified = 'nl.sbuilder.yessfish.YfWidgetProvider';
+  static const _iosNaam = 'YfWidget';
+  static const _appGroup = 'group.nl.sbuilder.yessfish';
 
   static Future<void> refresh(String lang) async {
+    // iOS deelt widget-data via de App Group; op Android is dit niet nodig.
+    if (Platform.isIOS) {
+      try { await HomeWidget.setAppGroupId(_appGroup); } catch (_) {}
+    }
     String? photoUrl;
     // Laatste openbare vangst — met fallback (/catches/map) zodat het ook werkt vóór de nieuwe backend live is.
     try {
@@ -46,14 +55,20 @@ class YfHomeWidget {
           final thumb = await FlutterImageCompress.compressAndGetFile(raw.path, out, minWidth: 240, minHeight: 240, quality: 80);
           final rounded = thumb != null ? await _roundThumb(thumb.path, 26) : null;
           await HomeWidget.saveWidgetData<String>('latest_photo', rounded ?? thumb?.path ?? '');
+          // iOS: de extensie kan niet in de app-map kijken → foto als base64
+          // in de App Group (klein jpegje; SwiftUI rondt zelf de hoeken af).
+          if (Platform.isIOS && thumb != null) {
+            await HomeWidget.saveWidgetData<String>('latest_photo_b64',
+                base64Encode(await File(thumb.path).readAsBytes()));
+          }
         } else {
-          await HomeWidget.saveWidgetData<String>('latest_photo', '');
+          await _wisFoto();
         }
       } else {
-        await HomeWidget.saveWidgetData<String>('latest_photo', '');
+        await _wisFoto();
       }
     } catch (_) {
-      await HomeWidget.saveWidgetData<String>('latest_photo', '');
+      await _wisFoto();
     }
 
     // Weer op je locatie (kort: temp · omschrijving · wind).
@@ -73,8 +88,15 @@ class YfHomeWidget {
 
 
     try {
-      await HomeWidget.updateWidget(name: _name, androidName: _name, qualifiedAndroidName: _qualified);
+      await HomeWidget.updateWidget(name: _name, androidName: _name, qualifiedAndroidName: _qualified, iOSName: _iosNaam);
     } catch (_) {}
+  }
+
+  static Future<void> _wisFoto() async {
+    await HomeWidget.saveWidgetData<String>('latest_photo', '');
+    if (Platform.isIOS) {
+      await HomeWidget.saveWidgetData<String>('latest_photo_b64', '');
+    }
   }
 
   // Rondt de foto af (transparante hoeken) zodat de widget-foto nette ronde hoeken heeft.

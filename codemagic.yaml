@@ -22,7 +22,9 @@ workflows:
       - name: Keychain initialiseren
         script: keychain initialize
       - name: Signing-bestanden ophalen of aanmaken
-        script: app-store-connect fetch-signing-files "nl.sbuilder.yessfish" --type IOS_APP_STORE --create
+        script: |
+          app-store-connect fetch-signing-files "nl.sbuilder.yessfish" --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "nl.sbuilder.yessfish.YfWidget" --type IOS_APP_STORE --create
       - name: Certificaten in keychain laden
         script: keychain add-certificates
       - name: Signing toepassen op Xcode-project
