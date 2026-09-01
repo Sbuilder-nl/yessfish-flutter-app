@@ -198,6 +198,20 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  // Hoofd-icoon met een wit "+"-badge rechtsonder — leest als één geheel
+  // (het oude add_location_alt leek twee losse icoontjes door elkaar).
+  Widget _plusBadgeIcoon(IconData icoon, double maat, Color kleur, {required double badge}) => SizedBox(
+    width: maat + 8, height: maat + 6,
+    child: Stack(clipBehavior: Clip.none, children: [
+      Positioned(left: 0, top: 0, child: Icon(icoon, color: Colors.white, size: maat)),
+      Positioned(right: 0, bottom: 0, child: Container(
+        width: badge, height: badge,
+        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        child: Icon(Icons.add, color: kleur, size: badge - 4),
+      )),
+    ]),
+  );
+
   // "Terug naar mijn locatie" — verse GPS-fix, kaart erheen + waters herladen.
   Future<void> _centerOnUser() async {
     final p = await loc.currentLocation();
@@ -989,7 +1003,7 @@ class _MapScreenState extends State<MapScreen> {
         const Divider(height: 18),
         row(const Icon(Icons.my_location, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_locate')),
         row(const Icon(Icons.water_drop, color: AppColors.shared, size: 20), mui(ctx, 'legend_btn_water')),
-        row(const Icon(Icons.add_location_alt, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_spot')),
+        row(const Icon(Icons.location_on, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_spot')),
         row(Container(width: 22, height: 22, alignment: Alignment.center,
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black12)),
           child: const Text('m', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)))), mui(ctx, 'legend_btn_depth')),
@@ -1660,17 +1674,14 @@ class _MapScreenState extends State<MapScreen> {
           heroTag: 'addwater', backgroundColor: AppColors.shared,
           onPressed: () => setState(() => _placing = 'water'),
           tooltip: mui(context, 'add_water'),
-          child: const Stack(alignment: Alignment.center, children: [
-            Icon(Icons.water_drop, color: Colors.white, size: 20),
-            Positioned(right: 0, top: 0, child: Icon(Icons.add_circle, color: Colors.white, size: 11)),
-          ]),
+          child: _plusBadgeIcoon(Icons.water_drop, 20, AppColors.shared, badge: 13),
         ),
         const SizedBox(height: 10),
         FloatingActionButton(
           heroTag: 'addspot', backgroundColor: AppColors.teal,
           onPressed: () => setState(() => _placing = 'spot'),
           tooltip: context.tr('map.spot_here'),
-          child: const Icon(Icons.add_location_alt, color: Colors.white),
+          child: _plusBadgeIcoon(Icons.location_on, 26, AppColors.teal, badge: 15),
         ),
       ]),
       body: Column(children: [
