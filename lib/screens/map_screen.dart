@@ -107,7 +107,8 @@ class _MapScreenState extends State<MapScreen> {
     _timer = Timer.periodic(const Duration(seconds: 150), (_) async { await _load(); _maybeAskCheckin(); });
   }
 
-  // Plaats zoeken (heel Europa) — autocomplete via /geocode, met voorkeur voor de huidige kaartlocatie.
+  // Zoeken op de kaart: waternamen (eigen database, begin-letters eerst) én
+  // plaatsen (heel Europa via /geocode) — allebei live tijdens het typen.
   Future<void> _openPlaceSearch() async {
     final loc8 = Provider.of<I18n>(context, listen: false).locale;
     await showModalBottomSheet(
@@ -117,22 +118,35 @@ class _MapScreenState extends State<MapScreen> {
       builder: (ctx) {
         final ctrl = TextEditingController();
         List results = [];
+        List waters = [];
         bool loading = false;
         Timer? deb;
         return StatefulBuilder(builder: (ctx, setS) {
           void run(String q) {
             deb?.cancel();
-            if (q.trim().length < 2) { setS(() { results = []; loading = false; }); return; }
+            if (q.trim().length < 2) { setS(() { results = []; waters = []; loading = false; }); return; }
             setS(() => loading = true);
             deb = Timer(const Duration(milliseconds: 350), () async {
               try {
                 final c = _map.camera.center;
-                final r = await Api.get('/geocode?q=${Uri.encodeQueryComponent(q.trim())}&lang=$loc8&lat=${c.latitude}&lon=${c.longitude}');
+                final qq = Uri.encodeQueryComponent(q.trim());
+                final beide = await Future.wait([
+                  Api.get('/waters/search?q=$qq').catchError((_) => []),
+                  Api.get('/geocode?q=$qq&lang=$loc8&lat=${c.latitude}&lon=${c.longitude}').catchError((_) => []),
+                ]);
                 if (!ctx.mounted) return;
-                setS(() { results = r is List ? r : []; loading = false; });
+                setS(() {
+                  waters = beide[0] is List ? beide[0] as List : [];
+                  results = beide[1] is List ? beide[1] as List : [];
+                  loading = false;
+                });
               } catch (_) { if (ctx.mounted) setS(() => loading = false); }
             });
           }
+          Widget kop(String key) => Padding(
+            padding: const EdgeInsets.only(left: 16, top: 6, bottom: 2),
+            child: Align(alignment: Alignment.centerLeft, child: Text(mui(ctx, key),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black45))));
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom + 12, left: 12, right: 12, top: 12),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -140,7 +154,7 @@ class _MapScreenState extends State<MapScreen> {
                 autofocus: true, controller: ctrl, textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
-                  hintText: mui(ctx, 'search_place'),
+                  hintText: mui(ctx, 'search_map'),
                   border: const OutlineInputBorder(),
                   suffixIcon: loading
                     ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
@@ -150,8 +164,23 @@ class _MapScreenState extends State<MapScreen> {
               ),
               const SizedBox(height: 8),
               Flexible(child: ListView(shrinkWrap: true, children: [
+                if (waters.isNotEmpty) kop('sec_waters'),
+                for (final w in waters)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.phishing, color: AppColors.teal),
+                    title: Text('${w['name']}'),
+                    subtitle: w['type'] != null ? Text('${w['type']}', maxLines: 1, overflow: TextOverflow.ellipsis) : null,
+                    onTap: () {
+                      final id = int.tryParse('${w['id']}');
+                      Navigator.pop(ctx);
+                      if (id != null) _openWaterById(id);
+                    },
+                  ),
+                if (results.isNotEmpty) kop('sec_places'),
                 for (final p in results)
                   ListTile(
+                    dense: true,
                     leading: const Icon(Icons.place_outlined, color: AppColors.teal),
                     title: Text('${p['name']}'),
                     subtitle: p['label'] != null ? Text('${p['label']}', maxLines: 1, overflow: TextOverflow.ellipsis) : null,
@@ -1570,10 +1599,17 @@ class _MapScreenState extends State<MapScreen> {
       // (alle water-dobbers staan in de CLUSTER-laag, zie hieronder)
       // Drukte-badges (aantal) weggehaald — drukte staat in de dobber-kleur.
       // Stekken verschijnen pas als pins zodra je een dobber tikt (= het aangetikte water).
+      // Stek = echte kaartpin (punt op de plek) met vishaakje erin — groen = van
+      // jou, blauw = gedeeld. Matcht nu het pin-icoon uit de legenda.
       ..._activeSpots.where((s) => s['latitude'] != null).map((s) => Marker(
         point: LatLng(double.parse('${s['latitude']}'), double.parse('${s['longitude']}')),
-        width: 40, height: 40,
-        child: GestureDetector(onTap: () => _showSpot(s as Map), child: Container(width: 20, height: 20, decoration: BoxDecoration(color: s['is_mine'] == true ? AppColors.teal : AppColors.shared, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1))]))))),
+        width: 44, height: 44, alignment: Alignment.topCenter,
+        child: GestureDetector(onTap: () => _showSpot(s as Map), child: Stack(alignment: Alignment.center, children: [
+          const Icon(Icons.location_on, size: 44, color: Colors.white,
+            shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1))]),
+          Icon(Icons.location_on, size: 36, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared),
+          const Positioned(top: 11, child: Icon(Icons.phishing, size: 14, color: Colors.white)),
+        ])))),
       // Vangsten (alleen bij inzoomen).
       if (detail) ..._catches.where((c) => c['latitude'] != null).map((c) => Marker(
         point: LatLng(double.parse('${c['latitude']}'), double.parse('${c['longitude']}')),
@@ -1583,7 +1619,7 @@ class _MapScreenState extends State<MapScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('map.title')), actions: [
-        IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_place'), onPressed: _openPlaceSearch),
+        IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'), onPressed: _openPlaceSearch),
         IconButton(icon: const Icon(Icons.info_outline), tooltip: mui(context, 'legend_title'), onPressed: _showLegend),
         PopupMenuButton<String>(
           icon: const Icon(Icons.public),
