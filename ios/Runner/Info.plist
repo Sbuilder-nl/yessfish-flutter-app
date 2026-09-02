@@ -59,5 +59,20 @@
 	<string>YessFish gebruikt je locatie om wateren en stekken bij jou in de buurt te tonen en je vangstlocatie vast te leggen.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>GIDClientID</key>
+	<string>722347151371-qjgu0qga50srsrjkv6982pjfr2bmedi8.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>722347151371-ht0f8ekdrb3e5p2k61ugb6jck8d42upm.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.722347151371-qjgu0qga50srsrjkv6982pjfr2bmedi8</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
