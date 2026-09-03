@@ -8,6 +8,7 @@ import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/feed_video.dart';
+import '../widgets/media_carousel.dart';
 import 'feed_screen.dart';
 import 'user_profile_screen.dart';
 
@@ -77,14 +78,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ]),
       if ((p['content'] ?? '').toString().trim().isNotEmpty)
         Padding(padding: const EdgeInsets.only(top: 10), child: Text(p['content'], style: const TextStyle(fontSize: 15))),
-      if (p['image_path'] != null)
-        Padding(padding: const EdgeInsets.only(top: 10), child: GestureDetector(
-          onTap: () => PhotoViewer.open(context, [p['image_path'].toString()]),
-          child: ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: p['image_path'], width: double.infinity, fit: BoxFit.cover)))),
-      if (p['video_path'] != null || p['youtube_id'] != null)
-        Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(
-          videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(),
-          youtubeId: p['youtube_id']?.toString(), ready: p['video_ready'] != false)),
+      // Nieuw formaat: media-carrousel (meerdere foto's/video's); anders de oude enkele velden.
+      if (p['media'] is List && (p['media'] as List).isNotEmpty)
+        Padding(padding: const EdgeInsets.only(top: 10), child: MediaCarousel(media: p['media'] as List))
+      else ...[
+        if (p['image_path'] != null)
+          Padding(padding: const EdgeInsets.only(top: 10), child: GestureDetector(
+            onTap: () => PhotoViewer.open(context, [p['image_path'].toString()]),
+            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: p['image_path'], width: double.infinity, fit: BoxFit.cover)))),
+        if (p['video_path'] != null)
+          Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(
+            videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(),
+            ready: p['video_ready'] != false)),
+      ],
+      if (p['youtube_id'] != null)
+        Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(youtubeId: p['youtube_id']?.toString())),
       const Divider(height: 24),
       Row(children: [
         InkWell(onTap: _toggleLike, child: Row(children: [

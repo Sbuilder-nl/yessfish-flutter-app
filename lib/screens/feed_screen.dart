@@ -15,6 +15,7 @@ import '../widgets/avatar.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/report.dart';
 import '../widgets/feed_video.dart';
+import '../widgets/media_carousel.dart';
 import '../widgets/sponsored_feed_card.dart';
 import 'user_profile_screen.dart';
 
@@ -28,9 +29,10 @@ class _FeedScreenState extends State<FeedScreen> {
   List _posts = [];
   bool _loading = true;
   final _composer = TextEditingController();
-  String? _photoPath, _photoUrl;
-  String? _videoPath;          // geüploade MP4 (transcodeert async)
-  String? _youtube;            // YouTube-link/ID
+  // Gekozen media voor het nieuwe bericht: foto's en video's gemengd, max 10.
+  // Elk item: {type: image|video, path: server-pad, url: preview-URL (foto's)}.
+  final List<Map> _media = [];
+  String? _youtube;            // YouTube-link/ID (sluit media uit)
   bool _videoUploading = false;
   bool _posting = false;
   final Map<int, Map> _trans = {}; // post-id → {content, shown, busy}
@@ -98,12 +100,22 @@ class _FeedScreenState extends State<FeedScreen> {
     if (mounted) setState(() {});
   }
 
+  // Voegt een gekozen foto/video toe aan het bericht (max 10, YouTube vervalt dan).
+  bool _voegMediaToe(Map m) {
+    if (_media.length >= 10) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('feed.media_max'))));
+      return false;
+    }
+    setState(() { _media.add(m); _youtube = null; });
+    return true;
+  }
+
   Future<void> _pickPhoto(ImageSource src) async {
     XFile? x;
     try { x = await ImagePicker().pickImage(source: src, maxWidth: 1600, imageQuality: 85); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${src == ImageSource.camera ? context.tr('feed.openCameraFail') : context.tr('feed.openGalleryFail')}: $e'))); return; }
     if (x == null) return;
-    try { final r = await Api.uploadImage(x.path); setState(() { _photoPath = r['path']; _photoUrl = r['url']; _videoPath = null; _youtube = null; }); }
+    try { final r = await Api.uploadImage(x.path); _voegMediaToe({'type': 'image', 'path': r['path'], 'url': r['url']}); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
   }
 
@@ -115,17 +127,22 @@ class _FeedScreenState extends State<FeedScreen> {
     if (x != null) await _uploadPickedVideo(x);
   }
 
-  // Galerij: kies een foto ÓF video uit de telefoon (pickMedia toont beide).
+  // Galerij: kies meerdere foto's en/of video's tegelijk (gemengd mag).
   Future<void> _pickMedia() async {
-    XFile? x;
-    try { x = await ImagePicker().pickMedia(imageQuality: 85, maxWidth: 1600); }
+    List<XFile> xs = [];
+    try { xs = await ImagePicker().pickMultipleMedia(imageQuality: 85, maxWidth: 1600); }
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${context.tr('feed.openGalleryFail')}: $e'))); return; }
-    if (x == null) return;
-    final p = x.path.toLowerCase();
-    final isVideo = ['.mp4', '.mov', '.m4v', '.avi', '.webm', '.mkv', '.3gp'].any(p.endsWith);
-    if (isVideo) { await _uploadPickedVideo(x); return; }
-    try { final r = await Api.uploadImage(x.path); setState(() { _photoPath = r['path']; _photoUrl = r['url']; _videoPath = null; _youtube = null; }); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
+    for (final x in xs) {
+      if (_media.length >= 10) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('feed.media_max'))));
+        break;
+      }
+      final p = x.path.toLowerCase();
+      final isVideo = ['.mp4', '.mov', '.m4v', '.avi', '.webm', '.mkv', '.3gp'].any(p.endsWith);
+      if (isVideo) { await _uploadPickedVideo(x); continue; }
+      try { final r = await Api.uploadImage(x.path); _voegMediaToe({'type': 'image', 'path': r['path'], 'url': r['url']}); }
+      catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? '${context.tr('feed.uploadFail')}: ${e.message}' : '${context.tr('feed.uploadFail')}: $e'))); }
+    }
   }
 
   Future<void> _uploadPickedVideo(XFile x) async {
@@ -138,7 +155,7 @@ class _FeedScreenState extends State<FeedScreen> {
       final path = mi?.path ?? x.path;
       info.value = const UploadState('upload', 0);
       final r = await Api.uploadVideo(path);
-      setState(() { _videoPath = r['path']; _photoPath = null; _photoUrl = null; _youtube = null; });
+      _voegMediaToe({'type': 'video', 'path': r['path']});
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '${context.tr('feed.uploadFail')}: $e')));
     } finally {
@@ -159,7 +176,7 @@ class _FeedScreenState extends State<FeedScreen> {
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('feed.save'))),
       ],
     ));
-    if (ok == true) setState(() { final v = c.text.trim(); _youtube = v.isEmpty ? null : v; if (v.isNotEmpty) { _photoPath = null; _photoUrl = null; _videoPath = null; } });
+    if (ok == true) setState(() { final v = c.text.trim(); _youtube = v.isEmpty ? null : v; if (v.isNotEmpty) _media.clear(); });
   }
 
   // @-taggen: vriendenlijst (lui geladen) + suggesties zodra je @+letters typt.
@@ -208,20 +225,19 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _post() async {
-    if (_composer.text.trim().isEmpty && _photoPath == null && _videoPath == null && (_youtube == null || _youtube!.isEmpty)) return;
+    if (_composer.text.trim().isEmpty && _media.isEmpty && (_youtube == null || _youtube!.isEmpty)) return;
     if (_videoUploading) return;
     setState(() => _posting = true);
     try {
       await Api.post('/posts', {
         'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': 'public',
-        if (_photoPath != null) 'image_path': _photoPath,
-        if (_videoPath != null) 'video_path': _videoPath,
+        if (_media.isNotEmpty) 'media': [for (final m in _media) {'type': m['type'], 'path': m['path']}],
         if (_youtube != null && _youtube!.isNotEmpty) 'youtube_id': _youtube,
         // vrienden wiens @naam in de tekst staat als tag meesturen (zoals de site)
         'tagged_ids': _vrienden.where((f) => RegExp('@' + RegExp.escape('${f['username']}') + r'(?![\w.])').hasMatch(_composer.text)).map((f) => f['id']).toList(),
       });
       _composer.clear();
-      setState(() { _photoPath = null; _photoUrl = null; _videoPath = null; _youtube = null; });
+      setState(() { _media.clear(); _youtube = null; });
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
@@ -260,23 +276,90 @@ class _FeedScreenState extends State<FeedScreen> {
     } catch (_) { setState(() => _trans.remove(id)); }
   }
 
-  // Bewerken van een eigen bericht (tekst); zichtbaarheid en foto blijven staan.
+  /// Serverpad terugwinnen uit een volledige uploads-URL (voor oude posts zonder media-rijen).
+  static String? _uploadsPad(dynamic url) {
+    final s = '$url';
+    final i = s.indexOf('/uploads/');
+    return i < 0 ? null : s.substring(i + 9);
+  }
+
+  // Bewerken van een eigen bericht: tekst én de foto's/video's (verwijderen + foto's toevoegen).
   Future<void> _editPost(Map p) async {
     final c = TextEditingController(text: (p['content'] ?? '').toString());
-    final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+    // Huidige media; oude posts zonder media-rijen → afleiden uit de losse velden.
+    final List<Map> media = [];
+    if (p['media'] is List && (p['media'] as List).isNotEmpty) {
+      media.addAll((p['media'] as List).map((m) => {'type': m['type'], 'path': m['path'], 'url': m['url']}));
+    } else {
+      final ip = _uploadsPad(p['image_path']);
+      if (ip != null) media.add({'type': 'image', 'path': ip, 'url': '${p['image_path']}'});
+      final vp = _uploadsPad(p['video_path']);
+      if (vp != null) media.add({'type': 'video', 'path': vp});
+    }
+    bool mediaGewijzigd = false;
+    bool uploadBezig = false;
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
       scrollable: true,
       title: Text(context.tr('feed.edit_title')),
-      content: TextField(controller: c, maxLines: 5, autofocus: true, textCapitalization: TextCapitalization.sentences),
+      content: SizedBox(width: double.maxFinite, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextField(controller: c, maxLines: 5, autofocus: true, textCapitalization: TextCapitalization.sentences),
+        if (media.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: SizedBox(height: 64, child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: media.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (_, i) {
+            final m = media[i];
+            return Stack(children: [
+              ClipRRect(borderRadius: BorderRadius.circular(8), child: m['type'] == 'video'
+                ? Container(width: 64, height: 64, color: AppColors.navy, child: const Icon(Icons.videocam, color: Colors.white, size: 24))
+                : CachedNetworkImage(imageUrl: '${m['url']}', width: 64, height: 64, fit: BoxFit.cover)),
+              Positioned(right: 2, top: 2, child: InkWell(
+                onTap: () => setD(() { media.removeAt(i); mediaGewijzigd = true; }),
+                child: Container(decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), padding: const EdgeInsets.all(3), child: const Icon(Icons.close, size: 13, color: Colors.white)))),
+            ]);
+          }))),
+        Row(children: [
+          IconButton(tooltip: context.tr('feed.camera'), onPressed: uploadBezig ? null : () async {
+            XFile? x;
+            try { x = await ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 1600, imageQuality: 85); } catch (_) { return; }
+            if (x == null) return;
+            setD(() => uploadBezig = true);
+            try { final r = await Api.uploadImage(x.path); setD(() { media.add({'type': 'image', 'path': r['path'], 'url': r['url']}); mediaGewijzigd = true; }); }
+            catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
+            finally { setD(() => uploadBezig = false); }
+          }, icon: const Icon(Icons.camera_alt, color: AppColors.teal)),
+          IconButton(tooltip: context.tr('feed.gallery'), onPressed: uploadBezig ? null : () async {
+            List<XFile> xs = [];
+            try { xs = await ImagePicker().pickMultiImage(maxWidth: 1600, imageQuality: 85); } catch (_) { return; }
+            if (xs.isEmpty) return;
+            setD(() => uploadBezig = true);
+            for (final x in xs) {
+              if (media.length >= 10) break;
+              try { final r = await Api.uploadImage(x.path); setD(() { media.add({'type': 'image', 'path': r['path'], 'url': r['url']}); mediaGewijzigd = true; }); }
+              catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
+            }
+            setD(() => uploadBezig = false);
+          }, icon: const Icon(Icons.photo_library, color: AppColors.teal)),
+          if (uploadBezig) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)),
+        ]),
+      ])),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('feed.cancel'))),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('feed.save'))),
+        FilledButton(onPressed: uploadBezig ? null : () => Navigator.pop(ctx, true), child: Text(context.tr('feed.save'))),
       ],
-    ));
+    )));
     if (ok != true || !mounted) return;
     try {
-      final r = await Api.put('/posts/${p['id']}', {'content': c.text.trim()});
-      final dynamic nc = (r is Map && r['data'] is Map) ? r['data']['content'] : null;
-      setState(() => p['content'] = nc ?? c.text.trim());
+      final r = await Api.put('/posts/${p['id']}', {
+        'content': c.text.trim(),
+        // alleen meesturen als er echt iets aan de media veranderd is
+        if (mediaGewijzigd) 'media': [for (final m in media) {'type': m['type'], 'path': m['path']}],
+      });
+      final d = (r is Map && r['data'] is Map) ? r['data'] as Map : null;
+      setState(() {
+        p['content'] = d?['content'] ?? c.text.trim();
+        if (d != null) { p['media'] = d['media']; p['image_path'] = d['image_path']; }
+      });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
   }
 
@@ -352,8 +435,21 @@ class _FeedScreenState extends State<FeedScreen> {
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _kiesMention(f)),
               ]))),
-              if (_photoUrl != null) Padding(padding: const EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: CachedNetworkImage(imageUrl: _photoUrl!, height: 140, width: double.infinity, fit: BoxFit.cover))),
-              if (_videoPath != null) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.videocam, context.tr('feed.videoSelected'), () => setState(() => _videoPath = null))),
+              if (_media.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(height: 76, child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _media.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (_, i) {
+                  final m = _media[i];
+                  return Stack(children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(10), child: m['type'] == 'video'
+                      ? Container(width: 76, height: 76, color: AppColors.navy, child: const Icon(Icons.videocam, color: Colors.white, size: 28))
+                      : CachedNetworkImage(imageUrl: '${m['url']}', width: 76, height: 76, fit: BoxFit.cover)),
+                    Positioned(right: 3, top: 3, child: InkWell(
+                      onTap: () => setState(() => _media.removeAt(i)),
+                      child: Container(decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), padding: const EdgeInsets.all(3), child: const Icon(Icons.close, size: 14, color: Colors.white)))),
+                  ]);
+                }))),
               if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
               Row(children: [
                 IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera')),
@@ -400,8 +496,14 @@ class _FeedScreenState extends State<FeedScreen> {
                 Text(_trans[p['id']]?['shown'] == true ? context.tr('feed.show_original') : context.tr('feed.translate'), style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600)),
               ]))),
             ],
-            if (p['image_path'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: GestureDetector(onTap: () => PhotoViewer.open(context, [p['image_path'].toString()]), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: p['image_path'], width: double.infinity, fit: BoxFit.cover)))),
-            if (p['video_path'] != null || p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(), youtubeId: p['youtube_id']?.toString(), ready: p['video_ready'] != false)),
+            // Nieuw formaat: media-carrousel (meerdere foto's/video's); anders de oude enkele velden.
+            if (p['media'] is List && (p['media'] as List).isNotEmpty)
+              Padding(padding: const EdgeInsets.only(top: 10), child: MediaCarousel(media: p['media'] as List))
+            else ...[
+              if (p['image_path'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: GestureDetector(onTap: () => PhotoViewer.open(context, [p['image_path'].toString()]), child: ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: p['image_path'], width: double.infinity, fit: BoxFit.cover)))),
+              if (p['video_path'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(), ready: p['video_ready'] != false)),
+            ],
+            if (p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(youtubeId: p['youtube_id']?.toString())),
             const Divider(height: 22),
             Row(children: [
               InkWell(onTap: () => _toggleLike(p), child: Row(children: [Icon(Icons.thumb_up, size: 18, color: p['liked_by_me'] == true ? AppColors.teal : Colors.black38), const SizedBox(width: 5), Text('${p['likes_count'] ?? 0}')])),

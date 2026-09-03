@@ -85,7 +85,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
     ));
     if (ok != true) return;
     try { await Api.delete('/albums/${widget.albumId}/photos/$id'); await _load(); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'))); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
   }
 
   void _openViewer(int start, {bool play = false}) {
