@@ -36,10 +36,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _i = 0;
   final Set<int> _visited = {0};
+  final GlobalKey<FeedScreenState> _feedKey = GlobalKey<FeedScreenState>();
 
   Widget _pageFor(int idx) {
     switch (idx) {
-      case 0: return const FeedScreen();
+      case 0: return FeedScreen(key: _feedKey);
       case 1: return const CatchesScreen();
       case 2: return const BiteScreen();
       case 3: return const MapScreen();
@@ -202,7 +203,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() { _i = v; _visited.add(v); }),
+        onDestinationSelected: (v) {
+          // terug naar (of nogmaals op) de feed-tab → altijd bovenaan beginnen
+          if (v == 0) WidgetsBinding.instance.addPostFrameCallback((_) => _feedKey.currentState?.scrollNaarTop());
+          setState(() { _i = v; _visited.add(v); });
+        },
         backgroundColor: Colors.white,
         indicatorColor: AppColors.teal.withValues(alpha: 0.15),
         destinations: [

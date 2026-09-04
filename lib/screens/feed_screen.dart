@@ -22,13 +22,21 @@ import 'user_profile_screen.dart';
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
   @override
-  State<FeedScreen> createState() => _FeedScreenState();
+  FeedScreenState createState() => FeedScreenState();
 }
 
-class _FeedScreenState extends State<FeedScreen> {
+class FeedScreenState extends State<FeedScreen> {
   List _posts = [];
   bool _loading = true;
   final _composer = TextEditingController();
+  final ScrollController _scroll = ScrollController();
+  bool _toonTopKnop = false;   // "naar boven"-knop verschijnt zodra je ver naar beneden bent
+
+  /// Springt vloeiend terug naar de bovenkant van de feed (knop + bij tab-terugkeer).
+  void scrollNaarTop() {
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+  }
   // Gekozen media voor het nieuwe bericht: foto's en video's gemengd, max 10.
   // Elk item: {type: image|video, path: server-pad, url: preview-URL (foto's)}.
   final List<Map> _media = [];
@@ -49,7 +57,7 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   @override
-  void dispose() { _liveSub?.cancel(); super.dispose(); }
+  void dispose() { _liveSub?.cancel(); _scroll.dispose(); super.dispose(); }
 
   // Korte plaatsingsdatum bij elk bericht: vandaag = tijd, dit jaar = dag-maand, ouder = met jaar.
   static String _postDate(dynamic raw) {
@@ -404,14 +412,19 @@ class _FeedScreenState extends State<FeedScreen> {
   Widget build(BuildContext context) {
     final me = context.read<AuthState>().user;
     if (_loading) return const Center(child: CircularProgressIndicator());
-    return RefreshIndicator(
+    return Stack(children: [
+      RefreshIndicator(
       onRefresh: _load,
       child: NotificationListener<ScrollNotification>(
         onNotification: (n) {
           if (n.metrics.pixels > n.metrics.maxScrollExtent - 600) _loadMore();
+          // "naar boven"-knop tonen zodra je ruim voorbij het eerste scherm bent
+          final wil = n.metrics.pixels > 800;
+          if (wil != _toonTopKnop) setState(() => _toonTopKnop = wil);
           return false;
         },
         child: ListView.builder(
+        controller: _scroll,
         padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         itemCount: _posts.length + 3,
         itemBuilder: (_, idx) {
@@ -521,7 +534,21 @@ class _FeedScreenState extends State<FeedScreen> {
         },
       ),
       ),
-    );
+      ),
+      // snelknop naar de bovenkant van de feed (verschijnt als je ver beneden bent)
+      if (_toonTopKnop)
+        Positioned(
+          right: 16,
+          bottom: 16 + MediaQuery.of(context).padding.bottom,
+          child: FloatingActionButton.small(
+            heroTag: 'feedTop',
+            backgroundColor: AppColors.teal,
+            foregroundColor: Colors.white,
+            onPressed: scrollNaarTop,
+            child: const Icon(Icons.keyboard_arrow_up, size: 28),
+          ),
+        ),
+    ]);
   }
 }
 
