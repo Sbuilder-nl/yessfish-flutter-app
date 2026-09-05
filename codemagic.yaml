@@ -31,8 +31,18 @@ workflows:
         script: xcode-project use-profiles
       - name: IPA bouwen
         script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+      - name: dSYM naar Crashlytics uploaden
+        script: |
+          # Crashlytics kan crashes alleen leesbaar maken (symboliceren) met de dSYM van
+          # precies deze build; zonder deze stap meldt Firebase "Missing dSYM".
+          DSYMS="build/ios/archive/Runner.xcarchive/dSYMs"
+          ls -la "$DSYMS"
+          ios/Pods/FirebaseCrashlytics/upload-symbols -gsp ios/Runner/GoogleService-Info.plist -p ios "$DSYMS"
+          # kopie als artifact bewaren, voor het geval een upload ooit handmatig moet
+          (cd build/ios/archive/Runner.xcarchive && zip -qr "$CM_BUILD_DIR/build/ios/ipa/dSYMs.zip" dSYMs)
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/ipa/dSYMs.zip
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
