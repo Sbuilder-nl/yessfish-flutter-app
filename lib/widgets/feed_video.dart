@@ -26,6 +26,7 @@ class FeedVideo extends StatefulWidget {
 class _FeedVideoState extends State<FeedVideo> {
   VideoPlayerController? _c;
   bool _init = false;
+  bool _bezig = false;   // controller aan het laden na een tik
 
   @override
   void dispose() { _c?.dispose(); super.dispose(); }
@@ -40,9 +41,24 @@ class _FeedVideoState extends State<FeedVideo> {
   }
 
   Future<void> _tapPlay() async {
-    await _ensureController();
-    _c!.play();
-    if (mounted) setState(() {});
+    if (_bezig) return;
+    setState(() => _bezig = true);
+    try {
+      await _ensureController();
+      _c!.play();
+    } catch (e) {
+      // speler kon de video niet laden (codec/netwerk): netjes melden + uitwijk naar de systeemspeler
+      try { _c?.dispose(); } catch (_) {}
+      _c = null; _init = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('feed.video_fail')),
+          action: SnackBarAction(label: context.tr('feed.video_open'), onPressed: () => launchUrl(Uri.parse(widget.videoUrl!), mode: LaunchMode.externalApplication)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _bezig = false);
+    }
   }
 
   void _onVisibility(double fraction) async {
@@ -82,16 +98,23 @@ class _FeedVideoState extends State<FeedVideo> {
     final player = (_init && _c != null)
         ? Stack(alignment: Alignment.center, children: [
             VideoPlayer(_c!),
-            if (!widget.autoplay) GestureDetector(
+            if (!widget.autoplay) Positioned.fill(child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () { _c!.value.isPlaying ? _c!.pause() : _c!.play(); setState(() {}); },
-              child: AnimatedOpacity(opacity: _c!.value.isPlaying ? 0 : 1, duration: const Duration(milliseconds: 200), child: const _PlayBadge(color: Color(0x8C000000))),
-            ),
+              child: Center(child: AnimatedOpacity(opacity: _c!.value.isPlaying ? 0 : 1, duration: const Duration(milliseconds: 200), child: const _PlayBadge(color: Color(0x8C000000)))),
+            )),
             if (!widget.autoplay) Positioned(left: 0, right: 0, bottom: 0, child: VideoProgressIndicator(_c!, allowScrubbing: true, colors: const VideoProgressColors(playedColor: AppColors.teal))),
           ])
-        : Stack(fit: StackFit.expand, children: [
-            if (widget.poster != null) CachedNetworkImage(imageUrl: widget.poster!, fit: BoxFit.cover) else Container(color: Colors.black),
-            if (!widget.autoplay) GestureDetector(onTap: _tapPlay, child: const Center(child: _PlayBadge(color: Color(0x8C000000)))),
-          ]);
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,   // hele videovlak reageert, niet alleen het knopje
+            onTap: widget.autoplay ? null : _tapPlay,
+            child: Stack(fit: StackFit.expand, children: [
+              if (widget.poster != null) CachedNetworkImage(imageUrl: widget.poster!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: Colors.black)) else Container(color: Colors.black),
+              if (!widget.autoplay) Center(child: _bezig
+                ? const SizedBox(width: 44, height: 44, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                : const _PlayBadge(color: Color(0x8C000000))),
+            ]),
+          );
 
     final content = _frame(Container(color: Colors.black, child: player));
 
@@ -109,7 +132,7 @@ class _PlayBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: 58, height: 58,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white70, width: 2)),
     child: const Icon(Icons.play_arrow, color: Colors.white, size: 34),
   );
 }

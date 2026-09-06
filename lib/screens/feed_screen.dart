@@ -235,6 +235,7 @@ class FeedScreenState extends State<FeedScreen> {
   Future<void> _post() async {
     if (_composer.text.trim().isEmpty && _media.isEmpty && (_youtube == null || _youtube!.isEmpty)) return;
     if (_videoUploading) return;
+    final hadVideo = _media.any((m) => m['type'] == 'video');
     setState(() => _posting = true);
     try {
       await Api.post('/posts', {
@@ -246,6 +247,9 @@ class FeedScreenState extends State<FeedScreen> {
       });
       _composer.clear();
       setState(() { _media.clear(); _youtube = null; });
+      // video wordt op de server nog verwerkt (±5-15 s): feed daarna nog eens ophalen zodat
+      // "verwerken…" vanzelf overgaat in een afspeelbare video
+      if (hadVideo) { Future.delayed(const Duration(seconds: 12), () { if (mounted) _load(); }); Future.delayed(const Duration(seconds: 30), () { if (mounted) _load(); }); }
       await _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));

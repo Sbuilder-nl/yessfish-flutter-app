@@ -1,7 +1,7 @@
 name: yessfish
 description: "YessFish - het sociale netwerk voor sportvissers"
 publish_to: 'none'
-version: 1.0.39+154
+version: 1.0.40+155
 
 environment:
   sdk: ^3.9.0
