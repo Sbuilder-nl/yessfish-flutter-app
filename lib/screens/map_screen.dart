@@ -218,7 +218,7 @@ class _MapScreenState extends State<MapScreen> {
     if (!mounted) return;
     if (p.isReal && _inKaart(p.lat, p.lng)) {
       setState(() => _userPos = LatLng(p.lat, p.lng));
-      _map.move(LatLng(p.lat, p.lng), 14);
+      _map.move(LatLng(p.lat, p.lng), _zoom < 15 ? 15 : _zoom);
       _loadWaters();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mui(context, 'locate_no_gps'))));
@@ -418,6 +418,9 @@ class _MapScreenState extends State<MapScreen> {
       if (!p.isReal) { messenger.showSnackBar(SnackBar(content: Text(failMsg))); return; }
       if ((p.accuracy ?? 9999) > maxAcc) { messenger.showSnackBar(SnackBar(content: Text('$roughMsg (±${p.accuracy!.round()} m)'))); return; }
       target = LatLng(p.lat, p.lng);
+      // Kaart mee naar het GPS-punt (Richard 06-09: "kaart gaat niet naar mijn GPS-punt"):
+      // zo zie je meteen wáár de stek komt te staan.
+      if (mounted) { try { _map.move(target, 17); setState(() => _userPos = target); } catch (_) {} }
     } else {
       target = _map.camera.center;
     }
