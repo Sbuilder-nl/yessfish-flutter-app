@@ -47,8 +47,11 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Google Play app-optimalisatie (06-09-2026): R8 aan — code verkleinen + vermommen,
+            // ongebruikte resources eruit. Keep-regels in proguard-rules.pro; mapping gaat mee in de AAB.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
