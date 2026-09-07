@@ -24,6 +24,7 @@ import 'package:video_compress/video_compress.dart';
 import '../widgets/dobber_loader.dart';
 import '../widgets/feed_video.dart';
 import '../widgets/water_depth_panel.dart';
+import 'quick_catch_screen.dart';
 
 class MapScreen extends StatefulWidget {
   final double? focusLat;
@@ -197,20 +198,6 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
-
-  // Hoofd-icoon met een wit "+"-badge rechtsonder — leest als één geheel
-  // (het oude add_location_alt leek twee losse icoontjes door elkaar).
-  Widget _plusBadgeIcoon(IconData icoon, double maat, Color kleur, {required double badge}) => SizedBox(
-    width: maat + 8, height: maat + 6,
-    child: Stack(clipBehavior: Clip.none, children: [
-      Positioned(left: 0, top: 0, child: Icon(icoon, color: Colors.white, size: maat)),
-      Positioned(right: 0, bottom: 0, child: Container(
-        width: badge, height: badge,
-        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-        child: Icon(Icons.add, color: kleur, size: badge - 4),
-      )),
-    ]),
-  );
 
   // "Terug naar mijn locatie" — verse GPS-fix, kaart erheen + waters herladen.
   Future<void> _centerOnUser() async {
@@ -553,15 +540,43 @@ class _MapScreenState extends State<MapScreen> {
       } catch (_) {}
     }();
 
+    // Bijtkans van vandaag op dit water (zelfde voorspelling als het bijtkans-scherm).
+    final bite = ValueNotifier<int?>(null);
+    () async {
+      final la = double.tryParse('${w['latitude']}'), lo = double.tryParse('${w['longitude']}');
+      if (la == null || lo == null) return;
+      try { final r = await Api.get('/bite-forecast?lat=$la&lng=$lo'); if (r is Map && r['score'] is num) bite.value = (r['score'] as num).toInt(); } catch (_) {}
+    }();
+    final la0 = double.tryParse('${w['latitude']}'), lo0 = double.tryParse('${w['longitude']}');
+
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
-      expand: false, initialChildSize: 0.5, minChildSize: 0.3, maxChildSize: 0.95,
+      expand: false, initialChildSize: 0.55, minChildSize: 0.3, maxChildSize: 0.95,
       builder: (ctx2, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx2).padding.bottom), children: [
         Row(children: [Icon(w['is_paid'] == true ? Icons.euro : Icons.water, color: w['is_paid'] == true ? const Color(0xFFD4A017) : _waterColor(level)), const SizedBox(width: 8), Expanded(child: Text(w['name'] ?? '', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))]),
         if (sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(sub, style: const TextStyle(color: Colors.black54))),
-        if (w['type'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Row(children: [
-          const Icon(Icons.category_outlined, size: 15, color: Colors.black45), const SizedBox(width: 6),
-          Text(mui(context, 'type_${w['type']}'), style: const TextStyle(color: Colors.black54, fontSize: 13)),
+        Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 12, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          if (w['type'] != null) Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.category_outlined, size: 15, color: Colors.black45), const SizedBox(width: 4), Text(mui(context, 'type_${w['type']}'), style: const TextStyle(color: Colors.black54, fontSize: 13))]),
+          Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.local_fire_department, size: 15, color: _waterColor(level)), const SizedBox(width: 4),
+            Text('${mui(context, 'busy')}: ${level == 'none' ? mui(context, 'busy_none') : busyLevelLabel(context, level)}${count > 0 ? ' ($count)' : ''}', style: const TextStyle(color: Colors.black54, fontSize: 13))]),
         ])),
+        // 1. Mag ik hier vissen? + hoe is de bijtkans vandaag? — de twee vragen bovenaan.
+        Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 8, runSpacing: 6, children: [
+          _permitChip(w),
+          ValueListenableBuilder<int?>(valueListenable: bite, builder: (_, sc, __) {
+            final kleur = sc == null ? Colors.grey.shade600 : sc >= 70 ? const Color(0xFF16A34A) : sc >= 45 ? const Color(0xFFEA580C) : const Color(0xFF64748B);
+            return Chip(avatar: Icon(Icons.water_outlined, size: 16, color: kleur),
+              label: Text(sc == null ? mui(context, 'bite_loading') : mui(context, 'bite_chip').replaceFirst('%s', '$sc'), style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5)),
+              backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact);
+          }),
+        ])),
+        // 2. Wat je hier doet: vangst loggen (snelvangst met dit water ingevuld) of een stek zetten.
+        Padding(padding: const EdgeInsets.only(top: 12), child: Row(children: [
+          Expanded(child: FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
+            onPressed: () { Navigator.pop(ctx2); _openQuickCatch(w); }, icon: const Icon(Icons.set_meal, size: 18), label: Text(mui(context, 'plus_catch')))),
+          const SizedBox(width: 8),
+          Expanded(child: OutlinedButton.icon(onPressed: () { Navigator.pop(ctx2); _startSpotAt(w); }, icon: const Icon(Icons.add_location_alt_outlined, size: 18), label: Text(mui(context, 'plus_spot')))),
+        ])),
+        if (la0 != null && lo0 != null) Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => _openNavigation(la0, lo0), icon: const Icon(Icons.directions, size: 16), label: Text(mui(context, 'navigate')))),
         // Betaalwater: prominente boek-kaart met info + "Boek nu".
         if (w['is_paid'] == true) Container(
           margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(12),
@@ -579,9 +594,35 @@ class _MapScreenState extends State<MapScreen> {
                 label: Text(mui(context, 'paid_book'))))),
           ]),
         ),
-        const SizedBox(height: 10),
-        Row(children: [Icon(Icons.local_fire_department, size: 16, color: _waterColor(level)), const SizedBox(width: 6),
-          Text('${mui(context, 'busy')}: ${level == 'none' ? mui(context, 'busy_none') : busyLevelLabel(context, level)}${count > 0 ? ' ($count)' : ''}', style: const TextStyle(color: Colors.black87))]),
+        // 3. Wat wordt hier gevangen + stekken van leden.
+        if (species.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(mui(context, 'species_here'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 6, runSpacing: 6, children: species.map((s) => Chip(label: Text('$s'), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)).toList()),
+        ],
+        const SizedBox(height: 12),
+        Text('${mui(context, 'spots_at_water')} (${near.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+        if (near.isEmpty)
+          Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(mui(context, 'no_spots_here'), style: const TextStyle(color: Colors.black45, fontSize: 13)))
+        else
+          ...near.map((s) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.place, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared),
+            title: Text('${s['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(_privacyLabel(s['privacy']), style: const TextStyle(fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () { Navigator.pop(context); _flyToSpot(s as Map); },
+          )),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: OutlinedButton.icon(onPressed: () => _showRules(w), icon: const Icon(Icons.gavel, size: 18), label: Text(mui(context, 'rules_and_permit'), maxLines: 1, overflow: TextOverflow.ellipsis))),
+          const SizedBox(width: 8),
+          Expanded(child: OutlinedButton.icon(onPressed: () => _showMedia(w), icon: const Icon(Icons.photo_library_outlined, size: 18), label: Text(mui(context, 'media_view'), maxLines: 1, overflow: TextOverflow.ellipsis))),
+        ]),
+        // 4. Meer: beoordeling, dieptelaag + AI-analyse, vorm (moderator) — onderaan, niets weggehaald.
+        const Divider(height: 28),
+        Text(mui(context, 'more_section'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
         // Visjes-beoordeling van dit water (gemiddelde + jouw score).
         ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
           final rating = m?['rating'] as Map?;
@@ -635,37 +676,6 @@ class _MapScreenState extends State<MapScreen> {
               label: Text(mui(context, 'shape_request'))))),
           ]);
         }),
-        const SizedBox(height: 12),
-        SizedBox(width: double.infinity, child: OutlinedButton.icon(
-          onPressed: () => _showRules(w),
-          icon: const Icon(Icons.gavel, size: 18),
-          label: Text(mui(context, 'rules_view')),
-        )),
-        const SizedBox(height: 8),
-        SizedBox(width: double.infinity, child: OutlinedButton.icon(
-          onPressed: () => _showMedia(w),
-          icon: const Icon(Icons.photo_library_outlined, size: 18),
-          label: Text(mui(context, 'media_view')),
-        )),
-        if (species.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Text(mui(context, 'species_here'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
-          const SizedBox(height: 6),
-          Wrap(spacing: 6, runSpacing: 6, children: species.map((s) => Chip(label: Text('$s'), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)).toList()),
-        ],
-        const Divider(height: 24),
-        Text('${mui(context, 'spots_at_water')} (${near.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
-        if (near.isEmpty)
-          Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(mui(context, 'no_spots_here'), style: const TextStyle(color: Colors.black45, fontSize: 13)))
-        else
-          ...near.map((s) => ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.place, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared),
-            title: Text('${s['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(_privacyLabel(s['privacy']), style: const TextStyle(fontSize: 12)),
-            trailing: const Icon(Icons.chevron_right, size: 18),
-            onTap: () { Navigator.pop(context); _flyToSpot(s as Map); },
-          )),
       ]),
     ));
   }
@@ -921,7 +931,7 @@ class _MapScreenState extends State<MapScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool('map_help_seen') ?? false) return;
       await prefs.setBool('map_help_seen', true);
-      if (mounted) _showHelp();
+      if (mounted) _showQuickStart();
     } catch (_) {}
   }
 
@@ -975,6 +985,112 @@ class _MapScreenState extends State<MapScreen> {
     )));
   }
 
+  // Eerste keer: één kaartje met drie zinnen. De 10 uitlegpagina's blijven achter 'Meer uitleg'.
+  void _showQuickStart() {
+    Widget regel(IconData ic, String key) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      CircleAvatar(radius: 16, backgroundColor: AppColors.teal.withValues(alpha: 0.12), child: Icon(ic, color: AppColors.teal, size: 18)),
+      const SizedBox(width: 12),
+      Expanded(child: Padding(padding: const EdgeInsets.only(top: 5), child: Text(mui(context, key), style: const TextStyle(fontSize: 14, height: 1.35)))),
+    ]));
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      scrollable: true,
+      title: Text(mui(ctx, 'quick_title')),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        regel(Icons.touch_app_outlined, 'quick_1'),
+        regel(Icons.add_circle_outline, 'quick_2'),
+        regel(Icons.layers_outlined, 'quick_3'),
+      ]),
+      actions: [
+        TextButton(onPressed: () { Navigator.pop(ctx); _showHelp(); }, child: Text(mui(ctx, 'quick_more'))),
+        FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal), onPressed: () => Navigator.pop(ctx), child: Text(mui(ctx, 'quick_ok'))),
+      ],
+    ));
+  }
+
+  void _setDepth(bool on) { setState(() { _depthOn = on; if (!on) _depthCells = []; }); if (on) _loadDepth(); }
+  void _setFlow(bool on) { setState(() { _flowOn = on; if (!on) _flowPoints = []; }); if (on) _loadFlow(); }
+
+  // ＋: de drie dingen die je op de kaart doet — vangst loggen, stek zetten, (zelden) water toevoegen.
+  void _showPlusMenu() {
+    showModalBottomSheet(context: context, builder: (ctx) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(8, 12, 8, 8), child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 6), child: Align(alignment: Alignment.centerLeft, child: Text(mui(ctx, 'plus_title'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54)))),
+      ListTile(leading: const CircleAvatar(backgroundColor: AppColors.teal, child: Icon(Icons.set_meal, color: Colors.white)),
+        title: Text(mui(ctx, 'plus_catch'), style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(mui(ctx, 'plus_catch_hint')),
+        onTap: () { Navigator.pop(ctx); _openQuickCatch(null); }),
+      ListTile(leading: CircleAvatar(backgroundColor: AppColors.teal.withValues(alpha: 0.15), child: const Icon(Icons.location_on, color: AppColors.teal)),
+        title: Text(mui(ctx, 'plus_spot'), style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(mui(ctx, 'plus_spot_hint')),
+        onTap: () { Navigator.pop(ctx); setState(() => _placing = 'spot'); }),
+      ListTile(leading: CircleAvatar(backgroundColor: AppColors.shared.withValues(alpha: 0.15), child: const Icon(Icons.water_drop, color: AppColors.shared)),
+        title: Text(mui(ctx, 'plus_water')), subtitle: Text(mui(ctx, 'plus_water_hint'), style: const TextStyle(fontSize: 12)),
+        onTap: () { Navigator.pop(ctx); setState(() => _placing = 'water'); }),
+    ]))));
+  }
+
+  // Snelvangst vanaf de kaart: water (en plek) alvast ingevuld.
+  Future<void> _openQuickCatch(Map? w) async {
+    final id = w == null ? null : int.tryParse('${w['id']}');
+    final la = w == null ? null : double.tryParse('${w['latitude']}'), lo = w == null ? null : double.tryParse('${w['longitude']}');
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => QuickCatchScreen(waterId: id, waterName: w?['name']?.toString(), lat: la, lng: lo)));
+    _load();
+  }
+
+  // Stek zetten bij dit water: kaart naar het water, kruis aan.
+  void _startSpotAt(Map w) {
+    final la = double.tryParse('${w['latitude']}'), lo = double.tryParse('${w['longitude']}');
+    if (la != null && lo != null) { try { _map.move(LatLng(la, lo), _zoom < 15 ? 16 : _zoom); } catch (_) {} }
+    setState(() => _placing = 'spot');
+  }
+
+  void _openNavigation(double la, double lo) => launchUrl(Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$la,$lo'), mode: LaunchMode.externalApplication);
+
+  // Lagen: alle aan/uit-schakelaars op één plek (dieptelaag, stroming, stekken-filter, land, auto-inchecken, uitleg).
+  void _showLayers() {
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => StatefulBuilder(builder: (ctx, setS) => SafeArea(child: SingleChildScrollView(child: Padding(
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 4), child: Text(mui(ctx, 'layers_title'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
+        SwitchListTile(secondary: const Icon(Icons.water, color: Color(0xFF2563EB)), title: Text(mui(ctx, 'depth_layer')), subtitle: Text(mui(ctx, 'depth_hint'), style: const TextStyle(fontSize: 12)),
+          value: _depthOn, onChanged: (v) { _setDepth(v); setS(() {}); }),
+        SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
+          value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); }),
+        const Divider(height: 8),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 4), child: Text(mui(ctx, 'layers_spots'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
+          segments: [for (final f in const ['all', 'public', 'friends']) ButtonSegment(value: f, label: Text(mui(ctx, 'filter_$f')))],
+          selected: {_spotFilter}, showSelectedIcon: false,
+          onSelectionChanged: (v) { setState(() { _spotFilter = v.first; if (_activeWaterId != null) _activeSpots = _spotsForWater(_activeWaterId); }); setS(() {}); })),
+        const SizedBox(height: 6),
+        SwitchListTile(secondary: Icon(_autoOn ? Icons.location_on : Icons.location_off, color: AppColors.teal), title: Text(mui(ctx, 'auto_title')), subtitle: Text(mui(ctx, 'auto_hint'), style: const TextStyle(fontSize: 12)),
+          value: _autoOn, onChanged: (v) async { await _toggleAuto(); setS(() {}); }),
+        const Divider(height: 8),
+        ListTile(leading: const Icon(Icons.public, color: AppColors.navy), title: Text(mui(ctx, 'layers_country')), trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            final c = await showModalBottomSheet<String>(context: context, builder: (c2) => SafeArea(child: ListView(shrinkWrap: true, children: [
+              for (final k in _countries.keys) ListTile(title: Text(countryLabel(c2, k)), onTap: () => Navigator.pop(c2, k)),
+            ])));
+            if (c == null || !mounted) return;
+            if (ctx.mounted) Navigator.pop(ctx);
+            _map.move(_countries[c]!, _countryZoom(c)); _loadWaters(); _loadRegions(c);
+          }),
+        ListTile(leading: const Icon(Icons.info_outline, color: AppColors.navy), title: Text(mui(ctx, 'legend_title')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(ctx); _showLegend(); }),
+        ListTile(leading: const Icon(Icons.help_outline, color: AppColors.navy), title: Text(mui(ctx, 'layers_more')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(ctx); _showHelp(); }),
+      ]),
+    )))));
+  }
+
+  // Korte vergunning-chip: kleur zegt het al (groen = mag, oranje = extra nodig, rood = niet, grijs = onbekend).
+  Widget _permitChip(Map w) {
+    final t = '${w['permit_type'] ?? 'onbekend'}';
+    final kleur = (t == 'landelijk' || t == 'vrij') ? const Color(0xFF16A34A) : t == 'verboden' ? const Color(0xFFDC2626)
+      : (t == 'onbekend' || t == 'onduidelijk') ? Colors.grey.shade600 : const Color(0xFFEA580C);
+    return ActionChip(
+      avatar: Icon(t == 'onbekend' ? Icons.help_outline : t == 'verboden' ? Icons.block : Icons.badge_outlined, size: 16, color: kleur),
+      label: Text(mui(context, 'permit_s_$t'), style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5)),
+      backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact,
+      onPressed: () => _showRules(w),
+    );
+  }
+
   void _showLegend() {
     Widget row(Widget icon, String text) => Padding(padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1005,12 +1121,8 @@ class _MapScreenState extends State<MapScreen> {
           child: const Icon(Icons.person, color: Colors.white, size: 12)), mui(ctx, 'legend_me')),
         const Divider(height: 18),
         row(const Icon(Icons.my_location, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_locate')),
-        row(const Icon(Icons.water_drop, color: AppColors.shared, size: 20), mui(ctx, 'legend_btn_water')),
-        row(const Icon(Icons.location_on, color: AppColors.teal, size: 20), mui(ctx, 'legend_btn_spot')),
-        row(Container(width: 22, height: 22, alignment: Alignment.center,
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black12)),
-          child: const Text('m', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)))), mui(ctx, 'legend_btn_depth')),
-        row(const Icon(Icons.waves, color: Color(0xFF2563EB), size: 20), mui(ctx, 'legend_btn_flow')),
+        row(const Icon(Icons.add_circle, color: AppColors.teal, size: 22), mui(ctx, 'legend_btn_plus')),
+        row(const Icon(Icons.layers, color: AppColors.navy, size: 20), mui(ctx, 'legend_btn_layers')),
         const Divider(height: 18),
         row(const Icon(Icons.lightbulb_outline, size: 18, color: Colors.black45), mui(ctx, 'legend_tip')),
       ])),
@@ -1309,6 +1421,15 @@ class _MapScreenState extends State<MapScreen> {
         ],
         const SizedBox(height: 8),
         Row(children: [const Icon(Icons.visibility, size: 14, color: Colors.black45), const SizedBox(width: 4), Text(_privacyLabel(s['privacy']), style: const TextStyle(color: Colors.black45, fontSize: 12))]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
+            onPressed: () { Navigator.pop(ctx); _openQuickCatch(s['water'] is Map ? {...(s['water'] as Map), 'latitude': s['latitude'], 'longitude': s['longitude']} : (s['water_id'] != null ? {'id': s['water_id'], 'name': waterName, 'latitude': s['latitude'], 'longitude': s['longitude']} : null)); },
+            icon: const Icon(Icons.set_meal, size: 18), label: Text(mui(ctx, 'plus_catch')))),
+          const SizedBox(width: 8),
+          if (s['latitude'] != null) Expanded(child: OutlinedButton.icon(onPressed: () => _openNavigation(double.parse('${s['latitude']}'), double.parse('${s['longitude']}')),
+            icon: const Icon(Icons.directions, size: 18), label: Text(mui(ctx, 'navigate')))),
+        ]),
         if (mine) ...[
           const Divider(height: 24),
           Row(children: [
@@ -1333,6 +1454,10 @@ class _MapScreenState extends State<MapScreen> {
       const SizedBox(height: 6),
       if (c['weight_kg'] != null) Text('${context.tr('map.weight')}: ${Units.weight(c['weight_kg'])}', style: const TextStyle(color: Colors.black54)),
       if (c['length_cm'] != null) Text('${context.tr('map.length')}: ${c['length_cm']} cm', style: const TextStyle(color: Colors.black54)),
+      if (c['id'] != null) Padding(padding: const EdgeInsets.only(top: 12), child: SizedBox(width: double.infinity, child: FilledButton.icon(
+        style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
+        onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => CatchDetailScreen(catchId: int.parse('${c['id']}')))); },
+        icon: const Icon(Icons.open_in_new, size: 18), label: Text(mui(ctx, 'view_catch'))))),
     ])));
   }
 
@@ -1634,21 +1759,18 @@ class _MapScreenState extends State<MapScreen> {
         child: GestureDetector(onTap: () => _showCatch(c as Map), child: const Icon(Icons.set_meal, color: Colors.orange, size: 26)))),
     ];
 
-    return Scaffold(
+    return PopScope(
+      canPop: _placing == null && !_editShape,
+      onPopInvokedWithResult: (didPop, _) { if (!didPop) setState(() { _placing = null; _movingSpot = null; _editShape = false; _draftPts = []; _shapeMsg = ''; }); },
+      child: Scaffold(
       appBar: AppBar(title: Text(context.tr('map.title')), actions: [
         IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'), onPressed: _openPlaceSearch),
-        IconButton(icon: const Icon(Icons.info_outline), tooltip: mui(context, 'legend_title'), onPressed: _showLegend),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.public),
-          tooltip: mui(context, 'country'),
-          onSelected: (c) { _map.move(_countries[c]!, _countryZoom(c)); _loadWaters(); _loadRegions(c); }, // naar het land + meteen waters laden
-          itemBuilder: (_) => _countries.keys.map((c) => PopupMenuItem(value: c, child: Text(c))).toList(),
-        ),
         TextButton.icon(
-          onPressed: _toggleAuto,
-          icon: Icon(_autoOn ? Icons.location_on : Icons.location_off, size: 18, color: _checkedIn ? AppColors.mint : Colors.white),
-          label: Text(mui(context, _autoOn ? 'auto_on_label' : 'auto_off_label'), style: const TextStyle(color: Colors.white, fontSize: 12)),
+          onPressed: _showLayers,
+          icon: Icon(Icons.layers, size: 20, color: (_depthOn || _flowOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
+          label: Text(mui(context, 'layers_title'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
         ),
+        const SizedBox(width: 4),
       ]),
       // Knoppen alleen tonen als je niet in plaats-/teken-modus zit.
       floatingActionButton: (_placing != null || _editShape) ? null : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -1658,54 +1780,17 @@ class _MapScreenState extends State<MapScreen> {
           tooltip: mui(context, 'locate_me'),
           child: const Icon(Icons.my_location, color: AppColors.teal),
         ),
-        const SizedBox(height: 10),
-        FloatingActionButton.small(
-          heroTag: 'depthtoggle', backgroundColor: _depthOn ? const Color(0xFF2563EB) : Colors.white,
-          onPressed: () { setState(() => _depthOn = !_depthOn); if (_depthOn) { _loadDepth(); } else { setState(() => _depthCells = []); } },
-          tooltip: mui(context, 'depth_layer'),
-          child: Text('m', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _depthOn ? Colors.white : const Color(0xFF2563EB))),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton.small(
-          heroTag: 'flowtoggle', backgroundColor: _flowOn ? const Color(0xFF0EA5E9) : Colors.white,
-          onPressed: () { setState(() => _flowOn = !_flowOn); if (_flowOn) { _loadFlow(); } else { setState(() => _flowPoints = []); } },
-          tooltip: mui(context, 'legend_btn_flow'),
-          child: Icon(Icons.waves, color: _flowOn ? Colors.white : const Color(0xFF0EA5E9)),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton.small(
-          heroTag: 'addwater', backgroundColor: AppColors.shared,
-          onPressed: () => setState(() => _placing = 'water'),
-          tooltip: mui(context, 'add_water'),
-          child: _plusBadgeIcoon(Icons.water_drop, 20, AppColors.shared, badge: 13),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton(
-          heroTag: 'addspot', backgroundColor: AppColors.teal,
-          onPressed: () => setState(() => _placing = 'spot'),
-          tooltip: context.tr('map.spot_here'),
-          child: _plusBadgeIcoon(Icons.location_on, 26, AppColors.teal, badge: 15),
+        const SizedBox(height: 12),
+        FloatingActionButton.large(
+          heroTag: 'plus', backgroundColor: AppColors.teal,
+          onPressed: _showPlusMenu,
+          tooltip: mui(context, 'plus_title'),
+          child: const Icon(Icons.add, color: Colors.white, size: 40),
         ),
       ]),
       body: Column(children: [
-        // Filter voor stekken.
-        SingleChildScrollView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(children: [
-            for (final f in const ['all', 'public', 'friends'])
-              Padding(padding: const EdgeInsets.only(right: 6), child: ChoiceChip(
-                label: Text(mui(context, 'filter_$f')),
-                selected: _spotFilter == f,
-                onSelected: (_) => setState(() {
-                  _spotFilter = f;
-                  // Pins van het open water meteen opnieuw filteren (anders blijven oude pins staan).
-                  if (_activeWaterId != null) _activeSpots = _spotsForWater(_activeWaterId);
-                }),
-                visualDensity: VisualDensity.compact,
-              )),
-          ])),
-        // Stekken verschijnen pas zodra je voldoende inzoomt (tegen wirwar) — duidelijke hint op een
-        // eigen regel zodat hij niet afkapt. Verdwijnt zodra je ingezoomd bent.
-        if (!detail) Container(width: double.infinity, color: const Color(0xFFEFF4F3),
+        // Stekken-filter zit onder 'Lagen'. Zoom-hint alleen als er echt stekken zijn om te zien.
+        if (!detail && _spots.isNotEmpty) Container(width: double.infinity, color: const Color(0xFFEFF4F3),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           child: Row(children: [
             const Icon(Icons.zoom_in, size: 15, color: Colors.black45),
@@ -1894,6 +1979,6 @@ class _MapScreenState extends State<MapScreen> {
           )),
         ])),
       ]),
-    );
+    ));
   }
 }

@@ -1,6 +1,7 @@
-// YessFish home-screenwidget (iOS): laatste openbare vangst + visweer.
+// YessFish home-screenwidget (iOS): laatste openbare vangst + visweer + snelknoppen.
+// Zelfde inhoud en knoppen als de Android-widget (YfWidgetProvider): vangst, stek, kaart, feed.
 // Data komt uit de app via de home_widget-plugin → UserDefaults in de App Group.
-// Zelfde inhoud als de Android-widget (YfWidgetProvider).
+// Knoppen openen de app met yessfishwidget://<doel>?homeWidget (home_widget vereist de query 'homeWidget').
 
 import WidgetKit
 import SwiftUI
@@ -12,6 +13,7 @@ struct YfEntry: TimelineEntry {
     let species: String
     let user: String
     let weather: String
+    let catchId: String
     let photo: UIImage?
 }
 
@@ -27,13 +29,16 @@ private func laadEntry() -> YfEntry {
         species: d?.string(forKey: "latest_species") ?? "",
         user: d?.string(forKey: "latest_user") ?? "",
         weather: d?.string(forKey: "weather_text") ?? "",
+        catchId: d?.string(forKey: "latest_catch_id") ?? "",
         photo: foto
     )
 }
 
+private func yfUrl(_ doel: String) -> URL { URL(string: "yessfishwidget://\(doel)?homeWidget")! }
+
 struct YfProvider: TimelineProvider {
     func placeholder(in context: Context) -> YfEntry {
-        YfEntry(date: Date(), species: "Snoek", user: "YessFish", weather: "🌤️ 18° · lichte wind", photo: nil)
+        YfEntry(date: Date(), species: "Snoek", user: "YessFish", weather: "🌤️ 18° · lichte wind", catchId: "", photo: nil)
     }
     func getSnapshot(in context: Context, completion: @escaping (YfEntry) -> Void) {
         completion(laadEntry())
@@ -47,6 +52,7 @@ struct YfProvider: TimelineProvider {
 
 private let yfNavy = Color(red: 0.051, green: 0.169, blue: 0.243) // app-donkerblauw
 private let yfTeal = Color(red: 0.075, green: 0.463, blue: 0.427) // app-teal
+private let yfMint = Color(red: 0.55, green: 0.90, blue: 0.80)
 
 struct YfWidgetView: View {
     var entry: YfEntry
@@ -75,9 +81,10 @@ struct YfWidgetView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
+    // Kleine widget: laatste vangst; tik = snelvangst (de snelste weg om te loggen).
     private var klein: some View {
         VStack(alignment: .leading, spacing: 5) {
-            foto.frame(maxWidth: .infinity).frame(height: 64)
+            foto.frame(maxWidth: .infinity).frame(height: 58)
             if !entry.species.isEmpty {
                 Text("🎣 \(entry.species)")
                     .font(.system(size: 13, weight: .bold))
@@ -91,41 +98,75 @@ struct YfWidgetView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
+            HStack(spacing: 4) {
+                Image(systemName: "camera.fill").font(.system(size: 10, weight: .bold))
+                Text("Snelvangst").font(.system(size: 11, weight: .bold))
+            }
+            .foregroundColor(yfNavy)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(yfMint)
+            .clipShape(Capsule())
         }
         .padding(12)
+        .widgetURL(yfUrl("catch"))
     }
 
+    private func knop(_ doel: String, _ icoon: String, _ tekst: String) -> some View {
+        Link(destination: yfUrl(doel)) {
+            VStack(spacing: 2) {
+                Image(systemName: icoon).font(.system(size: 14, weight: .bold))
+                Text(tekst).font(.system(size: 9, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundColor(yfNavy)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(yfMint)
+            .clipShape(RoundedRectangle(cornerRadius: 9))
+        }
+    }
+
+    // Middelgrote widget: foto (tik = die vangst) + info + vier knoppen zoals op Android.
     private var middel: some View {
-        HStack(spacing: 12) {
-            foto.frame(width: 96, height: 96)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("YessFish")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
-                if !entry.species.isEmpty {
-                    Text("🎣 \(entry.species)")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Group {
+                    if entry.catchId.isEmpty { foto } else { Link(destination: yfUrl("view/\(entry.catchId)")) { foto } }
                 }
-                if !entry.user.isEmpty {
-                    Text(entry.user)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.85))
-                        .lineLimit(1)
+                .frame(width: 84, height: 72)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("YessFish")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.7))
+                    if !entry.species.isEmpty {
+                        Text("🎣 \(entry.species)")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
+                    if !entry.user.isEmpty {
+                        Text(entry.user)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.85))
+                            .lineLimit(1)
+                    }
+                    if !entry.weather.isEmpty {
+                        Text(entry.weather)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.9))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
                 Spacer(minLength: 0)
-                if !entry.weather.isEmpty {
-                    Text(entry.weather)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.9))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
             }
-            Spacer(minLength: 0)
+            HStack(spacing: 6) {
+                knop("catch", "camera.fill", "Vangst")
+                knop("spot", "mappin.and.ellipse", "Stek")
+                knop("map", "map.fill", "Kaart")
+                knop("feed", "bubble.left.and.bubble.right.fill", "Feed")
+            }
         }
-        .padding(14)
+        .padding(12)
     }
 }
 
@@ -154,7 +195,7 @@ struct YfWidget: Widget {
             YfWidgetView(entry: entry)
         }
         .configurationDisplayName("YessFish")
-        .description("De laatste vangst en het visweer op je startscherm.")
+        .description("Laatste vangst, visweer en snelknoppen: vangst, stek, kaart, feed.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

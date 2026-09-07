@@ -14,7 +14,9 @@ import '../core/config.dart';
 /// Daarna rustig afmaken (soort/gewicht/aas/privacy) en afronden. Ook 'resume' voor een bestaand concept.
 class QuickCatchScreen extends StatefulWidget {
   final int? draftId; // hervatten van een bestaand concept
-  const QuickCatchScreen({super.key, this.draftId});
+  // Vanaf de kaart: water (en plek) alvast ingevuld.
+  final int? waterId; final String? waterName; final double? lat, lng;
+  const QuickCatchScreen({super.key, this.draftId, this.waterId, this.waterName, this.lat, this.lng});
   @override
   State<QuickCatchScreen> createState() => _QuickCatchScreenState();
 }
@@ -111,11 +113,14 @@ class _QuickCatchScreenState extends State<QuickCatchScreen> {
       'show_in_feed': false,
       'caught_at': _caughtAt.toIso8601String(),
       'photo_paths': [path],
+      if (widget.waterId != null) 'water_id': widget.waterId,
     };
     try {
       final loc = await currentLocation();
       if (loc.isReal) { body['latitude'] = loc.lat; body['longitude'] = loc.lng; }
     } catch (_) {}
+    // Geen GPS maar wel vanaf een water op de kaart gestart → plek van dat water.
+    if (body['latitude'] == null && widget.lat != null && widget.lng != null) { body['latitude'] = widget.lat; body['longitude'] = widget.lng; }
     final r = await Api.post('/catches', body);
     final d = r is Map && r['data'] is Map ? r['data'] as Map : (r as Map);
     _draftId = d['id'] as int?;
@@ -158,6 +163,7 @@ class _QuickCatchScreenState extends State<QuickCatchScreen> {
         'privacy': _privacy,
         'show_in_feed': _privacy == 'public' && _showInFeed,
         'caught_at': _caughtAt.toIso8601String(),
+        if (widget.waterId != null) 'water_id': widget.waterId,
         if (_weight.text.isNotEmpty) 'weight_kg': Units.toKg(_weight.text),
         if (_length.text.isNotEmpty) 'length_cm': double.tryParse(_length.text.replaceAll(',', '.')),
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
@@ -213,6 +219,8 @@ class _QuickCatchScreenState extends State<QuickCatchScreen> {
               const SizedBox(height: 8),
               OutlinedButton.icon(onPressed: _uploading ? null : _shoot, icon: const Icon(Icons.add_a_photo), label: Text(_t(_addPhoto))),
               const Divider(height: 28),
+              if (widget.waterName != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: Align(alignment: Alignment.centerLeft, child: Chip(
+                avatar: const Icon(Icons.water, size: 16, color: AppColors.teal), label: Text(widget.waterName!), visualDensity: VisualDensity.compact))),
               TextField(controller: _species, decoration: InputDecoration(labelText: _t(_speciesL))),
               const SizedBox(height: 12),
               Row(children: [

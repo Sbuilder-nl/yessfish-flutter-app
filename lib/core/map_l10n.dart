@@ -198,6 +198,47 @@ const Map<String, Map<String, String>> kMapUi = {
     'es': '1. Primero "Obtener de OSM" - normalmente la forma ya está.\n2. ¿No está o está mal? Toca con el lápiz a lo largo de la orilla, punto a punto, toda la vuelta.\n3. Más puntos en las curvas, menos en los tramos rectos.\n4. ¿Punto mal? Tócalo para borrarlo, o "Deshacer último".\n5. "Guardar" (mín. 3 puntos). La forma decide el check-in y los puntos - dibuja con la mayor precisión.',
     'pl': '1. Najpierw "Pobierz z OSM" - zwykle kształt już tam jest.\n2. Brak/źle? Stuknij piórem wzdłuż brzegu, punkt po punkcie, dookoła.\n3. Więcej punktów na zakrętach, mniej na prostych.\n4. Zły punkt? Stuknij, aby usunąć, lub "Cofnij ostatni".\n5. "Zapisz" (min. 3 punkty). Kształt decyduje o meldowaniu i stanowiskach - rysuj jak najdokładniej.',
   },
+  // --- 1.0.44: vereenvoudigde kaart (＋-knop, Lagen, snelstart, waterblad) ---
+  'layers_title':   {'nl': 'Lagen', 'en': 'Layers', 'de': 'Ebenen', 'fr': 'Couches', 'es': 'Capas', 'pl': 'Warstwy'},
+  'layers_spots':   {'nl': 'Stekken tonen', 'en': 'Show spots', 'de': 'Stellen anzeigen', 'fr': 'Afficher les spots', 'es': 'Mostrar puntos', 'pl': 'Pokaż miejscówki'},
+  'layers_country': {'nl': 'Naar een ander land', 'en': 'Jump to another country', 'de': 'In ein anderes Land springen', 'fr': 'Aller vers un autre pays', 'es': 'Ir a otro país', 'pl': 'Przejdź do innego kraju'},
+  'layers_more':    {'nl': 'Uitleg', 'en': 'Help', 'de': 'Hilfe', 'fr': 'Aide', 'es': 'Ayuda', 'pl': 'Pomoc'},
+  'flow_layer':     {'nl': 'Stromingslaag (rivieren)', 'en': 'Flow layer (rivers)', 'de': 'Strömungsebene (Flüsse)', 'fr': 'Couche débit (rivières)', 'es': 'Capa de caudal (ríos)', 'pl': 'Warstwa przepływu (rzeki)'},
+  'depth_hint':     {'nl': 'Diepte per vak, uit fishfinder-metingen van leden. Zoom in om de vakken te zien.', 'en': 'Depth per cell from members\' fishfinder soundings. Zoom in to see the cells.', 'de': 'Tiefe je Zelle aus Echolot-Messungen der Mitglieder. Zum Anzeigen hineinzoomen.', 'fr': 'Profondeur par case d\'après les sondages des membres. Zoomez pour voir les cases.', 'es': 'Profundidad por celda según las sondas de los miembros. Acerca para ver las celdas.', 'pl': 'Głębokość na pole z pomiarów echosond członków. Przybliż, aby zobaczyć pola.'},
+  'flow_hint':      {'nl': 'Afvoer van rivieren in m³/s (blauw = rustig, rood = veel water).', 'en': 'River discharge in m³/s (blue = calm, red = high flow).', 'de': 'Abfluss der Flüsse in m³/s (blau = ruhig, rot = viel Wasser).', 'fr': 'Débit des rivières en m³/s (bleu = calme, rouge = fort débit).', 'es': 'Caudal de los ríos en m³/s (azul = tranquilo, rojo = mucha agua).', 'pl': 'Przepływ rzek w m³/s (niebieski = spokojny, czerwony = dużo wody).'},
+  'auto_title':     {'nl': 'Automatisch inchecken', 'en': 'Automatic check-in', 'de': 'Automatisches Einchecken', 'fr': 'Check-in automatique', 'es': 'Registro automático', 'pl': 'Automatyczne meldowanie'},
+  'auto_hint':      {'nl': 'Sta je bij water, dan vraagt de app of je vist. Je telt dan anoniem mee in de drukte.', 'en': 'At a water the app asks if you are fishing. You then count anonymously towards busyness.', 'de': 'Am Wasser fragt die App, ob du angelst. Du zählst dann anonym zum Andrang.', 'fr': 'Au bord de l\'eau, l\'appli demande si vous pêchez. Vous comptez alors anonymement dans l\'affluence.', 'es': 'Junto al agua la app pregunta si estás pescando. Entonces cuentas anónimamente en la afluencia.', 'pl': 'Nad wodą aplikacja pyta, czy łowisz. Liczysz się wtedy anonimowo w statystyce ruchu.'},
+  'plus_title':     {'nl': 'Wat wil je doen?', 'en': 'What do you want to do?', 'de': 'Was möchtest du tun?', 'fr': 'Que voulez-vous faire ?', 'es': '¿Qué quieres hacer?', 'pl': 'Co chcesz zrobić?'},
+  'plus_catch':     {'nl': 'Vangst loggen', 'en': 'Log a catch', 'de': 'Fang loggen', 'fr': 'Enregistrer une prise', 'es': 'Registrar captura', 'pl': 'Zapisz połów'},
+  'plus_catch_hint':{'nl': 'Foto maken, soort invullen, klaar', 'en': 'Take a photo, enter the species, done', 'de': 'Foto machen, Art eintragen, fertig', 'fr': 'Photo, espèce, terminé', 'es': 'Foto, especie, listo', 'pl': 'Zdjęcie, gatunek, gotowe'},
+  'plus_spot':      {'nl': 'Stek zetten', 'en': 'Place a spot', 'de': 'Stelle setzen', 'fr': 'Placer un spot', 'es': 'Marcar un punto', 'pl': 'Ustaw miejscówkę'},
+  'plus_spot_hint': {'nl': 'Jouw plek op het water, privé of gedeeld', 'en': 'Your place on the water, private or shared', 'de': 'Dein Platz am Wasser, privat oder geteilt', 'fr': 'Votre coin sur l\'eau, privé ou partagé', 'es': 'Tu lugar en el agua, privado o compartido', 'pl': 'Twoje miejsce na wodzie, prywatne lub udostępnione'},
+  'plus_water':     {'nl': 'Water toevoegen', 'en': 'Add a water', 'de': 'Gewässer hinzufügen', 'fr': 'Ajouter un plan d\'eau', 'es': 'Añadir un agua', 'pl': 'Dodaj wodę'},
+  'plus_water_hint':{'nl': 'Alleen als het water nog niet op de kaart staat', 'en': 'Only if the water is not on the map yet', 'de': 'Nur wenn das Gewässer noch nicht auf der Karte ist', 'fr': 'Seulement si le plan d\'eau n\'est pas encore sur la carte', 'es': 'Solo si el agua aún no está en el mapa', 'pl': 'Tylko jeśli wody nie ma jeszcze na mapie'},
+  'quick_title':    {'nl': 'Zo werkt de Viskaart', 'en': 'How the fishing map works', 'de': 'So funktioniert die Angelkarte', 'fr': 'Comment marche la carte', 'es': 'Así funciona el mapa', 'pl': 'Jak działa mapa'},
+  'quick_1':        {'nl': 'Tik op een dobber: vergunning, bijtkans en wat er gevangen wordt.', 'en': 'Tap a float: permit, bite chance and what is caught there.', 'de': 'Tippe auf eine Pose: Erlaubnis, Beißchance und was dort gefangen wird.', 'fr': 'Touchez un flotteur : permis, chance de touche et prises.', 'es': 'Toca una boya: permiso, probabilidad de picada y capturas.', 'pl': 'Dotknij spławika: pozwolenie, szansa na branie i połowy.'},
+  'quick_2':        {'nl': 'Met ＋ log je een vangst of zet je een stek, precies waar je staat.', 'en': 'With ＋ you log a catch or place a spot, right where you are.', 'de': 'Mit ＋ loggst du einen Fang oder setzt eine Stelle, genau dort, wo du bist.', 'fr': 'Avec ＋ vous enregistrez une prise ou placez un spot, là où vous êtes.', 'es': 'Con ＋ registras una captura o marcas un punto, justo donde estás.', 'pl': 'Za pomocą ＋ zapisujesz połów lub ustawiasz miejscówkę, dokładnie tam, gdzie jesteś.'},
+  'quick_3':        {'nl': 'Onder Lagen vind je de dieptekaart, stroming, stekken van vrienden en andere landen.', 'en': 'Under Layers you find the depth map, flow, friends\' spots and other countries.', 'de': 'Unter Ebenen findest du Tiefenkarte, Strömung, Stellen von Freunden und andere Länder.', 'fr': 'Sous Couches : carte des profondeurs, débit, spots des amis et autres pays.', 'es': 'En Capas encuentras el mapa de profundidad, caudal, puntos de amigos y otros países.', 'pl': 'W Warstwach znajdziesz mapę głębokości, przepływ, miejscówki znajomych i inne kraje.'},
+  'quick_more':     {'nl': 'Meer uitleg', 'en': 'More help', 'de': 'Mehr Hilfe', 'fr': 'Plus d\'aide', 'es': 'Más ayuda', 'pl': 'Więcej pomocy'},
+  'quick_ok':       {'nl': 'Aan de slag', 'en': 'Let\'s go', 'de': 'Los geht\'s', 'fr': 'C\'est parti', 'es': 'Vamos', 'pl': 'Zaczynamy'},
+  'legend_btn_plus':{'nl': 'Knop ＋: vangst loggen, stek zetten of water toevoegen', 'en': 'Button ＋: log a catch, place a spot or add a water', 'de': 'Knopf ＋: Fang loggen, Stelle setzen oder Gewässer hinzufügen', 'fr': 'Bouton ＋ : prise, spot ou nouveau plan d\'eau', 'es': 'Botón ＋: captura, punto o nueva agua', 'pl': 'Przycisk ＋: połów, miejscówka lub nowa woda'},
+  'legend_btn_layers':{'nl': 'Knop Lagen: dieptelaag, stroming, stekken-filter, ander land', 'en': 'Layers button: depth, flow, spot filter, other country', 'de': 'Knopf Ebenen: Tiefe, Strömung, Stellen-Filter, anderes Land', 'fr': 'Bouton Couches : profondeur, débit, filtre spots, autre pays', 'es': 'Botón Capas: profundidad, caudal, filtro de puntos, otro país', 'pl': 'Przycisk Warstwy: głębokość, przepływ, filtr miejscówek, inny kraj'},
+  'bite_chip':      {'nl': 'Bijtkans %s%%', 'en': 'Bite chance %s%%', 'de': 'Beißchance %s%%', 'fr': 'Touche %s%%', 'es': 'Picada %s%%', 'pl': 'Branie %s%%'},
+  'bite_loading':   {'nl': 'Bijtkans…', 'en': 'Bite chance…', 'de': 'Beißchance…', 'fr': 'Touche…', 'es': 'Picada…', 'pl': 'Branie…'},
+  'permit_s_landelijk': {'nl': 'VISpas geldig', 'en': 'VISpas valid', 'de': 'VISpas gültig', 'fr': 'VISpas valable', 'es': 'VISpas válido', 'pl': 'VISpas ważny'},
+  'permit_s_vrij':      {'nl': 'Vrij vissen', 'en': 'Free fishing', 'de': 'Freies Angeln', 'fr': 'Pêche libre', 'es': 'Pesca libre', 'pl': 'Wolne łowienie'},
+  'permit_s_club':      {'nl': 'Clubwater', 'en': 'Club water', 'de': 'Vereinsgewässer', 'fr': 'Eau de club', 'es': 'Agua de club', 'pl': 'Woda klubowa'},
+  'permit_s_nho':       {'nl': 'NHO Viskaart', 'en': 'NHO permit', 'de': 'NHO-Karte', 'fr': 'Carte NHO', 'es': 'Tarjeta NHO', 'pl': 'Karta NHO'},
+  'permit_s_fiskfergunning': {'nl': 'Fiskfergunning', 'en': 'Fiskfergunning', 'de': 'Fiskfergunning', 'fr': 'Fiskfergunning', 'es': 'Fiskfergunning', 'pl': 'Fiskfergunning'},
+  'permit_s_betaald':   {'nl': 'Betaald water', 'en': 'Paid water', 'de': 'Bezahlgewässer', 'fr': 'Eau payante', 'es': 'Agua de pago', 'pl': 'Woda płatna'},
+  'permit_s_verboden':  {'nl': 'Vissen verboden', 'en': 'No fishing', 'de': 'Angeln verboten', 'fr': 'Pêche interdite', 'es': 'Pesca prohibida', 'pl': 'Zakaz łowienia'},
+  'permit_s_onduidelijk': {'nl': 'Vergunning onduidelijk', 'en': 'Permit unclear', 'de': 'Erlaubnis unklar', 'fr': 'Permis incertain', 'es': 'Permiso poco claro', 'pl': 'Pozwolenie niejasne'},
+  'permit_s_onbekend':  {'nl': 'Vergunning: controleer', 'en': 'Permit: check', 'de': 'Erlaubnis: prüfen', 'fr': 'Permis : à vérifier', 'es': 'Permiso: comprobar', 'pl': 'Pozwolenie: sprawdź'},
+  'navigate':       {'nl': 'Navigeer', 'en': 'Navigate', 'de': 'Navigieren', 'fr': 'Itinéraire', 'es': 'Navegar', 'pl': 'Nawiguj'},
+  'view_catch':     {'nl': 'Bekijk vangst', 'en': 'View catch', 'de': 'Fang ansehen', 'fr': 'Voir la prise', 'es': 'Ver captura', 'pl': 'Zobacz połów'},
+  'rules_and_permit': {'nl': 'Visregels & vergunning', 'en': 'Rules & permit', 'de': 'Regeln & Erlaubnis', 'fr': 'Règles & permis', 'es': 'Normas y permiso', 'pl': 'Zasady i pozwolenie'},
+  'more_section':   {'nl': 'Meer over dit water', 'en': 'More about this water', 'de': 'Mehr zu diesem Gewässer', 'fr': 'Plus sur ce plan d\'eau', 'es': 'Más sobre esta agua', 'pl': 'Więcej o tej wodzie'},
+
 };
 
 String _mLoc(BuildContext c) => Provider.of<I18n>(c, listen: false).locale;
@@ -227,3 +268,30 @@ String mapCountryLicence(BuildContext c, String? country) {
   if (m == null) return '';
   return m[_mLoc(c)] ?? m['en'] ?? '';
 }
+
+
+/// Landnamen in de app-taal (sleutel = de NL-naam die de kaart intern gebruikt).
+const Map<String, Map<String, String>> kCountryNames = {
+  'Nederland': {'nl': 'Nederland', 'en': 'Netherlands', 'de': 'Niederlande', 'fr': 'Pays-Bas', 'es': 'Países Bajos', 'pl': 'Holandia'},
+  'België': {'nl': 'België', 'en': 'Belgium', 'de': 'Belgien', 'fr': 'Belgique', 'es': 'Bélgica', 'pl': 'Belgia'},
+  'Duitsland': {'nl': 'Duitsland', 'en': 'Germany', 'de': 'Deutschland', 'fr': 'Allemagne', 'es': 'Alemania', 'pl': 'Niemcy'},
+  'Frankrijk': {'nl': 'Frankrijk', 'en': 'France', 'de': 'Frankreich', 'fr': 'France', 'es': 'Francia', 'pl': 'Francja'},
+  'Spanje': {'nl': 'Spanje', 'en': 'Spain', 'de': 'Spanien', 'fr': 'Espagne', 'es': 'España', 'pl': 'Hiszpania'},
+  'Italië': {'nl': 'Italië', 'en': 'Italy', 'de': 'Italien', 'fr': 'Italie', 'es': 'Italia', 'pl': 'Włochy'},
+  'Portugal': {'nl': 'Portugal', 'en': 'Portugal', 'de': 'Portugal', 'fr': 'Portugal', 'es': 'Portugal', 'pl': 'Portugalia'},
+  'Polen': {'nl': 'Polen', 'en': 'Poland', 'de': 'Polen', 'fr': 'Pologne', 'es': 'Polonia', 'pl': 'Polska'},
+  'Oostenrijk': {'nl': 'Oostenrijk', 'en': 'Austria', 'de': 'Österreich', 'fr': 'Autriche', 'es': 'Austria', 'pl': 'Austria'},
+  'Zwitserland': {'nl': 'Zwitserland', 'en': 'Switzerland', 'de': 'Schweiz', 'fr': 'Suisse', 'es': 'Suiza', 'pl': 'Szwajcaria'},
+  'Tsjechië': {'nl': 'Tsjechië', 'en': 'Czechia', 'de': 'Tschechien', 'fr': 'Tchéquie', 'es': 'Chequia', 'pl': 'Czechy'},
+  'Hongarije': {'nl': 'Hongarije', 'en': 'Hungary', 'de': 'Ungarn', 'fr': 'Hongrie', 'es': 'Hungría', 'pl': 'Węgry'},
+  'Kroatië': {'nl': 'Kroatië', 'en': 'Croatia', 'de': 'Kroatien', 'fr': 'Croatie', 'es': 'Croacia', 'pl': 'Chorwacja'},
+  'Roemenië': {'nl': 'Roemenië', 'en': 'Romania', 'de': 'Rumänien', 'fr': 'Roumanie', 'es': 'Rumanía', 'pl': 'Rumunia'},
+  'Servië': {'nl': 'Servië', 'en': 'Serbia', 'de': 'Serbien', 'fr': 'Serbie', 'es': 'Serbia', 'pl': 'Serbia'},
+  'Verenigd Koninkrijk': {'nl': 'Verenigd Koninkrijk', 'en': 'United Kingdom', 'de': 'Vereinigtes Königreich', 'fr': 'Royaume-Uni', 'es': 'Reino Unido', 'pl': 'Wielka Brytania'},
+  'Ierland': {'nl': 'Ierland', 'en': 'Ireland', 'de': 'Irland', 'fr': 'Irlande', 'es': 'Irlanda', 'pl': 'Irlandia'},
+  'Zweden': {'nl': 'Zweden', 'en': 'Sweden', 'de': 'Schweden', 'fr': 'Suède', 'es': 'Suecia', 'pl': 'Szwecja'},
+  'Noorwegen': {'nl': 'Noorwegen', 'en': 'Norway', 'de': 'Norwegen', 'fr': 'Norvège', 'es': 'Noruega', 'pl': 'Norwegia'},
+  'Finland': {'nl': 'Finland', 'en': 'Finland', 'de': 'Finnland', 'fr': 'Finlande', 'es': 'Finlandia', 'pl': 'Finlandia'},
+  'Denemarken': {'nl': 'Denemarken', 'en': 'Denmark', 'de': 'Dänemark', 'fr': 'Danemark', 'es': 'Dinamarca', 'pl': 'Dania'},
+};
+String countryLabel(BuildContext c, String key) { final m = kCountryNames[key]; return m?[_mLoc(c)] ?? m?['en'] ?? key; }
