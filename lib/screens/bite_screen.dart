@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
+import '../widgets/streak_card.dart';
 import '../core/config.dart';
 import '../core/location.dart';
 import '../core/i18n.dart';
@@ -27,6 +28,7 @@ class _BiteScreenState extends State<BiteScreen> {
       Map? sol;
       try { sol = await Api.get('/solunar?lat=${loc.lat}&lng=${loc.lng}') as Map?; } catch (_) {}
       setState(() { _data = r; _sol = sol; _loading = false; });
+      StreakData.load(force: true);   // bijtkans bekeken = reeks-dag → balk direct bijwerken
     } catch (e) {
       setState(() { _err = 'error'; _loading = false; });
     }

@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // terug naar (of nogmaals op) de feed-tab → altijd bovenaan beginnen
           if (v == 0) WidgetsBinding.instance.addPostFrameCallback((_) => _feedKey.currentState?.scrollNaarTop());
           setState(() { _i = v; _visited.add(v); });
-          StreakData.verversStraks();   // bijtkans/water bekeken → reeks-balk bijwerken
+          StreakData.verversStraks(); StreakData.verversStraks(const Duration(seconds: 8));   // bijtkans/water bekeken → reeks-balk bijwerken
         },
         backgroundColor: Colors.white,
         indicatorColor: AppColors.teal.withValues(alpha: 0.15),
