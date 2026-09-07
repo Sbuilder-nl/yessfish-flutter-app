@@ -5,6 +5,7 @@ import 'package:exif/exif.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import '../core/api.dart';
+import '../core/review.dart';
 import '../core/analytics.dart';
 import '../core/units.dart';
 import '../core/config.dart';
@@ -221,6 +222,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           try { await Api.put('/catches/$catchId', {'privacy': 'public', 'show_in_feed': true}); } on ApiException catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message))); }
         }
       }
+      maybeAskReview();
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

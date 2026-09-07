@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import 'mijn_data_screen.dart';
+import '../widgets/streak_card.dart';
 
 /// Dobbers: saldo, kopen (Google Play / App Store in-app) en korte uitleg.
 /// De aankoop wordt server-side geverifieerd vóór de dobbers worden bijgeschreven.
@@ -44,6 +45,7 @@ class SterrenScreen extends StatefulWidget {
 
 class _SterrenScreenState extends State<SterrenScreen> {
   int _saldo = 0;
+  Map<String, dynamic>? _streak;
   int _donTotaal = 0;
   List<dynamic> _bundles = [];
   Map<String, ProductDetails> _producten = {};
@@ -68,6 +70,8 @@ class _SterrenScreenState extends State<SterrenScreen> {
       final r = await Api.get('/store/bundles');
       if (mounted && r is Map) setState(() { _bundles = r['bundles'] ?? []; _saldo = (r['ai_points'] as num?)?.toInt() ?? 0; _donTotaal = (r['donated_total'] as num?)?.toInt() ?? 0; });
     } catch (_) {}
+    final st = await StreakData.load(force: true);
+    if (mounted) setState(() => _streak = st);
   }
 
   Future<void> _initStore() async {
@@ -146,6 +150,12 @@ class _SterrenScreenState extends State<SterrenScreen> {
             DobberText('⭐ $_saldo', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Color(0xFF1f8a70))),
           ]))),
           const SizedBox(height: 14),
+          if (_streak != null) ...[
+            StreakCard(d: _streak!),
+            const SizedBox(height: 10),
+            if (_streak!['invite'] is Map) InviteCard(invite: Map<String, dynamic>.from(_streak!['invite'] as Map), onChanged: _load),
+            const SizedBox(height: 14),
+          ],
           // Kopen
           Text('🛒 ${stt(context, 'buy')}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.navy)),
           const SizedBox(height: 4),

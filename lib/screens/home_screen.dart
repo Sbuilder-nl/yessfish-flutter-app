@@ -26,6 +26,8 @@ import 'package:home_widget/home_widget.dart';
 import '../core/home_widget_service.dart';
 import 'catch_detail_screen.dart';
 import 'albums_screen.dart';
+import 'sterren_screen.dart';
+import '../widgets/streak_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -199,6 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(children: [
         _verifyBanner(),
+        Offstage(offstage: !(_i == 0 || _i == 2), child: StreakBanner(onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const SterrenScreen())); StreakData.load(force: true); })),
         Expanded(child: IndexedStack(index: _i, children: List.generate(5, (idx) => _visited.contains(idx) ? _pageFor(idx) : const SizedBox.shrink()))),
       ]),
       bottomNavigationBar: NavigationBar(
@@ -207,6 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // terug naar (of nogmaals op) de feed-tab → altijd bovenaan beginnen
           if (v == 0) WidgetsBinding.instance.addPostFrameCallback((_) => _feedKey.currentState?.scrollNaarTop());
           setState(() { _i = v; _visited.add(v); });
+          StreakData.verversStraks();   // bijtkans/water bekeken → reeks-balk bijwerken
         },
         backgroundColor: Colors.white,
         indicatorColor: AppColors.teal.withValues(alpha: 0.15),

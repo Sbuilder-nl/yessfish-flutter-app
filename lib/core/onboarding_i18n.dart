@@ -27,6 +27,8 @@ const Map<String, Map<String, String>> kOnbUi = {
   'g_female':       {'nl': 'Vrouw', 'en': 'Female', 'de': 'Weiblich', 'fr': 'Femme', 'es': 'Mujer', 'pl': 'Kobieta'},
   'g_other':        {'nl': 'Anders', 'en': 'Other', 'de': 'Divers', 'fr': 'Autre', 'es': 'Otro', 'pl': 'Inna'},
   'g_prefer':       {'nl': 'Zeg ik liever niet', 'en': 'Prefer not to say', 'de': 'Keine Angabe', 'fr': 'Je préfère ne pas dire', 'es': 'Prefiero no decirlo', 'pl': 'Wolę nie podawać'},
+  'invite':         {'nl': 'Uitnodigingscode (optioneel)', 'en': 'Invite code (optional)', 'de': 'Einladungscode (optional)', 'fr': 'Code d\'invitation (facultatif)', 'es': 'Código de invitación (opcional)', 'pl': 'Kod zaproszenia (opcjonalnie)'},
+  'invite_hint':    {'nl': 'Van een vismaat? Jullie krijgen allebei 5 dobbers na je eerste vangst', 'en': 'From a buddy? You both get 5 bobbers after your first catch', 'de': 'Von einem Freund? Ihr bekommt beide 5 Posen nach deinem ersten Fang', 'fr': 'D\'un copain ? Vous recevez chacun 5 flotteurs après ta première prise', 'es': '¿De un compañero? Los dos recibís 5 boyas tras tu primera captura', 'pl': 'Od kolegi? Oboje dostaniecie 5 spławików po pierwszym połowie'},
   'city':           {'nl': 'Woonplaats', 'en': 'Town / city', 'de': 'Wohnort', 'fr': 'Ville', 'es': 'Ciudad', 'pl': 'Miejscowość'},
   'save':           {'nl': 'Opslaan en beginnen', 'en': 'Save and start', 'de': 'Speichern und loslegen', 'fr': 'Enregistrer et commencer', 'es': 'Guardar y empezar', 'pl': 'Zapisz i zacznij'},
   'saving':         {'nl': 'Bezig met opslaan…', 'en': 'Saving…', 'de': 'Wird gespeichert…', 'fr': 'Enregistrement…', 'es': 'Guardando…', 'pl': 'Zapisywanie…'},

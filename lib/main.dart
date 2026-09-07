@@ -40,7 +40,13 @@ void main() {
       crashlytics = kReleaseMode;
     } catch (_) {/* push (of een trage init) mag het opstarten nooit blokkeren */}
     if (crashlytics) {
-      FlutterError.onError = (d) { FlutterError.presentError(d); FirebaseCrashlytics.instance.recordFlutterFatalError(d); };
+      FlutterError.onError = (d) {
+        FlutterError.presentError(d);
+        final s = d.exception.toString();
+        // Ontbrekend plaatje / netwerkfout bij een afbeelding is geen crash → niet-fataal loggen
+        if (d.library == 'image resource service' || s.contains('HttpException') || s.contains('NetworkImageLoadException') || s.contains('SocketException')) { FirebaseCrashlytics.instance.recordFlutterError(d); return; }
+        FirebaseCrashlytics.instance.recordFlutterFatalError(d);
+      };
       PlatformDispatcher.instance.onError = (e, st) { FirebaseCrashlytics.instance.recordError(e, st, fatal: true); return true; };
     }
     runApp(const YessFishApp());

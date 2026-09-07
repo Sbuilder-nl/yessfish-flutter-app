@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import '../core/api.dart';
+import '../core/review.dart';
 import '../core/location.dart';
 import '../core/units.dart';
 import '../core/config.dart';
@@ -162,6 +163,7 @@ class _QuickCatchScreenState extends State<QuickCatchScreen> {
         if (_bait.text.isNotEmpty) 'bait': _bait.text.trim(),
       };
       await Api.put('/catches/$_draftId', body);
+      maybeAskReview();
       if (mounted) Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));

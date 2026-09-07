@@ -1,3 +1,5 @@
+import '../screens/sterren_screen.dart';
+import '../screens/bite_screen.dart';
 import 'package:flutter/material.dart';
 import '../screens/post_detail_screen.dart';
 import '../screens/messages_screen.dart';
@@ -13,6 +15,8 @@ import '../screens/feed_screen.dart';
 ///  - /vrienden      → vrienden
 ///  - /kaart?w=X     → kaart op dat water
 Widget? screenForLink(String link, {String? event}) {
+  if (event == 'streak' || event == 'retention' || event == 'bite') return const BiteScreen();
+  if (event == 'invite_reward') return const SterrenScreen();
   final l = link;
   final postMatch = RegExp(r'post=(\d+)').firstMatch(l);
   if (postMatch != null) {

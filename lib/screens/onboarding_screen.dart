@@ -25,6 +25,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? _experience;
   String? _gender;
   final _city = TextEditingController();
+  final _invite = TextEditingController();
   bool _loading = true;
   bool _saving = false;
   bool _agreed = false;
@@ -39,6 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void dispose() {
     _city.dispose();
+    _invite.dispose();
     super.dispose();
   }
 
@@ -84,6 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         if (_experience != null) 'fishing_experience': _experience,
         if (_gender != null) 'gender': _gender,
         if (_city.text.trim().isNotEmpty) 'city': _city.text.trim(),
+        if (_invite.text.trim().isNotEmpty) 'invite_code': _invite.text.trim().toUpperCase(),
       });
       if (!mounted) return;
       // needsOnboarding wordt false → RootGate toont automatisch het HomeScreen.
@@ -241,6 +244,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               const SizedBox(height: 12),
                               _label(oui(context, 'city')),
                               TextField(controller: _city, decoration: _dec(), maxLength: 120),
+                              _label(oui(context, 'invite')),
+                              TextField(controller: _invite, decoration: _dec().copyWith(hintText: oui(context, 'invite_hint')), maxLength: 10, textCapitalization: TextCapitalization.characters),
                             ],
                           ),
 

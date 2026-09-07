@@ -845,6 +845,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.11+1"
+  in_app_review:
+    dependency: "direct main"
+    description:
+      name: in_app_review
+      sha256: "364db0c160b37fe7fad9cdaa18f968473924b17368869010af902760421b6bf8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.12"
+  in_app_review_platform_interface:
+    dependency: transitive
+    description:
+      name: in_app_review_platform_interface
+      sha256: fed2c755f2125caa9ae10495a3c163aa7fab5af3585a9c62ef4a6920c5b45f10
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.5"
   intl:
     dependency: "direct main"
     description:
@@ -1205,6 +1221,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.28.0"
+  share_plus:
+    dependency: "direct main"
+    description:
+      name: share_plus
+      sha256: fce43200aa03ea87b91ce4c3ac79f0cecd52e2a7a56c7a4185023c271fbfa6da
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.1.4"
+  share_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: share_plus_platform_interface
+      sha256: cc012a23fc2d479854e6c80150696c4a5f5bb62cb89af4de1c505cf78d0a5d0b
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.2"
   shared_preferences:
     dependency: "direct main"
     description:
