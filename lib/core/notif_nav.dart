@@ -1,6 +1,7 @@
 import '../screens/sterren_screen.dart';
 import '../screens/bite_screen.dart';
 import 'package:flutter/material.dart';
+import 'i18n.dart';
 import '../screens/post_detail_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/chat_screen.dart';
@@ -15,7 +16,9 @@ import '../screens/feed_screen.dart';
 ///  - /vrienden      → vrienden
 ///  - /kaart?w=X     → kaart op dat water
 Widget? screenForLink(String link, {String? event}) {
-  if (event == 'streak' || event == 'retention' || event == 'bite') return const BiteScreen();
+  // BiteScreen is een tab-body zonder eigen Scaffold: als losse route (push-tik/meldingenlijst)
+  // gaf dat een zwart scherm met gele onderstrepingen (Richard 10-09-2026) → in een Scaffold zetten.
+  if (event == 'streak' || event == 'retention' || event == 'bite') return const _NotifBiteScreen();
   if (event == 'invite_reward') return const SterrenScreen();
   final l = link;
   final postMatch = RegExp(r'post=(\d+)').firstMatch(l);
@@ -49,5 +52,15 @@ class _NotifFeedScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('YessFish')),
         body: const FeedScreen(),
+      );
+}
+
+/// Bijtkans met een terug-knop, geopend vanuit een reeks-/terughaal-/bijtkans-melding.
+class _NotifBiteScreen extends StatelessWidget {
+  const _NotifBiteScreen();
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(context.tr('nav.bite'))),
+        body: const BiteScreen(),
       );
 }
