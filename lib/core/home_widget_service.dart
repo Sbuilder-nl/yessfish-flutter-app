@@ -34,11 +34,18 @@ class YfHomeWidget {
         final m = await Api.get('/catches/map');
         if (m is List && m.isNotEmpty) d = m.first as Map;
       }
-      if (d != null) {
+      // Alleen een vangst mét foto komt in de widget (Richard 10-09-2026); de backend
+      // filtert daar al op, en zonder foto laten we de vangst-regel hier leeg.
+      final foto = d?['photo_path']?.toString();
+      if (d != null && foto != null && foto.startsWith('http')) {
         await HomeWidget.saveWidgetData<String>('latest_species', '${d['species'] ?? ''}');
         await HomeWidget.saveWidgetData<String>('latest_user', '${d['username'] ?? ''}');
         if (d['id'] != null) await HomeWidget.saveWidgetData<String>('latest_catch_id', '${d['id']}');
-        photoUrl = d['photo_path']?.toString();
+        photoUrl = foto;
+      } else {
+        await HomeWidget.saveWidgetData<String>('latest_species', '');
+        await HomeWidget.saveWidgetData<String>('latest_user', '');
+        await HomeWidget.saveWidgetData<String>('latest_catch_id', '');
       }
     } catch (_) {}
 

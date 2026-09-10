@@ -25,7 +25,8 @@ class FeedScreen extends StatefulWidget {
   FeedScreenState createState() => FeedScreenState();
 }
 
-class FeedScreenState extends State<FeedScreen> {
+class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
+  DateTime _lastLoad = DateTime.now();
   List _posts = [];
   bool _loading = true;
   final _composer = TextEditingController();
@@ -49,6 +50,7 @@ class FeedScreenState extends State<FeedScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
     _composer.addListener(_composerChanged);
     _liveSub = context.read<RealtimeService>().feedPosts.listen((post) {
@@ -57,7 +59,14 @@ class FeedScreenState extends State<FeedScreen> {
   }
 
   @override
-  void dispose() { _liveSub?.cancel(); _scroll.dispose(); super.dispose(); }
+  void dispose() { WidgetsBinding.instance.removeObserver(this); _liveSub?.cancel(); _scroll.dispose(); super.dispose(); }
+
+  // Terug in de app na >1 minuut: feed opnieuw laden, zodat nieuwe berichten
+  // (bijv. van het YessFish-team) niet pas na handmatig verversen verschijnen.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && DateTime.now().difference(_lastLoad).inSeconds > 60) _load();
+  }
 
   // Korte plaatsingsdatum bij elk bericht: vandaag = tijd, dit jaar = dag-maand, ouder = met jaar.
   static String _postDate(dynamic raw) {
@@ -75,6 +84,7 @@ class FeedScreenState extends State<FeedScreen> {
   bool _loadingMore = false;
 
   Future<void> _load() async {
+    _lastLoad = DateTime.now();
     try {
       final r = await Api.get('/feed');
       final meta = r is Map ? r['meta'] : null;
