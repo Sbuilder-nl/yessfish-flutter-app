@@ -223,7 +223,7 @@ const Map<String, Map<String, String>> kMapUi = {
   'quick_ok':       {'nl': 'Aan de slag', 'en': 'Let\'s go', 'de': 'Los geht\'s', 'fr': 'C\'est parti', 'es': 'Vamos', 'pl': 'Zaczynamy'},
   'legend_btn_plus':{'nl': 'Knop ＋: vangst loggen, stek zetten of water toevoegen', 'en': 'Button ＋: log a catch, place a spot or add a water', 'de': 'Knopf ＋: Fang loggen, Stelle setzen oder Gewässer hinzufügen', 'fr': 'Bouton ＋ : prise, spot ou nouveau plan d\'eau', 'es': 'Botón ＋: captura, punto o nueva agua', 'pl': 'Przycisk ＋: połów, miejscówka lub nowa woda'},
   'legend_btn_layers':{'nl': 'Knop Lagen: dieptelaag, stroming, stekken-filter, ander land', 'en': 'Layers button: depth, flow, spot filter, other country', 'de': 'Knopf Ebenen: Tiefe, Strömung, Stellen-Filter, anderes Land', 'fr': 'Bouton Couches : profondeur, débit, filtre spots, autre pays', 'es': 'Botón Capas: profundidad, caudal, filtro de puntos, otro país', 'pl': 'Przycisk Warstwy: głębokość, przepływ, filtr miejscówek, inny kraj'},
-  'bite_chip':      {'nl': 'Bijtkans %s%%', 'en': 'Bite chance %s%%', 'de': 'Beißchance %s%%', 'fr': 'Touche %s%%', 'es': 'Picada %s%%', 'pl': 'Branie %s%%'},
+  'bite_chip':      {'nl': 'Bijtkans %s%', 'en': 'Bite chance %s%', 'de': 'Beißchance %s%', 'fr': 'Touche %s%', 'es': 'Picada %s%', 'pl': 'Branie %s%'},
   'bite_loading':   {'nl': 'Bijtkans…', 'en': 'Bite chance…', 'de': 'Beißchance…', 'fr': 'Touche…', 'es': 'Picada…', 'pl': 'Branie…'},
   'permit_s_landelijk': {'nl': 'VISpas geldig', 'en': 'VISpas valid', 'de': 'VISpas gültig', 'fr': 'VISpas valable', 'es': 'VISpas válido', 'pl': 'VISpas ważny'},
   'permit_s_vrij':      {'nl': 'Vrij vissen', 'en': 'Free fishing', 'de': 'Freies Angeln', 'fr': 'Pêche libre', 'es': 'Pesca libre', 'pl': 'Wolne łowienie'},

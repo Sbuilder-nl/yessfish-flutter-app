@@ -1664,7 +1664,7 @@ class _MapScreenState extends State<MapScreen> {
             onTap: () => _map.move(p, (z + 3.0).clamp(13.0, 18.0)),
             child: _clusterBubble(cnt))));
       } else {
-        out.add(Marker(point: p, width: 44, height: 48, alignment: Alignment.center,
+        out.add(Marker(point: p, width: 44, height: 56, alignment: Alignment.center,
           child: GestureDetector(behavior: HitTestBehavior.opaque,
             onTap: () => _showWater(w), child: _waterMarkerChild(w))));
       }
