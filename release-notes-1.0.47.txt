@@ -1,0 +1,18 @@
+<nl-NL>
+Nieuw: de Gids met visverenigingen, hengelsportwinkels en jachthavens. Op de kaart zie je bij een water wie het visrecht heeft en waar en hoe je volgens de officiële viswaterenlijst mag vissen (nachtvissen, derde hengel, uitzonderingen). Stroming nu gemeten door Rijkswaterstaat. Kleine verbeteringen op de kaart.
+</nl-NL>
+<en-US>
+New: the Directory with angling clubs, tackle shops and marinas. On the map, a water now shows who holds the fishing rights and where and how you may fish according to the official list (night fishing, third rod, exceptions). Current data now measured by Rijkswaterstaat. Small map improvements.
+</en-US>
+<de-DE>
+Neu: das Verzeichnis mit Angelvereinen, Angelgeschäften und Yachthäfen. Auf der Karte siehst du bei einem Gewässer, wer das Fischereirecht hat und wo und wie du laut offizieller Liste angeln darfst (Nachtangeln, dritte Rute, Ausnahmen). Strömung jetzt gemessen von Rijkswaterstaat. Kleine Verbesserungen an der Karte.
+</de-DE>
+<fr-FR>
+Nouveau : l’annuaire des associations de pêche, magasins et ports de plaisance. Sur la carte, un plan d’eau indique qui détient les droits de pêche et où et comment pêcher selon la liste officielle (pêche de nuit, troisième canne, exceptions). Courant désormais mesuré par Rijkswaterstaat. Petites améliorations de la carte.
+</fr-FR>
+<es-ES>
+Novedad: el directorio de clubes de pesca, tiendas y puertos deportivos. En el mapa, cada agua muestra quién tiene los derechos de pesca y dónde y cómo puedes pescar según la lista oficial (pesca nocturna, tercera caña, excepciones). Corriente medida ahora por Rijkswaterstaat. Pequeñas mejoras en el mapa.
+</es-ES>
+<pl-PL>
+Nowość: katalog kół wędkarskich, sklepów i przystani. Na mapie przy łowisku widać, kto ma prawa połowowe oraz gdzie i jak można łowić według oficjalnej listy (połów nocny, trzecia wędka, wyjątki). Prąd mierzony teraz przez Rijkswaterstaat. Drobne ulepszenia mapy.
+</pl-PL>
