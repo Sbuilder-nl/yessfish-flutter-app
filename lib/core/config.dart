@@ -4,6 +4,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 class Config {
   static const String apiBase = 'https://api.yessfish.com/api';
   static const String origin = 'https://api.yessfish.com';
+  // Website (gids-profielen, partner worden) — opent in de app-browser.
+  static const String webOrigin = 'https://yessfish.com';
   // Realtime (Reverb / Pusher-protocol)
   static const String reverbKey = 'fe25b2682d3a72029cc4';
   static const String reverbHost = 'api.yessfish.com';

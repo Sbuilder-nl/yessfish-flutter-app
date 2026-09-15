@@ -33,6 +33,8 @@ import 'discipline_dashboards_screen.dart';
 import 'vistijl_tools_screen.dart';
 import '../core/vistijl_tools_i18n.dart';
 import '../core/disciplines_i18n.dart';
+import '../core/gids_i18n.dart';
+import 'gids_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -116,6 +118,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
   );
 
+  /// Tegel die een websitepagina opent in de app-browser.
+  Widget _webTile(IconData ic, String label, String pad) => InkWell(
+    onTap: () => openWebPagina(pad),
+    borderRadius: BorderRadius.circular(14),
+    child: Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(ic, color: AppColors.teal, size: 26),
+        const SizedBox(height: 7),
+        Text(label, textAlign: TextAlign.center, maxLines: 2, style: const TextStyle(fontSize: 11.5, height: 1.1, color: Color(0xFF334155), fontWeight: FontWeight.w500)),
+      ]),
+    ),
+  );
+
   Widget _section(String title, List<Widget> tiles) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Padding(padding: const EdgeInsets.fromLTRB(2, 18, 0, 8), child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy))),
     GridView.count(crossAxisCount: 4, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -164,6 +181,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.cloud_outlined, context.tr('p.weather'), const WeatherScreen()),
         _tile(Icons.badge_outlined, context.tr('p.docs'), const LicensesScreen()),
         _tile(Icons.upload_file_outlined, mdt(context, 'title'), const MijnDataScreen()),
+      ]),
+      _section(gt(context, 'sec_gids'), [
+        _tile(Icons.anchor, gt(context, 'clubs'), const GidsScreen(startTab: 0)),
+        _tile(Icons.storefront_outlined, gt(context, 'shops'), const GidsScreen(startTab: 1)),
+        _tile(Icons.sailing_outlined, gt(context, 'marinas'), const GidsScreen(startTab: 2)),
+      ]),
+      _section(gt(context, 'sec_partners'), [
+        _webTile(Icons.handshake_outlined, gt(context, 'partner'), '/partner'),
+        _webTile(Icons.campaign_outlined, gt(context, 'advertise'), '/adverteren'),
       ]),
       _section(context.tr('sec.account'), [
         _tile(Icons.settings_outlined, context.tr('p.settings'), const SettingsScreen()),

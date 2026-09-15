@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../widgets/water_vissen_info.dart';
+import '../core/gids_i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -279,6 +281,22 @@ class _MapScreenState extends State<MapScreen> {
     return const Color(0xFFA5D8F3);
   }
 
+  void _toonMeting(Map f) {
+    final d = f['discharge_m3s'], v = f['velocity_ms'];
+    final t = DateTime.tryParse('${f['measured_at'] ?? ''}')?.toLocal();
+    final tijd = t == null ? '' : '${t.day}-${t.month} ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    showModalBottomSheet(context: context, builder: (c) => SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('🌊 ${f['name'] ?? ''}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8),
+      if (d != null) Text('$d m³/s', style: const TextStyle(fontSize: 15)),
+      if (v != null) Text('${gt(c, 'fl_snelheid')}: $v m/s', style: const TextStyle(fontSize: 15)),
+      if (tijd.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(gt(c, 'fl_gemeten', {'t': tijd}), style: const TextStyle(color: Colors.black54))),
+      const SizedBox(height: 10),
+      InkWell(onTap: () => launchUrl(Uri.parse('https://waterinfo.rws.nl'), mode: LaunchMode.externalApplication),
+        child: Text(gt(c, 'fl_bron'), style: const TextStyle(fontSize: 12, color: AppColors.teal, decoration: TextDecoration.underline))),
+    ]))));
+  }
+
   Future<void> _loadFlow() async {
     if (!_flowOn) return;
     try {
@@ -529,10 +547,12 @@ class _MapScreenState extends State<MapScreen> {
     setState(() { _activeWaterId = w['id']; _activeSpots = near; _shapeWaterId = w['id']; _selWaterPoly = []; _editShape = false; });
     // Vorm + aanvraag-info laden ná het openen; werkt de knoppen bij via 'meta'.
     final meta = ValueNotifier<Map<String, dynamic>?>(w['polygon'] != null ? {'has_shape': true, 'count': 0} : null);
+    final detail = ValueNotifier<Map?>(null);   // permits + officiële regels (taal van de app)
     () async {
       try {
-        final full = await Api.get('/waters/${w['id']}');
+        final full = await Api.get('/waters/${w['id']}?lang=${Provider.of<I18n>(context, listen: false).locale}');
         if (full is Map) {
+          detail.value = full;
           final ring = _ringFromGeo(full['polygon']);
           if (mounted && _shapeWaterId == w['id']) setState(() => _selWaterPoly = ring);
           meta.value = {'has_shape': full['has_shape'] == true || ring.isNotEmpty, 'count': (full['shape_request_count'] is num) ? (full['shape_request_count'] as num).toInt() : 0, 'rating': full['rating']};
@@ -569,6 +589,8 @@ class _MapScreenState extends State<MapScreen> {
               backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact);
           }),
         ])),
+        // 1b. Wie heeft hier het visrecht + waar en hoe je hier mag vissen (officiële bron).
+        ValueListenableBuilder<Map?>(valueListenable: detail, builder: (_, d, __) => d == null ? const SizedBox.shrink() : WaterVissenInfo(data: d)),
         // 2. Wat je hier doet: vangst loggen (snelvangst met dit water ingevuld) of een stek zetten.
         Padding(padding: const EdgeInsets.only(top: 12), child: Row(children: [
           Expanded(child: FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
@@ -1854,14 +1876,15 @@ class _MapScreenState extends State<MapScreen> {
                   CircleMarker(point: LatLng(double.parse('${c['lat']}'), double.parse('${c['lng']}')),
                     radius: 11, color: _depthColor(double.parse('${c['depth']}')).withValues(alpha: 0.75)),
               ]),
-            // Stromingslaag: rivierpunten gekleurd op afvoer (m3/s).
+            // Stromingslaag: meetstations van Rijkswaterstaat (gemeten debiet m³/s en/of stroomsnelheid m/s, ≤ 6 uur oud). Tik = details + bron.
             if (_flowOn && _flowPoints.isNotEmpty)
-              CircleLayer(circles: [
+              MarkerLayer(markers: [
                 for (final f in _flowPoints)
                   if (f['lat'] != null && f['lng'] != null)
-                    CircleMarker(point: LatLng(double.parse('${f['lat']}'), double.parse('${f['lng']}')),
-                      radius: 7, color: _flowColor(double.tryParse('${f['discharge_m3s']}') ?? 0),
-                      borderColor: Colors.white, borderStrokeWidth: 1),
+                    Marker(point: LatLng(double.parse('${f['lat']}'), double.parse('${f['lng']}')), width: 22, height: 22,
+                      child: GestureDetector(onTap: () => _toonMeting(f), child: Container(margin: const EdgeInsets.all(4), decoration: BoxDecoration(
+                        color: f['discharge_m3s'] != null ? _flowColor(double.tryParse('${f['discharge_m3s']}') ?? 0) : const Color(0xFF64748B),
+                        shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5))))),
               ]),
             // Concept-vorm tijdens intekenen (oranje).
             if (_editShape && _draftPts.length >= 2)
