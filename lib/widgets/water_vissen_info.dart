@@ -88,7 +88,7 @@ class WaterVissenInfo extends StatelessWidget {
         if (r['members_region_only'] == true) Padding(padding: const EdgeInsets.only(top: 4), child: Text(gt(context, 'or_region_only'), style: const TextStyle(fontSize: 12, color: Color(0xFF065F46), fontWeight: FontWeight.w600))),
         if (r['where'] != null && '${r['where']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('📍 ${gt(context, 'or_where')}: ${r['where']}', style: const TextStyle(fontSize: 13, height: 1.35))),
         if (rules.isNotEmpty) ...[
-          Padding(padding: const EdgeInsets.only(top: 6), child: Text(gt(context, 'or_rules'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54))),
+          Padding(padding: const EdgeInsets.only(top: 6), child: Text(gt(context, area is Map ? 'or_rules_area' : 'or_rules'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54))),
           for (final x in rules) Padding(padding: const EdgeInsets.only(top: 2), child: Text('• ${'$x'.replaceFirst(RegExp(r'^[•⁃-]\s*'), '')}', style: const TextStyle(fontSize: 13, height: 1.3))),
         ],
         const SizedBox(height: 4),
