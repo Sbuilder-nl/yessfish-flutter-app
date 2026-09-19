@@ -1627,60 +1627,49 @@ class _MapScreenState extends State<MapScreen> {
     ])));
   }
 
-  // Duidelijk tikbare water-pin: gevulde druppel-vorm met witte rand + schaduw,
-  // zodat het herkenbaar is als aan te tikken marker (i.p.v. een plat icoontje).
-  Widget _waterPin(String level) {
-    // Achtergrond verkleurt met de drukte: rustig = wit, druk = groen/oranje/rood.
-    final busy = level != 'none';
-    final c = _busyColor(level);
-    final bg = busy ? c : Colors.white;
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: 36, height: 36,
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: bg,
-          shape: BoxShape.circle,
-          border: Border.all(color: busy ? Colors.white : const Color(0xFFCBD5E1), width: 2.5),
-          boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2))],
+  /// Water-marker: de YessFish-dobber op een WITTE schijf, met de drukte in de RING.
+  ///
+  /// Eén vormentaal met het web (Richard 17-09-2026). Daar is dit een schijf van 34×34 met een
+  /// ring van 3 px en het logo van 20×22 erin. De dobber zelf verandert nooit van kleur — dat is
+  /// het merk; alleen de ring vertelt of het er druk is. De app vulde de héle schijf met de
+  /// druktekleur en zette er een pijltje onder; daardoor stonden dezelfde wateren er op de site
+  /// en in de app verschillend bij (19-09-2026).
+  static const double _schijf = 34;
+
+  Widget _schijfMarker(String level, {Widget? badge, Color? ringKleur}) {
+    final c = ringKleur ?? _waterColor(level);
+    return SizedBox(
+      width: _schijf, height: _schijf,
+      child: Stack(clipBehavior: Clip.none, children: [
+        Container(
+          width: _schijf, height: _schijf,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: c, width: 3),
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 1))],
+          ),
         ),
-        child: Image.asset('assets/marker_dobber.png', fit: BoxFit.contain),
-      ),
-      // Klein puntje eronder → leest als kaart-speld die ergens naar wijst.
-      Transform.translate(offset: const Offset(0, -4), child: Icon(Icons.arrow_drop_down, color: busy ? c : const Color(0xFF94A3B8), size: 18)),
-    ]);
+        Positioned(left: 7, top: 6, width: 20, height: 22,
+          child: Image.asset('assets/marker_dobber.png', fit: BoxFit.contain)),
+        if (badge != null) Positioned(right: -3, top: -3, child: badge),
+      ]),
+    );
   }
 
-  // Betaalwater = goud-omrande dobber (zelfde dobber-thema) met €-badge en,
-  // net als gratis water, een drukte-gekleurde achtergrond.
-  Widget _paidPin(String level) {
-    const gold = Color(0xFFD4A017);
-    final busy = level != 'none';
-    final c = _busyColor(level);
-    final bg = busy ? c : Colors.white;
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Stack(clipBehavior: Clip.none, children: [
-        Container(
-          width: 36, height: 36,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: bg,
-            shape: BoxShape.circle,
-            border: Border.all(color: gold, width: 3), // gouden rand = betaalwater
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2))],
-          ),
-          child: Image.asset('assets/marker_dobber.png', fit: BoxFit.contain),
-        ),
-        Positioned(right: -3, bottom: -3, child: Container(
-          width: 16, height: 16,
-          decoration: BoxDecoration(color: gold, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5)),
-          alignment: Alignment.center,
-          child: const Icon(Icons.euro, color: Colors.white, size: 10),
-        )),
-      ]),
-      Transform.translate(offset: const Offset(0, -4), child: Icon(Icons.arrow_drop_down, color: busy ? c : gold, size: 18)),
-    ]);
-  }
+  Widget _waterPin(String level) => _schijfMarker(level);
+
+  /// Betaalwater: zelfde schijf en drukte-ring, met een gouden €-munt rechtsboven — als op het web.
+  Widget _paidPin(String level) => _schijfMarker(level, badge: Container(
+    width: 16, height: 16,
+    decoration: BoxDecoration(
+      color: const Color(0xFFD4A017), shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 2),
+      boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1))],
+    ),
+    alignment: Alignment.center,
+    child: const Text('€', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, height: 1)),
+  ));
 
   bool _spotPasses(Map s) {
     if (_spotFilter == 'public') return s['privacy'] == 'public';

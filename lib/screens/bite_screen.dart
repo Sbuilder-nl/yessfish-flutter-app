@@ -3,6 +3,7 @@ import '../core/api.dart';
 import '../widgets/streak_card.dart';
 import '../core/config.dart';
 import '../core/location.dart';
+import 'package:provider/provider.dart';
 import '../core/i18n.dart';
 import '../core/rondleiding.dart';
 
@@ -13,6 +14,9 @@ class BiteScreen extends StatefulWidget {
 }
 
 class _BiteScreenState extends State<BiteScreen> {
+  /// Welke factor staat opengeklapt; null = geen. Eén tegelijk, net als op het web.
+  String? _openFactor;
+
   Map? _data;
   Map? _sol;
   bool _loading = true;
@@ -104,12 +108,34 @@ class _BiteScreenState extends State<BiteScreen> {
         const SizedBox(height: 8),
         TourAnker(id: 'bijt-factoren', child: Column(children: [...factors.map((f) {
           final s = (f['score'] ?? 0) as int;
-          return Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
-            SizedBox(width: 96, child: Text(_factorNl(f['key']), style: const TextStyle(fontSize: 13))),
-            Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(value: s / 100, minHeight: 10, backgroundColor: const Color(0xFFE5E7EB), color: AppColors.teal))),
-            SizedBox(width: 64, child: Text(' ${f['detail'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.black45), overflow: TextOverflow.ellipsis)),
-          ]));
+          final sleutel = '${f['key']}';
+          final uitleg = kFactorUitleg[sleutel]?[Provider.of<I18n>(context, listen: false).locale]
+              ?? kFactorUitleg[sleutel]?['en'];
+          final open = _openFactor == sleutel;
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Tikken opent de uitleg, net als op het web. Het cijfer alleen zegt te weinig.
+            InkWell(
+              onTap: uitleg == null ? null : () => setState(() => _openFactor = open ? null : sleutel),
+              child: Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
+                SizedBox(width: 96, child: Row(children: [
+                  Flexible(child: Text(_factorNl(f['key']), style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
+                  if (uitleg != null) Icon(open ? Icons.expand_less : Icons.expand_more, size: 15, color: Colors.black38),
+                ])),
+                Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(value: s / 100, minHeight: 10, backgroundColor: const Color(0xFFE5E7EB), color: AppColors.teal))),
+                SizedBox(width: 64, child: Text(' ${f['detail'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.black45), overflow: TextOverflow.ellipsis)),
+              ])),
+            ),
+            if (open && uitleg != null) Padding(
+              padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
+                child: Text(uitleg, style: const TextStyle(fontSize: 12, height: 1.45, color: Color(0xFF475569))),
+              ),
+            ),
+          ]);
         })])),
         const SizedBox(height: 16),
         if (windows.isNotEmpty) ...[
@@ -135,3 +161,17 @@ class _BiteScreenState extends State<BiteScreen> {
     );
   }
 }
+
+/// Uitleg per bijtkans-factor, letterlijk gelijk aan het web.
+///
+/// Het cijfer alleen zegt een lid weinig: "In de buurt 40%" roept vooral de vraag op wat dat
+/// betekent. Deze teksten komen één op één uit de webversie, zodat app en site hetzelfde
+/// uitleggen (Richard 17/19-09-2026).
+const Map<String, Map<String, String>> kFactorUitleg = {
+  'solunar': {'nl': 'Zon en maan bepalen de bijtmomenten: rond op- en ondergang en bij nieuwe of volle maan wordt er meer gevangen.', 'en': 'Sun and moon drive the bite: around rise and set and at new or full moon more fish are caught.', 'de': 'Sonne und Mond bestimmen die Beißzeiten: um Auf- und Untergang und bei Neu- oder Vollmond wird mehr gefangen.', 'fr': 'Le soleil et la lune rythment les touches : autour du lever et du coucher et à la nouvelle ou pleine lune, ça mord davantage.', 'es': 'El sol y la luna marcan las picadas: cerca del orto y el ocaso y en luna nueva o llena se pesca más.', 'pl': 'Słońce i księżyc wyznaczają brania: przy wschodzie i zachodzie oraz przy nowiu i pełni łowi się więcej.'},
+  'pressure': {'nl': 'Vis reageert op luchtdruk. Een stabiele of licht dalende druk is meestal beter dan een snel stijgende.', 'en': 'Fish react to air pressure. Steady or slightly falling is usually better than fast rising.', 'de': 'Fische reagieren auf Luftdruck. Stabil oder leicht fallend ist meist besser als schnell steigend.', 'fr': 'Le poisson réagit à la pression. Stable ou en légère baisse vaut mieux qu’une hausse rapide.', 'es': 'El pez reacciona a la presión. Estable o bajando un poco suele ser mejor que subiendo rápido.', 'pl': 'Ryby reagują na ciśnienie. Stabilne lub lekko spadające jest zwykle lepsze niż szybko rosnące.'},
+  'wind': {'nl': 'Wat wind zet het water in beweging en brengt voedsel naar de oever; windstil en keihard zijn allebei minder.', 'en': 'Some wind stirs the water and pushes food to the bank; dead calm and a gale are both worse.', 'de': 'Etwas Wind bewegt das Wasser und treibt Futter ans Ufer; Flaute und Sturm sind beide schlechter.', 'fr': 'Un peu de vent brasse l’eau et pousse la nourriture vers la berge ; le calme plat et la tempête sont moins bons.', 'es': 'Algo de viento mueve el agua y lleva comida a la orilla; la calma total y el vendaval son peores.', 'pl': 'Lekki wiatr porusza wodę i spycha pokarm do brzegu; cisza i wichura są gorsze.'},
+  'clouds': {'nl': 'Bewolking geeft dekking. Veel vis staat bij bewolkt weer actiever en ondieper dan bij felle zon.', 'en': 'Cloud gives cover. Many fish are more active and shallower under cloud than in bright sun.', 'de': 'Wolken geben Deckung. Viele Fische sind bei bewölktem Wetter aktiver und flacher unterwegs.', 'fr': 'Les nuages donnent du couvert. Beaucoup de poissons sont plus actifs et moins profonds par temps couvert.', 'es': 'Las nubes dan cobertura. Muchos peces están más activos y menos profundos con cielo cubierto.', 'pl': 'Chmury dają osłonę. Przy zachmurzeniu ryby są aktywniejsze i płycej.'},
+  'history': {'nl': 'Jouw eigen vangsten: hoe vaak jij in deze maand ving, vergeleken met je gemiddelde over het jaar. Pas zichtbaar vanaf 3 vangsten.', 'en': 'Your own catches: how often you caught in this month compared with your yearly average. Shown from 3 catches.', 'de': 'Deine eigenen Fänge: wie oft du in diesem Monat gefangen hast im Vergleich zu deinem Jahresschnitt. Ab 3 Fängen sichtbar.', 'fr': 'Tes propres prises : combien tu as pris ce mois-ci par rapport à ta moyenne annuelle. Visible à partir de 3 prises.', 'es': 'Tus propias capturas: cuántas hiciste este mes frente a tu media anual. Visible a partir de 3 capturas.', 'pl': 'Twoje połowy: ile złowiłeś w tym miesiącu w porównaniu ze średnią roczną. Widoczne od 3 połowów.'},
+  'community': {'nl': 'Openbare vangsten van andere leden binnen 25 kilometer, deze maand. Vangsten bij vergelijkbaar weer wegen extra mee. Namen zie je niet.', 'en': 'Public catches by other members within 25 kilometres this month. Catches in similar weather count extra. You never see names.', 'de': 'Öffentliche Fänge anderer Mitglieder im Umkreis von 25 Kilometern in diesem Monat. Fänge bei ähnlichem Wetter zählen extra. Namen siehst du nie.', 'fr': 'Prises publiques d’autres membres dans un rayon de 25 kilomètres ce mois-ci. Les prises par météo comparable comptent davantage. Aucun nom affiché.', 'es': 'Capturas públicas de otros miembros en 25 kilómetros a la redonda este mes. Las capturas con tiempo parecido cuentan más. Nunca ves nombres.', 'pl': 'Publiczne połowy innych członków w promieniu 25 kilometrów w tym miesiącu. Połowy przy podobnej pogodzie liczą się bardziej. Nie widzisz nazwisk.'},
+};

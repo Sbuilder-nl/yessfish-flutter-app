@@ -176,11 +176,34 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
     Rondleiding.stop();
   }
 
+  /// Het uit te lichten vlak, teruggebracht tot wat er écht op het scherm past.
+  ///
+  /// Twee dingen gingen hier mis (Richard 19-09-2026: "na een tijdje liep die vast, donkerder
+  /// scherm en kon ik niks meer"):
+  ///  - Een anker dat hoger is dan het scherm — het hele factorenblok, de winactielijst — heeft een
+  ///    bovenkant boven en een onderkant onder de rand. De vier verduisteringspanelen gingen elkaar
+  ///    dan overlappen (vandaar dónkerder) en de ballon werd buiten beeld geduwd: alles zwart, niets
+  ///    meer aan te tikken.
+  ///  - Een anker dat bijna het hele scherm vult licht niets ùit. Dan liever de uitleg in het
+  ///    midden, zoals bij een stap zonder anker.
+  Rect? _bruikbaarVlak(Rect? v, Size scherm) {
+    if (v == null) return null;
+    final bij = Rect.fromLTRB(
+      v.left.clamp(0.0, scherm.width),
+      v.top.clamp(0.0, scherm.height),
+      v.right.clamp(0.0, scherm.width),
+      v.bottom.clamp(0.0, scherm.height),
+    );
+    if (bij.width < 8 || bij.height < 8) return null;              // buiten beeld gescrold
+    if (bij.height > scherm.height * 0.72) return null;            // vult het scherm: wijst niets aan
+    return bij;
+  }
+
   @override
   Widget build(BuildContext context) {
     final taal = _taal(context);
     final scherm = MediaQuery.of(context).size;
-    final v = _vlak;
+    final v = _bruikbaarVlak(_vlak, scherm);
     final klikbaar = _stap.klik && v != null;
 
     return Material(
@@ -236,20 +259,36 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       );
 
   Widget _ballon(String taal, Rect? v, Size scherm) {
-    // Ballon onder de knop, of erboven als daar geen plek is.
-    final onder = v == null || v.bottom + 260 < scherm.height;
-    final top = v == null ? null : (onder ? v.bottom + 20 : null);
-    final bodem = v == null ? null : (onder ? null : scherm.height - v.top + 20);
+    // De ballon staat onder de knop, of erboven als daar geen plek is — maar hij moet ALTIJD
+    // binnen het scherm blijven. Stond hij erbuiten, dan zag een lid alleen nog een donker scherm
+    // zonder knoppen en kon hij geen kant meer op (Richard 19-09-2026).
+    const hoogte = 230.0;   // ruime schatting; de ballon zelf groeit mee met de tekst
+    const marge = 12.0;
+    final maxTop = (scherm.height - hoogte - marge).clamp(marge, scherm.height);
+
+    double top;
+    if (v == null) {
+      top = ((scherm.height - hoogte) / 2).clamp(marge, maxTop);
+    } else if (v.bottom + hoogte + 40 < scherm.height) {
+      top = v.bottom + 20;                       // past eronder
+    } else if (v.top - hoogte - 20 > marge) {
+      top = v.top - hoogte - 20;                 // dan erboven
+    } else {
+      // Past nergens netjes: zet hem op de helft met de meeste ruimte, en altijd in beeld.
+      top = v.top > scherm.height / 2 ? marge : (scherm.height - hoogte - marge);
+    }
 
     return Positioned(
-      left: 12, right: 12,
-      top: v == null ? scherm.height / 2 - 130 : top,
-      bottom: bodem,
+      left: marge, right: marge,
+      top: top.clamp(marge, maxTop),
       child: Material(
         borderRadius: BorderRadius.circular(16),
         elevation: 8,
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          // Lange uitleg of een groot lettertype mag de knoppen nooit uit beeld duwen: de tekst
+          // scrolt, de knoppen blijven staan.
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [

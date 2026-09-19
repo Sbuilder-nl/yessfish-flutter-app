@@ -5,6 +5,7 @@ import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/gids_i18n.dart';
+import 'organisatie_screen.dart';
 
 /// Pagina op de website openen in de app-browser (profiel van vereniging/winkel/jachthaven, partner worden, adverteren).
 Future<void> openWebPagina(String pad) async {
@@ -118,7 +119,12 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
                           title: Text('${it['name']}', maxLines: 2, overflow: TextOverflow.ellipsis),
                           subtitle: Text([if ((it['region'] ?? '').toString().isNotEmpty) '${it['region']}', if (n > 0) gt(context, 'waters', {'n': '$n'}), zelf ? gt(context, 'managed_self') : gt(context, 'managed_yf')].join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis),
                           trailing: const Icon(Icons.chevron_right),
-                          onTap: it['href'] != null ? () => openWebPagina('${it['href']}') : null,
+                          // In de app openen, niet in een browser. Een verenigingspagina op de
+                          // site is sinds 19-09-2026 voor leden, dus een browser kwam uit op een
+                          // inlogmuur — en los daarvan hoort dit gewoon in de app te blijven.
+                          onTap: it['href'] != null ? () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => OrganisatieScreen(href: '${it['href']}', naam: it['name']?.toString()),
+                          )) : null,
                         );
                       },
                     ))),
