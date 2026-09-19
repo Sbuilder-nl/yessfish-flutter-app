@@ -136,6 +136,9 @@ class InviteCard extends StatelessWidget {
   Future<void> _claim(BuildContext context) async {
     final c = TextEditingController();
     final code = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      // scrollable: bij een groot lettertype of een open toetsenbord past de inhoud anders niet
+      // en loopt de tekst buiten beeld (UI-waakhond, Richards leesbaarheidsronde).
+      scrollable: true,
       title: Text(sti(ctx, 'enter_code')),
       content: TextField(controller: c, autofocus: true, textCapitalization: TextCapitalization.characters, maxLength: 10,
         decoration: InputDecoration(hintText: sti(ctx, 'code_hint'))),
