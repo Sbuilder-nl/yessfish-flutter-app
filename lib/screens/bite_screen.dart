@@ -4,6 +4,7 @@ import '../widgets/streak_card.dart';
 import '../core/config.dart';
 import '../core/location.dart';
 import '../core/i18n.dart';
+import '../core/rondleiding.dart';
 
 class BiteScreen extends StatefulWidget {
   const BiteScreen({super.key});
@@ -101,7 +102,7 @@ class _BiteScreenState extends State<BiteScreen> {
         const SizedBox(height: 14),
         Text(context.tr('bite.factors'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
         const SizedBox(height: 8),
-        ...factors.map((f) {
+        TourAnker(id: 'bijt-factoren', child: Column(children: [...factors.map((f) {
           final s = (f['score'] ?? 0) as int;
           return Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Row(children: [
             SizedBox(width: 96, child: Text(_factorNl(f['key']), style: const TextStyle(fontSize: 13))),
@@ -109,7 +110,7 @@ class _BiteScreenState extends State<BiteScreen> {
               child: LinearProgressIndicator(value: s / 100, minHeight: 10, backgroundColor: const Color(0xFFE5E7EB), color: AppColors.teal))),
             SizedBox(width: 64, child: Text(' ${f['detail'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.black45), overflow: TextOverflow.ellipsis)),
           ]));
-        }),
+        })])),
         const SizedBox(height: 16),
         if (windows.isNotEmpty) ...[
           Text(context.tr('bite.windows'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),

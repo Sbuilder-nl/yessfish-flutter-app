@@ -14,6 +14,8 @@ import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/location.dart' as loc;
 import '../core/i18n.dart';
+import '../core/rondleiding.dart';
+import '../widgets/rondleiding_overlay.dart';
 import '../core/map_l10n.dart';
 import 'catch_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -806,14 +808,19 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ],
                 ]))),
-            if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend') Padding(
+            if ((w['permit_type'] != null && '${w['permit_type']}' != 'onbekend')
+                || '${w['permit_pass'] ?? ''}'.trim().isNotEmpty) Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: const Color(0xFFF0F7F5), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFCADFDA))),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(mui(context, 'permit_label'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.black54)),
                   const SizedBox(height: 2),
-                  Text(mui(context, 'permit_${w['permit_type']}'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  // Hier staat de vergunningsnaam wél voluit: in de chip is hij ingekort.
+                  if ('${w['permit_pass'] ?? ''}'.trim().isNotEmpty)
+                    Text('${w['permit_pass']}'.trim(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend')
+                    Text(mui(context, 'permit_${w['permit_type']}'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   if (w['permit_url'] != null && '${w['permit_url']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
                     child: InkWell(onTap: () => launchUrl(Uri.parse('${w['permit_url']}'), mode: LaunchMode.externalApplication),
                       child: Text(mui(context, 'permit_arrange'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
@@ -949,6 +956,10 @@ class _MapScreenState extends State<MapScreen> {
 
   // Eerste keer dat iemand de kaart opent → toon het uitleg-boekje automatisch (daarna niet meer).
   Future<void> _maybeShowHelpOnce() async {
+    // Loopt de rondleiding, dan legt díé de kaart al uit. Allebei tegelijk is twee uitleggen over
+    // elkaar heen — op de emulator gezien bij stap 15 (Richard 19-09-2026). We zetten het boekje
+    // ook niet op "gezien", zodat het alsnog verschijnt als het lid de rondleiding overslaat.
+    if (Rondleiding.loopt) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool('map_help_seen') ?? false) return;
@@ -1100,14 +1111,35 @@ class _MapScreenState extends State<MapScreen> {
     )))));
   }
 
+  /// Vergunningsnaam kort genoeg voor een chip, of null als er geen is.
+  ///
+  /// "Rod fishing licence (Environment Agency) + NRW-regels" past niet op een telefoon. We knippen
+  /// bij de eerste " + " of haak, want daarvóór staat de naam waar het om gaat; de rest leest het
+  /// lid in het regelblad eronder.
+  String? _pasKort(String pas) {
+    var s = pas.trim();
+    if (s.isEmpty) return null;
+    for (final scheiding in [' + ', ' (', ' — ', ' - ']) {
+      final i = s.indexOf(scheiding);
+      if (i > 3 && s.length > 24) s = s.substring(0, i).trim();
+    }
+    return s.isEmpty ? null : s;
+  }
+
   // Korte vergunning-chip: kleur zegt het al (groen = mag, oranje = extra nodig, rood = niet, grijs = onbekend).
   Widget _permitChip(Map w) {
     final t = '${w['permit_type'] ?? 'onbekend'}';
     final kleur = (t == 'landelijk' || t == 'vrij') ? const Color(0xFF16A34A) : t == 'verboden' ? const Color(0xFFDC2626)
       : (t == 'onbekend' || t == 'onduidelijk') ? Colors.grey.shade600 : const Color(0xFFEA580C);
+    // De vergunning volgt het water. Stond hier "VISpas" op een Duits water, dan klopte dat niet:
+    // daar heb je een Fischereischein nodig. De server geeft de juiste naam mee in permit_pass
+    // (Fiskfergunning in Fryslân, Viskaart bij de NHO, Licenza di pesca in Italië). Ontbreekt die,
+    // dan houden we de oude tekst aan — zo blijft Nederland precies zoals het was
+    // (Richard 17/19-09-2026).
+    final tekst = _pasKort('${w['permit_pass'] ?? ''}') ?? mui(context, 'permit_s_$t');
     return ActionChip(
       avatar: Icon(t == 'onbekend' ? Icons.help_outline : t == 'verboden' ? Icons.block : Icons.badge_outlined, size: 16, color: kleur),
-      label: Text(mui(context, 'permit_s_$t'), style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5)),
+      label: Text(tekst, style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5), overflow: TextOverflow.ellipsis),
       backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact,
       onPressed: () => _showRules(w),
     );
@@ -1786,12 +1818,12 @@ class _MapScreenState extends State<MapScreen> {
       onPopInvokedWithResult: (didPop, _) { if (!didPop) setState(() { _placing = null; _movingSpot = null; _editShape = false; _draftPts = []; _shapeMsg = ''; }); },
       child: Scaffold(
       appBar: AppBar(title: Text(context.tr('map.title')), actions: [
-        IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'), onPressed: _openPlaceSearch),
-        TextButton.icon(
+        TourAnker(id: 'kaart-zoeken', child: IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'), onPressed: _openPlaceSearch)),
+        TourAnker(id: 'kaart-lagen', child: TextButton.icon(
           onPressed: _showLayers,
           icon: Icon(Icons.layers, size: 20, color: (_depthOn || _flowOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
           label: Text(mui(context, 'layers_title'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-        ),
+        )),
         const SizedBox(width: 4),
       ]),
       // Knoppen alleen tonen als je niet in plaats-/teken-modus zit.
@@ -1803,12 +1835,12 @@ class _MapScreenState extends State<MapScreen> {
           child: const Icon(Icons.my_location, color: AppColors.teal),
         ),
         const SizedBox(height: 12),
-        FloatingActionButton.large(
+        TourAnker(id: 'kaart-plus', child: FloatingActionButton.large(
           heroTag: 'plus', backgroundColor: AppColors.teal,
           onPressed: _showPlusMenu,
           tooltip: mui(context, 'plus_title'),
           child: const Icon(Icons.add, color: Colors.white, size: 40),
-        ),
+        )),
       ]),
       body: Column(children: [
         // Stekken-filter zit onder 'Lagen'. Zoom-hint alleen als er echt stekken zijn om te zien.

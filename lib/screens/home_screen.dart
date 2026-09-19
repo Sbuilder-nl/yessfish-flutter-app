@@ -28,6 +28,8 @@ import 'catch_detail_screen.dart';
 import 'albums_screen.dart';
 import 'sterren_screen.dart';
 import '../widgets/streak_card.dart';
+import '../core/rondleiding.dart';
+import '../widgets/rondleiding_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,6 +41,14 @@ class _HomeScreenState extends State<HomeScreen> {
   int _i = 0;
   final Set<int> _visited = {0};
   final GlobalKey<FeedScreenState> _feedKey = GlobalKey<FeedScreenState>();
+
+  /// De rondleiding moet zelf naar het juiste tabblad kunnen springen: een stap over de kaart
+  /// heeft geen zin als het lid nog in de feed staat. Daarom geeft dit scherm die schakelaar
+  /// door zodra het opent (Richard 19-09-2026).
+  void _naarTab(int tab) {
+    if (!mounted || tab < 0 || tab > 4) return;
+    setState(() { _i = tab; _visited.add(tab); });
+  }
 
   Widget _pageFor(int idx) {
     switch (idx) {
@@ -81,7 +91,59 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     final auth = context.read<AuthState>();
     if (auth.user != null) context.read<RealtimeService>().start(auth.user!.id);
-    WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); AppConfig.load(); _maybePromptDisciplines(); context.read<AuthState>().refresh(); _initQuickActions(); _initHomeWidget(); });
+    Rondleiding.gaNaarTab = _naarTab;
+    WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); AppConfig.load(); context.read<AuthState>().refresh(); _initQuickActions(); _initHomeWidget(); _startVragen(); });
+  }
+
+  @override
+  void dispose() {
+    if (Rondleiding.gaNaarTab == _naarTab) Rondleiding.gaNaarTab = null;
+    super.dispose();
+  }
+
+  /// Nieuw lid dat de rondleiding nog nooit heeft gezien: één keer aanbieden.
+  ///
+  /// De server bepaalt dat (`suggest`), niet de telefoon. Zo klopt het ook als iemand zich op de
+  /// site aanmeldde en daarna de app installeert, en werkt een reset echt (Richard 19-09-2026).
+  Future<void> _rondleidingAanbieden() async {
+    final stand = await Rondleiding.stand();
+    if (!mounted || stand == null || stand['suggest'] != true) return;
+    final ja = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
+      title: Text(_qt(const {'nl': 'Zal ik je rondleiden?', 'en': 'Shall I show you around?', 'de': 'Soll ich dir alles zeigen?', 'fr': 'Je te fais visiter ?', 'es': '¿Te doy una vuelta?', 'pl': 'Oprowadzić cię?'})),
+      content: Text(_qt(const {
+        'nl': 'We lopen samen door de app: waar je vangsten meldt, hoe de viskaart werkt en wat er allemaal in zit. Duurt een paar minuten en je kunt altijd stoppen.',
+        'en': 'We will walk through the app together: where you log catches, how the map works and what else is in there. Takes a few minutes and you can stop any time.',
+        'de': 'Wir gehen zusammen durch die App: wo du Fänge meldest, wie die Karte funktioniert und was noch drin steckt. Dauert ein paar Minuten, Abbrechen jederzeit.',
+        'fr': 'On parcourt l’app ensemble : où déclarer tes prises, comment marche la carte et tout le reste. Quelques minutes, tu peux arrêter quand tu veux.',
+        'es': 'Recorremos la app juntos: dónde registrar capturas, cómo funciona el mapa y qué más hay. Unos minutos y puedes parar cuando quieras.',
+        'pl': 'Przejdziemy przez aplikację razem: gdzie zgłaszasz połowy, jak działa mapa i co jeszcze tu jest. Kilka minut, możesz przerwać.',
+      })),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false),
+          child: Text(_qt(const {'nl': 'Liever later', 'en': 'Maybe later', 'de': 'Lieber später', 'fr': 'Plus tard', 'es': 'Más tarde', 'pl': 'Może później'}))),
+        FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
+          onPressed: () => Navigator.pop(c, true),
+          child: Text(_qt(const {'nl': 'Neem me mee', 'en': 'Show me', 'de': 'Zeig es mir', 'fr': 'Montre-moi', 'es': 'Enséñame', 'pl': 'Pokaż mi'}))),
+      ],
+    ));
+    if (!mounted) return;
+    if (ja == true) {
+      Rondleiding.start(context);
+    } else {
+      Rondleiding.overslaan();
+    }
+  }
+
+  /// Openingsvragen netjes achter elkaar in plaats van tegelijk.
+  ///
+  /// Anders staan de visstijlen-vraag en de rondleiding-uitnodiging over elkaar heen — op de
+  /// emulator gezien en precies waar Richard op het web ook over viel: twee vensters tegelijk
+  /// (19-09-2026).
+  Future<void> _startVragen() async {
+    await _maybePromptDisciplines();
+    if (!mounted) return;
+    await _rondleidingAanbieden();
   }
 
   // Bestaande én nieuwe accounts: als er nog geen visstijlen gekozen zijn,
@@ -91,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final r = await Api.get('/profile/disciplines');
       final list = (r is Map ? r['disciplines'] : null) as List?;
       if (list == null || list.isNotEmpty || !mounted) return;
-      showDialog(context: context, builder: (ctx) => AlertDialog(
+      await showDialog(context: context, builder: (ctx) => AlertDialog(
         scrollable: true,
         title: Text(dui(ctx, 'title')),
         content: Text(dui(ctx, 'prompt')),
@@ -201,10 +263,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(children: [
         _verifyBanner(),
-        Offstage(offstage: !(_i == 0 || _i == 2), child: StreakBanner(onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const SterrenScreen())); StreakData.load(force: true); })),
+        Offstage(offstage: !(_i == 0 || _i == 2), child: TourAnker(id: 'reeks-balk', child: StreakBanner(onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const SterrenScreen())); StreakData.load(force: true); }))),
         Expanded(child: IndexedStack(index: _i, children: List.generate(5, (idx) => _visited.contains(idx) ? _pageFor(idx) : const SizedBox.shrink()))),
       ]),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: TourAnker(id: 'nav-balk', child: NavigationBar(
         selectedIndex: _i,
         onDestinationSelected: (v) {
           // terug naar (of nogmaals op) de feed-tab → altijd bovenaan beginnen
@@ -221,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: const Icon(Icons.map_outlined), selectedIcon: const Icon(Icons.map), label: context.tr('nav.map')),
           NavigationDestination(icon: const Icon(Icons.grid_view_outlined), selectedIcon: const Icon(Icons.grid_view), label: context.tr('nav.menu')),
         ],
-      ),
+      )),
     );
   }
 }

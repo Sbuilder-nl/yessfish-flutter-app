@@ -4,6 +4,7 @@ import '../core/api.dart';
 import '../core/units.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import '../core/rondleiding.dart';
 import 'new_catch_screen.dart';
 import 'catch_detail_screen.dart';
 
@@ -34,7 +35,7 @@ class _CatchesScreenState extends State<CatchesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: TourAnker(id: 'vangst-nieuw', child: FloatingActionButton.extended(
         backgroundColor: AppColors.teal,
         onPressed: () async {
           final added = await Navigator.push(context, MaterialPageRoute(builder: (_) => const NewCatchScreen()));
@@ -42,7 +43,7 @@ class _CatchesScreenState extends State<CatchesScreen> {
         },
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(context.tr('catches.fab'), style: const TextStyle(color: Colors.white)),
-      ),
+      )),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _catches.isEmpty

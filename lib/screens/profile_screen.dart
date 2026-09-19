@@ -35,6 +35,8 @@ import '../core/vistijl_tools_i18n.dart';
 import '../core/disciplines_i18n.dart';
 import '../core/gids_i18n.dart';
 import 'gids_screen.dart';
+import '../core/rondleiding.dart';
+import '../widgets/rondleiding_overlay.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -98,7 +100,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) context.read<RealtimeService>().refreshCounts();
   }
 
-  Widget _tile(IconData ic, String label, Widget screen, {int badge = 0}) => InkWell(
+  /// [anker] geeft de rondleiding een handvat om deze tegel aan te wijzen — hetzelfde idee als
+  /// `data-tour="..."` op het web (Richard 19-09-2026).
+  Widget _tile(IconData ic, String label, Widget screen, {int badge = 0, String? anker}) {
+    final tegel = _tileInhoud(ic, label, screen, badge: badge);
+    return anker == null ? tegel : TourAnker(id: anker, child: tegel);
+  }
+
+  Widget _tileInhoud(IconData ic, String label, Widget screen, {int badge = 0}) => InkWell(
     onTap: () => _open(screen),
     borderRadius: BorderRadius.circular(14),
     child: Container(
@@ -133,6 +142,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
   );
 
+  /// De rondleiding nog eens doen. Staat bewust in het menu en niet alleen bij de eerste keer:
+  /// een lid moet hem altijd terug kunnen kijken (Richard 19-09-2026).
+  Widget _rondleidingTegel() => InkWell(
+    onTap: () => Rondleiding.opnieuw(context),
+    borderRadius: BorderRadius.circular(14),
+    child: Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.explore_outlined, color: AppColors.teal, size: 26),
+        const SizedBox(height: 7),
+        Text(_rt(const {'nl': 'Rondleiding', 'en': 'Tour', 'de': 'Rundgang', 'fr': 'Visite guidée', 'es': 'Recorrido', 'pl': 'Przewodnik'}),
+          textAlign: TextAlign.center, maxLines: 2,
+          style: const TextStyle(fontSize: 11.5, height: 1.1, color: Color(0xFF334155), fontWeight: FontWeight.w500)),
+      ]),
+    ),
+  );
+
+  String _rt(Map<String, String> m) { final l = context.read<I18n>().locale; return m[l] ?? m['en'] ?? m['nl'] ?? ''; }
+
   Widget _section(String title, List<Widget> tiles) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Padding(padding: const EdgeInsets.fromLTRB(2, 18, 0, 8), child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy))),
     GridView.count(crossAxisCount: 4, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
@@ -160,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _statsCard(),
       _section(context.tr('sec.social'), [
         _tile(Icons.notifications_outlined, context.tr('p.notifications'), const NotificationsScreen(), badge: rt.unread),
-        _tile(Icons.chat_bubble_outline, context.tr('p.messages'), const MessagesScreen(), badge: rt.messagesUnread),
+        _tile(Icons.chat_bubble_outline, context.tr('p.messages'), const MessagesScreen(), badge: rt.messagesUnread, anker: 'menu-berichten'),
         _tile(Icons.people_outline, context.tr('p.friends'), const FriendsScreen(), badge: rt.pendingFriends),
         _tile(Icons.emoji_events_outlined, context.tr('p.leaderboard'), const LeaderboardScreen()),
         _tile(Icons.leaderboard_outlined, context.tr('toplist.title'), const ToplistScreen()),
@@ -169,21 +198,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _section(context.tr('sec.fishing'), [
         _tile(Icons.style_outlined, dui(context, 'title'), const DisciplineDashboardsScreen()),
         _tile(Icons.handyman_outlined, vtt(context, 'title'), const VistijlToolsScreen()),
-        _tile(Icons.photo_album_outlined, context.tr('p.albums'), const AlbumsScreen()),
-        _tile(Icons.phishing, context.tr('p.tackle'), const TackleScreen()),
-        _tile(Icons.military_tech_outlined, context.tr('p.tournaments'), const TournamentsScreen()),
+        _tile(Icons.photo_album_outlined, context.tr('p.albums'), const AlbumsScreen(), anker: 'menu-albums'),
+        _tile(Icons.phishing, context.tr('p.tackle'), const TackleScreen(), anker: 'menu-uitrusting'),
+        _tile(Icons.military_tech_outlined, context.tr('p.tournaments'), const TournamentsScreen(), anker: 'menu-wedstrijden'),
         _tile(Icons.map_outlined, context.tr('p.map'), const MapScreen()),
       ]),
       _section(context.tr('sec.tools'), [
-        _tile(Icons.auto_awesome, context.tr('p.identify'), const IdentifyScreen()),
+        _tile(Icons.auto_awesome, context.tr('p.identify'), const IdentifyScreen(), anker: 'menu-herkennen'),
         if (AppConfig.aiVisible) _tile(Icons.smart_toy_outlined, visAiLabel(context), const VisAiScreen()),
-        _tile(Icons.menu_book_outlined, context.tr('p.species'), const SpeciesScreen()),
+        _tile(Icons.menu_book_outlined, context.tr('p.species'), const SpeciesScreen(), anker: 'menu-soorten'),
         _tile(Icons.cloud_outlined, context.tr('p.weather'), const WeatherScreen()),
-        _tile(Icons.badge_outlined, context.tr('p.docs'), const LicensesScreen()),
-        _tile(Icons.upload_file_outlined, mdt(context, 'title'), const MijnDataScreen()),
+        _tile(Icons.badge_outlined, context.tr('p.docs'), const LicensesScreen(), anker: 'menu-documenten'),
+        _tile(Icons.upload_file_outlined, mdt(context, 'title'), const MijnDataScreen(), anker: 'menu-mijndata'),
       ]),
       _section(gt(context, 'sec_gids'), [
-        _tile(Icons.anchor, gt(context, 'clubs'), const GidsScreen(startTab: 0)),
+        _tile(Icons.anchor, gt(context, 'clubs'), const GidsScreen(startTab: 0), anker: 'menu-gids'),
         _tile(Icons.storefront_outlined, gt(context, 'shops'), const GidsScreen(startTab: 1)),
         _tile(Icons.sailing_outlined, gt(context, 'marinas'), const GidsScreen(startTab: 2)),
       ]),
@@ -192,7 +221,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _webTile(Icons.campaign_outlined, gt(context, 'advertise'), '/adverteren'),
       ]),
       _section(context.tr('sec.account'), [
-        _tile(Icons.settings_outlined, context.tr('p.settings'), const SettingsScreen()),
+        _rondleidingTegel(),
+        _tile(Icons.settings_outlined, context.tr('p.settings'), const SettingsScreen(), anker: 'menu-instellingen'),
         if (u?.canModerate == true) _tile(Icons.shield_outlined, context.tr('p.moderation'), const ModerationScreen()),
       ]),
     ]);
