@@ -280,10 +280,71 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('feed.deleteFail')))); }
   }
 
-  Future<void> _toggleLike(Map p) async {
-    final liked = p['liked_by_me'] == true;
-    setState(() { p['liked_by_me'] = !liked; p['likes_count'] = (p['likes_count'] ?? 0) + (liked ? -1 : 1); });
-    try { await (liked ? Api.delete('/posts/${p['id']}/like') : Api.post('/posts/${p['id']}/like')); } catch (_) { _load(); }
+  // De oude _toggleLike is vervallen: de duim loopt nu ook via /posts/{id}/reactions, zodat één
+  // plek de telling bijhoudt. De server spiegelt 👍 naar de oude likes, dus een lid met een
+  // oudere app ziet dezelfde duimen (Richard 19-09-2026).
+
+  /// De zes emoji's die de server toestaat. Bewust klein gehouden, zodat het overzichtelijk blijft
+  /// en de telling per emoji iets betekent. De duim telt als de oude 'like', dus een lid met een
+  /// oudere app ziet nog steeds gewoon duimen (Richard 19-09-2026).
+  static const _emojis = ['👍', '❤️', '😂', '😮', '🎣', '🏆'];
+
+  /// Eén tik = duim (of duim weghalen). Ingedrukt houden = kiezen uit de zes.
+  Widget _reactieKnop(Map p) {
+    final r = (p['reactions'] is Map) ? Map<String, dynamic>.from(p['reactions']) : null;
+    final mijn = r?['mine'] as String?;
+    final tellers = (r?['counts'] is Map) ? Map<String, dynamic>.from(r!['counts']) : <String, dynamic>{};
+    final totaal = (r?['total'] as num?)?.toInt() ?? (p['likes_count'] as num?)?.toInt() ?? 0;
+
+    return InkWell(
+      onTap: () => _reageer(p, mijn == '👍' ? null : '👍'),
+      onLongPress: () => _kiesEmoji(p, mijn),
+      child: Row(children: [
+        if (mijn != null)
+          Text(mijn, style: const TextStyle(fontSize: 17))
+        else
+          Icon(Icons.thumb_up, size: 18, color: p['liked_by_me'] == true ? AppColors.teal : Colors.black38),
+        const SizedBox(width: 5),
+        Text('$totaal', style: TextStyle(color: mijn != null ? AppColors.teal : null, fontWeight: mijn != null ? FontWeight.w700 : null)),
+        // De andere emoji's die er al staan, klein ernaast.
+        ...tellers.entries.where((e) => e.key != mijn && ((e.value as num?)?.toInt() ?? 0) > 0).take(3).map(
+          (e) => Padding(padding: const EdgeInsets.only(left: 6), child: Text(e.key, style: const TextStyle(fontSize: 13)))),
+      ]),
+    );
+  }
+
+  Future<void> _kiesEmoji(Map p, String? huidig) async {
+    final keuze = await showModalBottomSheet<String?>(context: context, builder: (c) => SafeArea(
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        child: Wrap(alignment: WrapAlignment.center, spacing: 6, children: [
+          for (final e in _emojis) InkWell(
+            borderRadius: BorderRadius.circular(40),
+            onTap: () => Navigator.pop(c, e),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: e == huidig ? BoxDecoration(color: AppColors.teal.withValues(alpha: 0.15), shape: BoxShape.circle) : null,
+              child: Text(e, style: const TextStyle(fontSize: 30)))),
+        ])),
+    ));
+    if (keuze != null) await _reageer(p, keuze == huidig ? null : keuze);
+  }
+
+  /// Stuurt de reactie en neemt het antwoord van de server over — die telt, niet de telefoon.
+  Future<void> _reageer(Map p, String? emoji) async {
+    try {
+      final r = await Api.post('/posts/${p['id']}/reactions', {'emoji': emoji});
+      if (r is Map && mounted) {
+        setState(() {
+          p['reactions'] = {'counts': r['counts'] ?? {}, 'total': r['total'] ?? 0, 'mine': r['mine']};
+          if (r['likes_count'] != null) p['likes_count'] = r['likes_count'];
+          p['liked_by_me'] = r['mine'] == '👍';
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      _load();
+    }
   }
 
   Future<void> _translate(Map p) async {
@@ -533,7 +594,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
             if (p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(youtubeId: p['youtube_id']?.toString())),
             const Divider(height: 22),
             Row(children: [
-              InkWell(onTap: () => _toggleLike(p), child: Row(children: [Icon(Icons.thumb_up, size: 18, color: p['liked_by_me'] == true ? AppColors.teal : Colors.black38), const SizedBox(width: 5), Text('${p['likes_count'] ?? 0}')])),
+              _reactieKnop(p),
               const SizedBox(width: 20),
               InkWell(onTap: () => _openComments(p), child: Row(children: [const Icon(Icons.mode_comment_outlined, size: 18, color: Colors.black38), const SizedBox(width: 5), Text('${p['comments_count'] ?? 0}')])),
               if ((p['visibility'] ?? 'public') == 'public') ...[

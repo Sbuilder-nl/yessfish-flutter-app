@@ -15,6 +15,7 @@ import '../core/config.dart';
 import '../core/location.dart' as loc;
 import '../core/i18n.dart';
 import '../core/rondleiding.dart';
+import 'federatie_screen.dart';
 import '../widgets/rondleiding_overlay.dart';
 import '../core/map_l10n.dart';
 import 'catch_detail_screen.dart';
@@ -819,6 +820,20 @@ class _MapScreenState extends State<MapScreen> {
                   // Hier staat de vergunningsnaam wél voluit: in de chip is hij ingekort.
                   if ('${w['permit_pass'] ?? ''}'.trim().isNotEmpty)
                     Text('${w['permit_pass']}'.trim(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  // Doorklikken naar de federatie achter deze vergunning: welke regels gelden er,
+                  // wat kost de pas, en waar staat dat officieel. Zelfde pagina als op het web.
+                  if ('${w['federation_slug'] ?? ''}'.trim().isNotEmpty) Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: InkWell(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => FederatieScreen(slug: '${w['federation_slug']}', naam: w['permit_pass']?.toString()))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(_mt(context, const {
+                          'nl': 'Regels en prijzen', 'en': 'Rules and prices', 'de': 'Regeln und Preise',
+                          'fr': 'Règles et tarifs', 'es': 'Normas y precios', 'pl': 'Zasady i ceny'}),
+                          style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
+                        const Icon(Icons.chevron_right, size: 18, color: AppColors.teal),
+                      ]))),
                   if (w['permit_type'] != null && '${w['permit_type']}' != 'onbekend')
                     Text(mui(context, 'permit_${w['permit_type']}'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   if (w['permit_url'] != null && '${w['permit_url']}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
@@ -1077,6 +1092,85 @@ class _MapScreenState extends State<MapScreen> {
   void _openNavigation(double la, double lo) => launchUrl(Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$la,$lo'), mode: LaunchMode.externalApplication);
 
   // Lagen: alle aan/uit-schakelaars op één plek (dieptelaag, stroming, stekken-filter, land, auto-inchecken, uitleg).
+  String _mt(BuildContext c, Map<String, String> m) {
+    final l = Provider.of<I18n>(c, listen: false).locale;
+    return m[l] ?? m['en'] ?? m['nl'] ?? '';
+  }
+
+  /// Lijst met wateren waar diepte beschikbaar is, in twee groepen.
+  ///
+  /// De server bepaalt welke dat zijn (wat in beeld is, plus wat je zelf hebt ontgrendeld of
+  /// waar je zelf deelt). Tik op een water en de kaart vliegt ernaartoe met de dieptelaag aan.
+  Future<void> _toonDiepteWateren() async {
+    final b = _map.camera.visibleBounds;
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (bladCtx) => FutureBuilder(
+      future: Api.get('/depth/wateren?minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}'),
+      builder: (ctx, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+        }
+        final r = snap.data;
+        final lijst = (r is Map && r['data'] is List) ? List<Map<String, dynamic>>.from((r['data'] as List).map((e) => Map<String, dynamic>.from(e))) : <Map<String, dynamic>>[];
+        final kosten = (r is Map ? (r['kosten'] as num?)?.toInt() : null) ?? 0;
+        final mijne = lijst.where((w) => w['ontgrendeld'] == true).toList();
+        final rest = lijst.where((w) => w['ontgrendeld'] != true).toList();
+
+        Widget regel(Map<String, dynamic> w, {required bool vanMij}) => ListTile(
+          leading: Icon(vanMij ? Icons.check_circle : Icons.lock_outline,
+            color: vanMij ? const Color(0xFF16A34A) : Colors.black38, size: 20),
+          title: Text('${w['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text([
+            '${w['vakken'] ?? 0} ${_mt(ctx, const {'nl': 'vakken', 'en': 'cells', 'de': 'Felder', 'fr': 'cases', 'es': 'celdas', 'pl': 'pól'})}',
+            if ((w['vissers'] as num?) != null && (w['vissers'] as num) > 0)
+              '${w['vissers']} ${_mt(ctx, const {'nl': 'vissers', 'en': 'anglers', 'de': 'Angler', 'fr': 'pêcheurs', 'es': 'pescadores', 'pl': 'wędkarzy'})}',
+            if (w['officieel'] == true) _mt(ctx, const {'nl': 'officiële meting', 'en': 'official survey', 'de': 'amtliche Messung', 'fr': 'relevé officiel', 'es': 'medición oficial', 'pl': 'pomiar urzędowy'}),
+            if (w['deel_ik'] == true) _mt(ctx, const {'nl': 'jij deelt hier', 'en': 'you share here', 'de': 'du teilst hier', 'fr': 'tu partages ici', 'es': 'compartes aquí', 'pl': 'tu udostępniasz'}),
+          ].join(' · '), style: const TextStyle(fontSize: 12)),
+          trailing: vanMij ? null : Text('$kosten ⭐', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFD4A017))),
+          onTap: () {
+            Navigator.pop(bladCtx);
+            final lat = (w['latitude'] as num?)?.toDouble();
+            final lng = (w['longitude'] as num?)?.toDouble();
+            if (lat == null || lng == null) return;
+            if (!_depthOn) _setDepth(true);
+            _map.move(LatLng(lat, lng), 14);
+          },
+        );
+
+        return SafeArea(child: SingleChildScrollView(child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 8), child: Text(
+              _mt(ctx, const {'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
+                'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'}),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
+            if (lijst.isEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 20), child: Text(
+              _mt(ctx, const {
+                'nl': 'Hier is nog geen dieptedata. Vaar je met een fishfinder? Dan kun je die zelf delen.',
+                'en': 'No depth data here yet. Using a fishfinder? You can share yours.',
+                'de': 'Hier gibt es noch keine Tiefendaten. Mit Echolot unterwegs? Du kannst deine teilen.',
+                'fr': 'Pas encore de données de profondeur ici. Tu as un sondeur ? Tu peux partager les tiennes.',
+                'es': 'Aún no hay datos de profundidad aquí. ¿Usas sonda? Puedes compartir los tuyos.',
+                'pl': 'Tu nie ma jeszcze danych o głębokości. Masz echosondę? Możesz udostępnić swoje.'}),
+              style: const TextStyle(color: Colors.black54))),
+            if (mijne.isNotEmpty) ...[
+              Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 2), child: Text(
+                _mt(ctx, const {'nl': 'Van jou', 'en': 'Yours', 'de': 'Von dir', 'fr': 'À toi', 'es': 'Tuyas', 'pl': 'Twoje'}),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
+              ...mijne.map((w) => regel(w, vanMij: true)),
+            ],
+            if (rest.isNotEmpty) ...[
+              Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 2), child: Text(
+                _mt(ctx, const {'nl': 'Te ontgrendelen', 'en': 'To unlock', 'de': 'Freischaltbar', 'fr': 'À débloquer', 'es': 'Para desbloquear', 'pl': 'Do odblokowania'}),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
+              ...rest.map((w) => regel(w, vanMij: false)),
+            ],
+          ]),
+        )));
+      },
+    ));
+  }
+
   void _showLayers() {
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => StatefulBuilder(builder: (ctx, setS) => SafeArea(child: SingleChildScrollView(child: Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
@@ -1084,6 +1178,24 @@ class _MapScreenState extends State<MapScreen> {
         Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 4), child: Text(mui(ctx, 'layers_title'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
         SwitchListTile(secondary: const Icon(Icons.water, color: Color(0xFF2563EB)), title: Text(mui(ctx, 'depth_layer')), subtitle: Text(mui(ctx, 'depth_hint'), style: const TextStyle(fontSize: 12)),
           value: _depthOn, onChanged: (v) { _setDepth(v); setS(() {}); }),
+        // Welke wateren hebben hier diepte? Zelfde twee groepen als op het web: wat je al hebt,
+        // en wat je kunt ontgrendelen. Zonder dit zag een lid alleen een lege blauwe laag en
+        // wist hij niet wáár hij moest kijken (Richard 19-09-2026).
+        TourAnker(id: 'kaart-dieptemenu', child: ListTile(
+          leading: const Icon(Icons.layers_outlined, color: Color(0xFF2563EB)),
+          title: Text(_mt(ctx, const {
+            'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
+            'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'})),
+          subtitle: Text(_mt(ctx, const {
+            'nl': 'Wat je al hebt, en wat je kunt ontgrendelen',
+            'en': 'What you already have, and what you can unlock',
+            'de': 'Was du schon hast, und was du freischalten kannst',
+            'fr': 'Ce que tu as déjà, et ce que tu peux débloquer',
+            'es': 'Lo que ya tienes y lo que puedes desbloquear',
+            'pl': 'Co już masz i co możesz odblokować'}), style: const TextStyle(fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () { Navigator.pop(ctx); _toonDiepteWateren(); },
+        )),
         SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
           value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); }),
         const Divider(height: 8),

@@ -35,6 +35,9 @@ import '../core/vistijl_tools_i18n.dart';
 import '../core/disciplines_i18n.dart';
 import '../core/gids_i18n.dart';
 import 'gids_screen.dart';
+import 'wedstrijd_screen.dart';
+import 'winacties_screen.dart';
+import 'schone_stek_screen.dart';
 import '../core/rondleiding.dart';
 import '../widgets/rondleiding_overlay.dart';
 
@@ -201,6 +204,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.photo_album_outlined, context.tr('p.albums'), const AlbumsScreen(), anker: 'menu-albums'),
         _tile(Icons.phishing, context.tr('p.tackle'), const TackleScreen(), anker: 'menu-uitrusting'),
         _tile(Icons.military_tech_outlined, context.tr('p.tournaments'), const TournamentsScreen(), anker: 'menu-wedstrijden'),
+        _tile(Icons.emoji_events_outlined, _rt(const {'nl': 'Wedstrijd', 'en': 'Contest', 'de': 'Wettbewerb', 'fr': 'Concours', 'es': 'Concurso', 'pl': 'Konkurs'}), const WedstrijdScreen(), anker: 'menu-wedstrijd'),
+        _tile(Icons.cleaning_services_outlined, _rt(const {'nl': 'Schone stek', 'en': 'Clean spot', 'de': 'Saubere Stelle', 'fr': 'Spot propre', 'es': 'Sitio limpio', 'pl': 'Czyste stanowisko'}), const SchoneStekScreen(), anker: 'menu-schone-stek'),
         _tile(Icons.map_outlined, context.tr('p.map'), const MapScreen()),
       ]),
       _section(context.tr('sec.tools'), [
@@ -215,6 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.anchor, gt(context, 'clubs'), const GidsScreen(startTab: 0), anker: 'menu-gids'),
         _tile(Icons.storefront_outlined, gt(context, 'shops'), const GidsScreen(startTab: 1)),
         _tile(Icons.sailing_outlined, gt(context, 'marinas'), const GidsScreen(startTab: 2)),
+        _tile(Icons.card_giftcard_outlined, _rt(const {'nl': 'Winacties', 'en': 'Giveaways', 'de': 'Gewinnspiele', 'fr': 'Jeux-concours', 'es': 'Sorteos', 'pl': 'Konkursy'}), const WinactiesScreen(), anker: 'menu-winacties'),
       ]),
       _section(gt(context, 'sec_partners'), [
         _webTile(Icons.handshake_outlined, gt(context, 'partner'), '/partner'),

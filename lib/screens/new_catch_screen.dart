@@ -10,6 +10,7 @@ import '../core/analytics.dart';
 import '../core/units.dart';
 import '../core/config.dart';
 import '../core/location.dart';
+import 'package:provider/provider.dart';
 import '../core/i18n.dart';
 
 class NewCatchScreen extends StatefulWidget {
@@ -23,6 +24,8 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   final _weight = TextEditingController();
   final _length = TextEditingController();
   final _bait = TextEditingController();
+  final _aantal = TextEditingController();
+  final List<_ExtraSoort> _extra = [];
   String _privacy = 'public';
   bool _showInFeed = true;
   bool _addLocation = true;
@@ -181,6 +184,106 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     setState(() { _waterId = picked['id'] as int?; _waterName = picked['name']?.toString(); });
   }
 
+  /// Alle soorten van deze sessie als regels voor de API: eerst de vaste velden, dan de extra's.
+  /// Lege regels laten we weg — iemand die op "meer soorten" tikt en zich bedenkt hoort geen
+  /// spookvangst in zijn visboek te krijgen.
+  List<Map<String, dynamic>> _rijenVoorSessie() {
+    final uit = <Map<String, dynamic>>[];
+    void voegToe(String soort, String gewicht, String lengte, String aantal, String aas) {
+      if (soort.trim().isEmpty) return;
+      uit.add({
+        'species_text': soort.trim(),
+        'aantal': int.tryParse(aantal.trim()) ?? 1,
+        if (gewicht.trim().isNotEmpty) 'weight_kg': Units.toKg(gewicht),
+        if (lengte.trim().isNotEmpty) 'length_cm': double.tryParse(lengte.replaceAll(',', '.')),
+        if (aas.trim().isNotEmpty) 'bait': aas.trim(),
+      });
+    }
+    voegToe(_species.text, _weight.text, _length.text, _aantal.text, _bait.text);
+    for (final e in _extra) {
+      voegToe(e.soort.text, e.gewicht.text, e.lengte.text, e.aantal.text, '');
+    }
+    return uit;
+  }
+
+  /// Eén regel per extra vissoort. De eerste soort staat in de vaste velden hierboven.
+  ///
+  /// Waarom dit er is: op één sessie vang je zelden één vis. Twintig voorns en twee brasems in
+  /// twintig losse meldingen invoeren doet niemand, dus die vangsten verdwenen uit het visboek.
+  /// De API kent hiervoor /catches/sessie, met per regel een aantal (Richard 18/19-09-2026).
+  Widget _extraSoorten() {
+    final tekst = _t(context, const {
+      'nl': 'Meer soorten gevangen?', 'en': 'Caught more species?', 'de': 'Mehr Arten gefangen?',
+      'fr': 'D’autres espèces ?', 'es': '¿Más especies?', 'pl': 'Więcej gatunków?'});
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (var i = 0; i < _extra.length; i++) Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 6, 6, 10),
+          decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+          child: Column(children: [
+            Row(children: [
+              Expanded(child: TextField(controller: _extra[i].soort,
+                decoration: InputDecoration(labelText: context.tr('newcatch.species'), isDense: true))),
+              IconButton(
+                tooltip: _t(context, const {'nl': 'Regel weghalen', 'en': 'Remove row', 'de': 'Zeile entfernen', 'fr': 'Retirer la ligne', 'es': 'Quitar fila', 'pl': 'Usuń wiersz'}),
+                icon: const Icon(Icons.close, size: 20, color: Colors.black45),
+                onPressed: () => setState(() { _extra[i].weg(); _extra.removeAt(i); })),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              Expanded(child: TextField(controller: _extra[i].gewicht, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: '${context.tr('newcatch.weight')} (${Units.label})', isDense: true))),
+              const SizedBox(width: 8),
+              Expanded(child: TextField(controller: _extra[i].lengte, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(labelText: context.tr('newcatch.length'), isDense: true))),
+              const SizedBox(width: 8),
+              SizedBox(width: 86, child: _aantalVeld(_extra[i].aantal, _t(context, const {
+                'nl': 'Aantal', 'en': 'Number', 'de': 'Anzahl', 'fr': 'Nombre', 'es': 'Cantidad', 'pl': 'Liczba'}))),
+            ]),
+          ]),
+        ),
+      ),
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+        onPressed: _extra.length >= 24 ? null : () => setState(() => _extra.add(_ExtraSoort())),
+        icon: const Icon(Icons.add, size: 18),
+        label: Text(tekst))),
+      // Zo weet een lid wat hij bij gewicht moet invullen als hij er twintig ving.
+      if (_extra.isNotEmpty || (int.tryParse(_aantal.text) ?? 1) > 1) Padding(
+        padding: const EdgeInsets.only(top: 2, left: 4),
+        child: Text(_t(context, const {
+          'nl': 'Vul bij het gewicht dat van de zwaarste vis in.',
+          'en': 'For weight, enter the heaviest fish.',
+          'de': 'Beim Gewicht den schwersten Fisch eintragen.',
+          'fr': 'Pour le poids, indique le plus lourd.',
+          'es': 'En el peso, pon el más pesado.',
+          'pl': 'W wadze wpisz najcięższą rybę.'}),
+          style: const TextStyle(fontSize: 12, color: Colors.black54))),
+    ]);
+  }
+
+  Widget _aantalVeld(TextEditingController c, String label) => TextField(
+    controller: c,
+    keyboardType: TextInputType.number,
+    decoration: InputDecoration(labelText: label, isDense: true, hintText: '1'),
+  );
+
+  String _t(BuildContext c, Map<String, String> m) {
+    final l = c.read<I18n>().locale;
+    return m[l] ?? m['en'] ?? m['nl'] ?? '';
+  }
+
+  @override
+  void dispose() {
+    _species.dispose();
+    _weight.dispose();
+    _length.dispose();
+    _bait.dispose();
+    _aantal.dispose();
+    for (final e in _extra) { e.weg(); }
+    super.dispose();
+  }
+
   Future<void> _save() async {
     if (_species.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('newcatch.enterSpecies'))));
@@ -203,6 +306,27 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         final loc = await currentLocation();
         body['latitude'] = loc.lat;
         body['longitude'] = loc.lng;
+      }
+
+      // Meerdere soorten of meer dan één vis → in één keer als sessie. De server maakt er dan
+      // losse vangsten van met één gezamenlijk feedbericht, zodat de feed niet volloopt.
+      final rijen = _rijenVoorSessie();
+      if (rijen.length > 1) {
+        final sessieBody = Map<String, dynamic>.from(body)
+          ..remove('species_text')
+          ..remove('weight_kg')
+          ..remove('length_cm')
+          ..remove('bait')
+          ..remove('photo_paths');
+        if (_photos.isNotEmpty) sessieBody['photo_path'] = _photos.first['path'];
+        sessieBody['rijen'] = rijen;
+        await Api.post('/catches/sessie', sessieBody);
+        Analytics.log('catch_created');
+        if (mounted) Navigator.pop(context, true);
+        return;
+      }
+      if (rijen.length == 1 && (rijen.first['aantal'] as int) > 1) {
+        body['aantal'] = rijen.first['aantal'];
       }
       final r = await Api.post('/catches', body);
       Analytics.log('catch_created');
@@ -272,6 +396,11 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           const SizedBox(width: 10),
           Expanded(child: TextField(controller: _length, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.tr('newcatch.length')))),
         ]),
+        const SizedBox(height: 8),
+        _aantalVeld(_aantal, _t(context, const {
+          'nl': 'Aantal', 'en': 'Number', 'de': 'Anzahl', 'fr': 'Nombre', 'es': 'Cantidad', 'pl': 'Liczba'})),
+        const SizedBox(height: 12),
+        _extraSoorten(),
         const SizedBox(height: 12),
         TextField(controller: _bait, decoration: InputDecoration(labelText: context.tr('newcatch.bait'))),
         const SizedBox(height: 12),
@@ -338,5 +467,20 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('newcatch.save'))))),
       ]),
     );
+  }
+}
+
+/// Eén extra vissoort in het vangstformulier: soort, gewicht, lengte en aantal.
+class _ExtraSoort {
+  final soort = TextEditingController();
+  final gewicht = TextEditingController();
+  final lengte = TextEditingController();
+  final aantal = TextEditingController();
+
+  void weg() {
+    soort.dispose();
+    gewicht.dispose();
+    lengte.dispose();
+    aantal.dispose();
   }
 }
