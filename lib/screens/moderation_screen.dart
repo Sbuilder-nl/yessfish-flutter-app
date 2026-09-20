@@ -85,12 +85,16 @@ class _ModerationScreenState extends State<ModerationScreen> {
       _members = u is Map ? (u['data'] ?? []) : (u is List ? u : []);
       _ledenTotaal = u is Map ? ((u['totaal'] as num?)?.toInt() ?? _members.length) : _members.length;
     } catch (_) {}
+    // Vergunningmeldingen van leden. Die kwamen binnen maar waren nergens te zien (20-09-2026).
+    try { final v = await Api.get('/admin/permit-reports'); _permits = (v is Map && v['reports'] is List) ? v['reports'] : []; } catch (_) {}
     try { final l = await Api.get('/admin/moderation/log'); _log = l is List ? l : []; } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
 
   /// Welk filter staat er op de ledenlijst; leeg = alles. Richard 20-09-2026: moderators moeten
   /// kunnen zien wie actief is, wie slapend en wie geblokkeerd.
+  List<dynamic> _permits = [];
+
   String _ledenFilter = '';
   int _ledenTotaal = 0;
 
@@ -186,7 +190,24 @@ class _ModerationScreenState extends State<ModerationScreen> {
         if (recent.isNotEmpty) ...[
           const SizedBox(height: 14),
           Text(_lbl('posts'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black45)),
-          ...recent.take(5).map((p) => Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Text('• ${(p['content'] ?? '').toString().replaceAll('\n', ' ')}${p['deleted_at'] != null ? '  (verwijderd)' : ''}', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: p['deleted_at'] != null ? Colors.black38 : Colors.black87)))),
+          // Een moderator kon de persoon wel straffen maar de post niet weghalen (20-09-2026).
+          ...recent.take(5).map((p) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Text('• ${(p['content'] ?? '').toString().replaceAll('\n', ' ')}',
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: p['deleted_at'] != null ? Colors.black38 : Colors.black87,
+                      decoration: p['deleted_at'] != null ? TextDecoration.lineThrough : null))),
+              TextButton(
+                onPressed: () { Navigator.pop(context); _postActie((p['id'] as num).toInt(), p['deleted_at'] != null ? 'restore' : 'delete', uid); },
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  foregroundColor: p['deleted_at'] != null ? const Color(0xFF16A34A) : AppColors.danger),
+                child: Text(_mlbl(p['deleted_at'] != null ? _lTerugzetten : _lVerwijderen), style: const TextStyle(fontSize: 11)),
+              ),
+            ]),
+          )),
         ],
         if (history.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -227,11 +248,12 @@ class _ModerationScreenState extends State<ModerationScreen> {
     if (_loading) return Scaffold(appBar: AppBar(title: Text(context.tr('moderation.title'))), body: const Center(child: CircularProgressIndicator()));
     final openReports = _reports.where((r) => r['status'] == 'open').toList();
     final restReports = _reports.where((r) => r['status'] != 'open').toList();
-    return DefaultTabController(length: 5, child: Scaffold(
+    return DefaultTabController(length: 6, child: Scaffold(
       appBar: AppBar(title: Text(context.tr('moderation.title')), bottom: TabBar(tabs: [
         Tab(text: '${_lbl('tab_reports')}${openReports.isNotEmpty ? ' (${openReports.length})' : ''}'),
         Tab(text: '${_lbl('tab_media')}${_media.isNotEmpty ? ' (${_media.length})' : ''}'),
         Tab(text: '${_lbl('tab_shapes')}${_shapeReqs.isNotEmpty ? ' (${_shapeReqs.length})' : ''}'),
+        Tab(text: '${_mlbl(_lVergunning)}${_permits.isNotEmpty ? ' (${_permits.length})' : ''}'),
         Tab(text: _lbl('tab_members')),
         Tab(text: _lbl('tab_log')),
       ])),
@@ -268,6 +290,12 @@ class _ModerationScreenState extends State<ModerationScreen> {
                     child: Text(_lbl('go_water'))),
                 ));
               }).toList())),
+          // Vergunningmeldingen: wat een lid meldt, naast wat wij zelf al weten over dat water.
+          _permits.isEmpty
+            ? Center(child: Text(_mlbl(_lGeenVergunning), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45)))
+            : RefreshIndicator(onRefresh: _load, child: ListView(
+                padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
+                children: _permits.map<Widget>((m) => _permitKaart(m as Map)).toList())),
           // Leden
           Column(children: [
             Padding(padding: const EdgeInsets.all(10), child: TextField(controller: _searchCtrl, decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 20), hintText: _lbl('search'), isDense: true, border: const OutlineInputBorder()), onChanged: _loadMembers)),
@@ -377,6 +405,141 @@ class _ModerationScreenState extends State<ModerationScreen> {
     'geblokkeerd': {'nl': 'Geblokkeerd', 'en': 'Blocked', 'de': 'Gesperrt', 'fr': 'Bloqué', 'es': 'Bloqueado', 'pl': 'Zablokowany'},
     'geschorst': {'nl': 'Geschorst', 'en': 'Suspended', 'de': 'Zeitlich gesperrt', 'fr': 'Suspendu', 'es': 'Suspendido', 'pl': 'Zawieszony'},
     'verwijderd': {'nl': 'Verwijderd', 'en': 'Deleted', 'de': 'Gelöscht', 'fr': 'Supprimé', 'es': 'Eliminado', 'pl': 'Usunięty'},
+  };
+
+  /// Eén vergunningmelding: wat het lid zegt, en wat wij zelf al weten (vereniging, federatie,
+  /// pas, wat er nu op het water staat). Zo hoeft een moderator niet zelf te gaan zoeken.
+  Widget _permitKaart(Map m) {
+    final bekend = (m['bekend'] as Map?) ?? {};
+    final verenigingen = (bekend['verenigingen'] as List?) ?? [];
+    final claim = '${m['claim'] ?? ''}';
+    final nu = '${bekend['permit_type'] ?? ''}';
+    return Card(margin: const EdgeInsets.only(bottom: 10), child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        InkWell(
+          onTap: () {
+            final id = (m['water_id'] as num?)?.toInt();
+            if (id != null) Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(focusWaterId: id)));
+          },
+          child: Row(children: [
+            const Icon(Icons.place_outlined, size: 16, color: AppColors.teal),
+            const SizedBox(width: 4),
+            Expanded(child: Text('${m['water'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy))),
+            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+          ]),
+        ),
+        const SizedBox(height: 4),
+        Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(color: (_claimKleur[claim] ?? Colors.black26).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+            child: Text(_mlbl(_claimLabels[claim] ?? {'nl': claim, 'en': claim}),
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _claimKleur[claim] ?? Colors.black54)),
+          ),
+          Text('${m['username'] ?? ''}', style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
+        ]),
+        if ('${m['note'] ?? ''}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
+          child: Text('${m['note']}', style: const TextStyle(fontSize: 13))),
+        // Wat wij zelf al weten.
+        Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(10)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_mlbl(_lWijWeten), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
+            const SizedBox(height: 2),
+            Text('${_mlbl(_lStaatNuOp)}: ${nu.isEmpty ? _mlbl(_lNietsIngevuld) : (_mlbl(_soortLabels[nu] ?? {'nl': nu, 'en': nu}))}',
+                style: const TextStyle(fontSize: 12)),
+            if ('${m['country'] ?? ''}'.isNotEmpty) Text('${m['country']}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            if ('${bekend['pas'] ?? ''}'.isNotEmpty) Text('${_mlbl(_lPasHier)}: ${bekend['pas']}', style: const TextStyle(fontSize: 12)),
+            if (verenigingen.isNotEmpty) Text('${_mlbl(_lVerenigingenHier)}: ${verenigingen.map((v) => (v as Map)['naam']).join(', ')}',
+                style: const TextStyle(fontSize: 12)),
+            if (verenigingen.isEmpty && claim == 'club') Text(_mlbl(_lGeenVerenigingBekend),
+                style: const TextStyle(fontSize: 12, color: Color(0xFFB45309))),
+          ]),
+        ),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF16A34A)),
+            onPressed: () => _permitBeslis((m['id'] as num).toInt(), 'approve'),
+            icon: const Icon(Icons.check, size: 16), label: Text(_mlbl(_lKlopt)))),
+          const SizedBox(width: 8),
+          Expanded(child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
+            onPressed: () => _permitBeslis((m['id'] as num).toInt(), 'reject'),
+            icon: const Icon(Icons.close, size: 16), label: Text(_mlbl(_lKloptNiet)))),
+        ]),
+      ]),
+    ));
+  }
+
+  /// Bericht verwijderen of terugzetten vanuit het lid-detail.
+  Future<void> _postActie(int postId, String actie, int uid) async {
+    try {
+      await Api.post('/admin/moderation/post/$postId', {'action': actie});
+      await _load();
+      if (mounted) {
+        final lid = _members.cast<Map?>().firstWhere((m) => m?['id'] == uid, orElse: () => null);
+        if (lid != null) _memberActions(lid);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
+      }
+    }
+  }
+
+  Future<void> _permitBeslis(int id, String actie) async {
+    try {
+      await Api.put('/admin/permit-reports/$id', {'action': actie});
+      if (mounted) setState(() => _permits.removeWhere((m) => (m as Map)['id'] == id));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
+      }
+    }
+  }
+
+  // ── Teksten voor de vergunningmeldingen, zes talen ────────────────────────────────────────
+  static const _lVergunning = {'nl': 'Vergunningen', 'en': 'Permits', 'de': 'Erlaubnisse', 'fr': 'Permis', 'es': 'Licencias', 'pl': 'Zezwolenia'};
+  static const _lGeenVergunning = {'nl': 'Geen openstaande vergunningmeldingen. 👍', 'en': 'No open permit reports. 👍', 'de': 'Keine offenen Meldungen. 👍', 'fr': 'Aucun signalement en attente. 👍', 'es': 'No hay avisos pendientes. 👍', 'pl': 'Brak oczekujących zgłoszeń. 👍'};
+  static const _lWijWeten = {'nl': 'Wat wij nu weten', 'en': 'What we know now', 'de': 'Was wir bisher wissen', 'fr': 'Ce que nous savons', 'es': 'Lo que sabemos', 'pl': 'Co już wiemy'};
+  static const _lStaatNuOp = {'nl': 'Staat nu op', 'en': 'Currently set to', 'de': 'Steht jetzt auf', 'fr': 'Actuellement', 'es': 'Ahora está en', 'pl': 'Obecnie'};
+  static const _lNietsIngevuld = {'nl': 'niets ingevuld', 'en': 'nothing set', 'de': 'nichts eingetragen', 'fr': 'rien de renseigné', 'es': 'sin rellenar', 'pl': 'nic nie ustawiono'};
+  static const _lPasHier = {'nl': 'Pas hier', 'en': 'Pass here', 'de': 'Pass hier', 'fr': 'Carte ici', 'es': 'Pase aquí', 'pl': 'Karta tutaj'};
+  static const _lVerenigingenHier = {'nl': 'Verenigingen hier', 'en': 'Clubs here', 'de': 'Vereine hier', 'fr': 'Associations ici', 'es': 'Clubes aquí', 'pl': 'Koła tutaj'};
+  static const _lGeenVerenigingBekend = {'nl': 'Wij kennen hier geen vereniging bij — vraag het lid welke.', 'en': 'We know no club here — ask the member which one.', 'de': 'Wir kennen hier keinen Verein — frag das Mitglied.', 'fr': 'Aucune association connue ici — demande au membre.', 'es': 'No conocemos ningún club aquí: pregunta al miembro.', 'pl': 'Nie znamy tu koła — zapytaj członka.'};
+  static const _lVerwijderen = {'nl': 'verwijderen', 'en': 'delete', 'de': 'löschen', 'fr': 'supprimer', 'es': 'eliminar', 'pl': 'usuń'};
+  static const _lTerugzetten = {'nl': 'terugzetten', 'en': 'restore', 'de': 'wiederherstellen', 'fr': 'restaurer', 'es': 'restaurar', 'pl': 'przywróć'};
+  static const _lKlopt = {'nl': 'Klopt', 'en': 'Correct', 'de': 'Stimmt', 'fr': 'Exact', 'es': 'Correcto', 'pl': 'Zgadza się'};
+  static const _lKloptNiet = {'nl': 'Klopt niet', 'en': 'Not correct', 'de': 'Stimmt nicht', 'fr': 'Incorrect', 'es': 'Incorrecto', 'pl': 'Nieprawda'};
+
+  static const Map<String, Map<String, String>> _claimLabels = {
+    'vispas': {'nl': 'Hier geldt de VISpas', 'en': 'VISpas applies here', 'de': 'Hier gilt der VISpas', 'fr': 'La VISpas s’applique', 'es': 'Aquí vale la VISpas', 'pl': 'Tu obowiązuje VISpas'},
+    'club': {'nl': 'Verenigingswater', 'en': 'Club water', 'de': 'Vereinsgewässer', 'fr': 'Eau d’association', 'es': 'Agua de club', 'pl': 'Woda koła'},
+    'betaald': {'nl': 'Betaalwater', 'en': 'Paid water', 'de': 'Zahlgewässer', 'fr': 'Eau payante', 'es': 'Agua de pago', 'pl': 'Łowisko płatne'},
+    'verboden': {'nl': 'Hier mag je niet vissen', 'en': 'No fishing allowed here', 'de': 'Hier darf nicht geangelt werden', 'fr': 'Pêche interdite ici', 'es': 'Aquí no se puede pescar', 'pl': 'Tu nie wolno łowić'},
+  };
+
+  static const Map<String, Color> _claimKleur = {
+    'vispas': Color(0xFF16A34A), 'club': Color(0xFF0284C7),
+    'betaald': Color(0xFFD97706), 'verboden': Color(0xFFDC2626),
+  };
+
+  static const Map<String, Map<String, String>> _soortLabels = {
+    'landelijk': {'nl': 'Landelijke pas', 'en': 'National pass', 'de': 'Landespass', 'fr': 'Carte nationale', 'es': 'Pase nacional', 'pl': 'Karta krajowa'},
+    'club': {'nl': 'Verenigingswater', 'en': 'Club water', 'de': 'Vereinsgewässer', 'fr': 'Eau d’association', 'es': 'Agua de club', 'pl': 'Woda koła'},
+    'betaald': {'nl': 'Betaalwater', 'en': 'Paid water', 'de': 'Zahlgewässer', 'fr': 'Eau payante', 'es': 'Agua de pago', 'pl': 'Łowisko płatne'},
+    'vrij': {'nl': 'Vrij vissen', 'en': 'Free fishing', 'de': 'Freies Angeln', 'fr': 'Pêche libre', 'es': 'Pesca libre', 'pl': 'Wolne wędkowanie'},
+    'verboden': {'nl': 'Verboden', 'en': 'Forbidden', 'de': 'Verboten', 'fr': 'Interdit', 'es': 'Prohibido', 'pl': 'Zabronione'},
+    'onbekend': {'nl': 'Onbekend', 'en': 'Unknown', 'de': 'Unbekannt', 'fr': 'Inconnu', 'es': 'Desconocido', 'pl': 'Nieznane'},
+    'onduidelijk': {'nl': 'Onduidelijk', 'en': 'Unclear', 'de': 'Unklar', 'fr': 'Peu clair', 'es': 'Poco claro', 'pl': 'Niejasne'},
+    'fiskfergunning': {'nl': 'Fiskfergunning', 'en': 'Fiskfergunning', 'de': 'Fiskfergunning', 'fr': 'Fiskfergunning', 'es': 'Fiskfergunning', 'pl': 'Fiskfergunning'},
+    'nho': {'nl': 'NHO-viskaart', 'en': 'NHO card', 'de': 'NHO-Karte', 'fr': 'Carte NHO', 'es': 'Tarjeta NHO', 'pl': 'Karta NHO'},
   };
 
   Widget _memberTile(Map u) {
