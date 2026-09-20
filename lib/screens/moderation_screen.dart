@@ -79,13 +79,30 @@ class _ModerationScreenState extends State<ModerationScreen> {
     }
     try { final m = await Api.get('/admin/media?status=$_mediaStatus'); _media = m is List ? m : []; } catch (_) {}
     try { final sq = await Api.get('/admin/shape-requests'); _shapeReqs = (sq is Map && sq['requests'] is List) ? sq['requests'] : []; } catch (_) {}
-    try { final u = await Api.get('/admin/users'); _members = u is List ? u : []; } catch (_) {}
+    // De ledenlijst geeft sinds 20-09-2026 {data, totaal, …} terug en kent een statusfilter.
+    try {
+      final u = await Api.get('/admin/users?status=$_ledenFilter&per_page=100');
+      _members = u is Map ? (u['data'] ?? []) : (u is List ? u : []);
+      _ledenTotaal = u is Map ? ((u['totaal'] as num?)?.toInt() ?? _members.length) : _members.length;
+    } catch (_) {}
     try { final l = await Api.get('/admin/moderation/log'); _log = l is List ? l : []; } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
 
+  /// Welk filter staat er op de ledenlijst; leeg = alles. Richard 20-09-2026: moderators moeten
+  /// kunnen zien wie actief is, wie slapend en wie geblokkeerd.
+  String _ledenFilter = '';
+  int _ledenTotaal = 0;
+
   Future<void> _loadMembers(String q) async {
-    try { final u = await Api.get('/admin/users?q=${Uri.encodeComponent(q)}'); if (mounted) setState(() => _members = u is List ? u : []); } catch (_) {}
+    try {
+      final u = await Api.get('/admin/users?q=${Uri.encodeComponent(q)}&status=$_ledenFilter&per_page=100');
+      if (!mounted) return;
+      setState(() {
+        _members = u is Map ? (u['data'] ?? []) : (u is List ? u : []);
+        _ledenTotaal = u is Map ? ((u['totaal'] as num?)?.toInt() ?? _members.length) : _members.length;
+      });
+    } catch (_) {}
   }
 
   Future<void> _dismiss(int reportId) async {
@@ -254,6 +271,23 @@ class _ModerationScreenState extends State<ModerationScreen> {
           // Leden
           Column(children: [
             Padding(padding: const EdgeInsets.all(10), child: TextField(controller: _searchCtrl, decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 20), hintText: _lbl('search'), isDense: true, border: const OutlineInputBorder()), onChanged: _loadMembers)),
+            // Filterbalk: één tik en je ziet alleen de slapende, geblokkeerde of gewaarschuwde leden.
+            SizedBox(height: 40, child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                for (final f in _ledenFilters)
+                  Padding(padding: const EdgeInsets.only(right: 6), child: ChoiceChip(
+                    label: Text(_mlbl(f[1] as Map<String, String>), style: const TextStyle(fontSize: 12)),
+                    selected: _ledenFilter == f[0],
+                    onSelected: (_) { setState(() => _ledenFilter = f[0] as String); _loadMembers(_searchCtrl.text); },
+                    visualDensity: VisualDensity.compact,
+                  )),
+              ],
+            )),
+            Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 2), child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('$_ledenTotaal', style: const TextStyle(fontSize: 11, color: Colors.black45)))),
             Expanded(child: _members.isEmpty ? Center(child: Text(_lbl('no_members'), style: const TextStyle(color: Colors.black45)))
               : ListView(children: _members.map<Widget>((u) => _memberTile(u as Map)).toList())),
           ]),
@@ -311,19 +345,77 @@ class _ModerationScreenState extends State<ModerationScreen> {
     ])));
   }
 
+  /// Korte tekst in de taal van de moderator (deze labels staan alleen hier).
+  String _mlbl(Map<String, String> m) {
+    final l = context.read<I18n>().locale;
+    return m[l] ?? m['en'] ?? m['nl'] ?? '';
+  }
+
+  /// Filters op de ledenlijst; de sleutel gaat als ?status= naar de server.
+  static const List<List<Object>> _ledenFilters = [
+    ['', {'nl': 'Alle', 'en': 'All', 'de': 'Alle', 'fr': 'Tous', 'es': 'Todos', 'pl': 'Wszyscy'}],
+    ['online', {'nl': 'Nu online', 'en': 'Online now', 'de': 'Jetzt online', 'fr': 'En ligne', 'es': 'En línea', 'pl': 'Online'}],
+    ['actief_7d', {'nl': 'Actief 7d', 'en': 'Active 7d', 'de': 'Aktiv 7T', 'fr': 'Actif 7j', 'es': 'Activo 7d', 'pl': 'Aktywni 7d'}],
+    ['actief_30d', {'nl': 'Actief 30d', 'en': 'Active 30d', 'de': 'Aktiv 30T', 'fr': 'Actif 30j', 'es': 'Activo 30d', 'pl': 'Aktywni 30d'}],
+    ['slapend', {'nl': 'Slapend', 'en': 'Dormant', 'de': 'Schlafend', 'fr': 'Inactif', 'es': 'Inactivo', 'pl': 'Uśpieni'}],
+    ['nooit_ingelogd', {'nl': 'Nooit ingelogd', 'en': 'Never logged in', 'de': 'Nie angemeldet', 'fr': 'Jamais connecté', 'es': 'Nunca conectado', 'pl': 'Nigdy nie logowali'}],
+    ['geblokkeerd', {'nl': 'Geblokkeerd', 'en': 'Blocked', 'de': 'Gesperrt', 'fr': 'Bloqué', 'es': 'Bloqueado', 'pl': 'Zablokowani'}],
+    ['geschorst', {'nl': 'Geschorst', 'en': 'Suspended', 'de': 'Gesperrt (Zeit)', 'fr': 'Suspendu', 'es': 'Suspendido', 'pl': 'Zawieszeni'}],
+    ['gewaarschuwd', {'nl': 'Gewaarschuwd', 'en': 'Warned', 'de': 'Verwarnt', 'fr': 'Averti', 'es': 'Advertido', 'pl': 'Ostrzeżeni'}],
+    ['mail_onbevestigd', {'nl': 'Mail onbevestigd', 'en': 'Email unconfirmed', 'de': 'Mail unbestätigt', 'fr': 'E-mail non confirmé', 'es': 'Correo sin confirmar', 'pl': 'Mail niepotwierdzony'}],
+    ['mail_bounce', {'nl': 'Mail komt niet aan', 'en': 'Mail bouncing', 'de': 'Mail unzustellbar', 'fr': 'E-mail rejeté', 'es': 'Correo rebotado', 'pl': 'Mail odbija'}],
+    ['moderator', {'nl': 'Moderators', 'en': 'Moderators', 'de': 'Moderatoren', 'fr': 'Modérateurs', 'es': 'Moderadores', 'pl': 'Moderatorzy'}],
+  ];
+
+  static const Map<String, Map<String, String>> _standLabels = {
+    'online': {'nl': 'Nu online', 'en': 'Online now', 'de': 'Jetzt online', 'fr': 'En ligne', 'es': 'En línea', 'pl': 'Online'},
+    'actief': {'nl': 'Actief', 'en': 'Active', 'de': 'Aktiv', 'fr': 'Actif', 'es': 'Activo', 'pl': 'Aktywny'},
+    'af_en_toe': {'nl': 'Af en toe', 'en': 'Now and then', 'de': 'Ab und zu', 'fr': 'De temps en temps', 'es': 'De vez en cuando', 'pl': 'Od czasu do czasu'},
+    'stil': {'nl': 'Stil', 'en': 'Quiet', 'de': 'Still', 'fr': 'Silencieux', 'es': 'Callado', 'pl': 'Cichy'},
+    'slapend': {'nl': 'Slapend', 'en': 'Dormant', 'de': 'Schlafend', 'fr': 'Inactif', 'es': 'Inactivo', 'pl': 'Uśpiony'},
+    'nooit_ingelogd': {'nl': 'Nooit ingelogd', 'en': 'Never logged in', 'de': 'Nie angemeldet', 'fr': 'Jamais connecté', 'es': 'Nunca conectado', 'pl': 'Nigdy nie zalogowany'},
+    'geblokkeerd': {'nl': 'Geblokkeerd', 'en': 'Blocked', 'de': 'Gesperrt', 'fr': 'Bloqué', 'es': 'Bloqueado', 'pl': 'Zablokowany'},
+    'geschorst': {'nl': 'Geschorst', 'en': 'Suspended', 'de': 'Zeitlich gesperrt', 'fr': 'Suspendu', 'es': 'Suspendido', 'pl': 'Zawieszony'},
+    'verwijderd': {'nl': 'Verwijderd', 'en': 'Deleted', 'de': 'Gelöscht', 'fr': 'Supprimé', 'es': 'Eliminado', 'pl': 'Usunięty'},
+  };
+
   Widget _memberTile(Map u) {
-    final online = u['last_seen_at'] != null && DateTime.tryParse('${u['last_seen_at']}')?.isAfter(DateTime.now().toUtc().subtract(const Duration(minutes: 5))) == true;
     final role = u['is_admin'] == true ? '🛡️' : u['is_moderator'] == true ? '🛠️' : '';
     final banned = u['banned_until'] != null;
+    final stand = '${u['activiteit'] ?? ''}';
+    final kleur = _standKleur[stand] ?? Colors.black26;
+    final gezien = DateTime.tryParse('${u['last_seen_at'] ?? ''}')?.toLocal();
     return ListTile(
       dense: true,
       onTap: () => _memberActions(u),
-      leading: CircleAvatar(radius: 6, backgroundColor: online ? const Color(0xFF16A34A) : Colors.black26),
+      leading: CircleAvatar(radius: 6, backgroundColor: kleur),
       title: Text('${u['username'] ?? ''} $role'),
-      subtitle: Text('${u['email'] ?? ''}', style: const TextStyle(fontSize: 11)),
+      subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('${u['email'] ?? ''}', style: const TextStyle(fontSize: 11)),
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(color: kleur.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+            child: Text(_standNaam(stand), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: kleur)),
+          ),
+          if (gezien != null) Padding(padding: const EdgeInsets.only(left: 6),
+            child: Text('${gezien.day}-${gezien.month}-${gezien.year}', style: const TextStyle(fontSize: 10, color: Colors.black38))),
+          if ((u['geblokkeerd_door'] as num? ?? 0) > 0) Padding(padding: const EdgeInsets.only(left: 6),
+            child: Text('🚫 ${u['geblokkeerd_door']}', style: const TextStyle(fontSize: 10, color: Colors.red))),
+        ]),
+      ]),
+      isThreeLine: true,
       trailing: u['is_active'] == false || banned ? const Icon(Icons.block, size: 16, color: Colors.red) : const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
     );
   }
+
+  static const Map<String, Color> _standKleur = {
+    'online': Color(0xFF16A34A), 'actief': Color(0xFF16A34A), 'af_en_toe': Color(0xFF0D9488),
+    'stil': Color(0xFFD97706), 'slapend': Color(0xFFB45309), 'nooit_ingelogd': Color(0xFF64748B),
+    'geblokkeerd': Color(0xFFDC2626), 'geschorst': Color(0xFFDC2626), 'verwijderd': Color(0xFF475569),
+  };
+
+  String _standNaam(String stand) => _mlbl(_standLabels[stand] ?? {'nl': stand, 'en': stand});
 
   Widget _card(BuildContext context, dynamic rr) {
     final r = rr as Map;
