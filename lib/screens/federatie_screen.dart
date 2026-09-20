@@ -4,7 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import '../core/gids_i18n.dart';
 import '../core/rondleiding.dart';
+import 'organisatie_screen.dart';
+import 'map_screen.dart';
 
 /// Federatie-scherm: welke visorganisatie hoort bij een water en welke vergunning geldt daar.
 ///
@@ -33,10 +36,27 @@ class _FederatieScreenState extends State<FederatieScreen> {
   bool _fout = false;
   bool _nietGevonden = false;
 
+  /// Zoeken en uitklappen in de twee lange lijsten onderaan: de wateren en de verenigingen.
+  /// Die lijsten kunnen honderden regels lang zijn, dus we tonen er eerst een deel van.
+  final _waterZoek = TextEditingController();
+  final _clubZoek = TextEditingController();
+  String _waterFilter = '';
+  String _clubFilter = '';
+  String? _openVerenigingHref;
+  bool _alleEigenWateren = false;
+  bool _alleVerenigingen = false;
+
   @override
   void initState() {
     super.initState();
     _haalOp();
+  }
+
+  @override
+  void dispose() {
+    _waterZoek.dispose();
+    _clubZoek.dispose();
+    super.dispose();
   }
 
   Future<void> _haalOp() async {
@@ -292,6 +312,14 @@ class _FederatieScreenState extends State<FederatieScreen> {
             ),
         ],
 
+        // ── Wateren ─────────────────────────────────────────────────────────────────────────
+        // Waar mag je met deze pas vissen? Dat is de vraag waar een lid voor komt. Tikken op een
+        // water opent het waterblad op de kaart, net als /kaart?w=<id> op het web.
+        ..._waterenBlok(c, f),
+
+        // ── Aangesloten verenigingen ────────────────────────────────────────────────────────
+        ..._verenigingenBlok(c, f),
+
         // Bronvermelding + controledatum: hiermee kan het lid alles zelf natrekken.
         if (bronnen.isNotEmpty || gecontroleerd.isNotEmpty) ...[
           const Divider(height: 32),
@@ -379,6 +407,210 @@ class _FederatieScreenState extends State<FederatieScreen> {
         ]),
       ),
     );
+  }
+
+  /// Wateren van de organisatie zelf én van haar verenigingen, met dezelfde indeling als op het
+  /// web: eerst de wateren van de organisatie, daarna per vereniging uitklapbaar.
+  List<Widget> _waterenBlok(BuildContext c, Map f) {
+    final eigen = _lijst(f['waters']);
+    final perClub = _lijst(f['club_waters']);
+    if (eigen.isEmpty && perClub.isEmpty) return const [];
+
+    final zoek = _waterFilter.trim().toLowerCase();
+    bool past(Map w, [String clubNaam = '']) => zoek.isEmpty ||
+        _tekst(w['name']).toLowerCase().contains(zoek) ||
+        clubNaam.toLowerCase().contains(zoek);
+
+    final eigenLijst = eigen.where((w) => past(w as Map)).toList();
+    final clubLijst = [
+      for (final club in perClub)
+        if (_lijst((club as Map)['waters']).where((w) => past(w as Map, _tekst(club['name']))).isNotEmpty)
+          {...club, 'waters': _lijst(club['waters']).where((w) => past(w as Map, _tekst(club['name']))).toList()},
+    ];
+    final naam = _tekst(f['name']);
+    final getoond = _alleEigenWateren ? eigenLijst : eigenLijst.take(25).toList();
+
+    return [
+      const Divider(height: 32),
+      _kopje(c, Icons.water, gt(c, 'fw_title')),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _waterZoek,
+        onChanged: (v) => setState(() => _waterFilter = v),
+        decoration: InputDecoration(
+          isDense: true,
+          prefixIcon: const Icon(Icons.search, size: 18),
+          hintText: gt(c, 'fw_search'),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+      const SizedBox(height: 12),
+
+      // Wateren van de organisatie zelf.
+      Text('${gt(c, 'fw_org_title', {'org': naam})} (${eigenLijst.length})',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.navy)),
+      Padding(padding: const EdgeInsets.only(top: 2, bottom: 4),
+          child: Text(gt(c, 'fw_org_sub', {'org': naam}), style: const TextStyle(fontSize: 12.5, height: 1.35, color: Colors.black54))),
+      if (eigenLijst.isEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(gt(c, 'fw_none'), style: const TextStyle(fontSize: 13, color: Colors.black45)))
+      else ...[
+        for (final w in getoond) _waterRij(c, w as Map),
+        if (!_alleEigenWateren && eigenLijst.length > 25)
+          Align(alignment: Alignment.centerLeft, child: TextButton(
+            onPressed: () => setState(() => _alleEigenWateren = true),
+            child: Text(gt(c, 'club_waters', {'n': '${eigenLijst.length}'})),
+          )),
+      ],
+
+      // Wateren per aangesloten vereniging.
+      const SizedBox(height: 14),
+      Text('${gt(c, 'fw_clubs_title')} (${clubLijst.length})',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.navy)),
+      Padding(padding: const EdgeInsets.only(top: 2, bottom: 4),
+          child: Text(gt(c, 'fw_clubs_sub'), style: const TextStyle(fontSize: 12.5, height: 1.35, color: Colors.black54))),
+      if (clubLijst.isEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(gt(c, 'fw_none'), style: const TextStyle(fontSize: 13, color: Colors.black45)))
+      else
+        for (final club in clubLijst) _clubMetWateren(c, club),
+    ];
+  }
+
+  Widget _clubMetWateren(BuildContext c, Map club) {
+    final href = _tekst(club['href']);
+    final wateren = _lijst(club['waters']);
+    final uit = _openVerenigingHref == href || _waterFilter.trim().isNotEmpty;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      InkWell(
+        onTap: () => setState(() => _openVerenigingHref = uit && _waterFilter.trim().isEmpty ? null : href),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_tekst(club['name']), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+              if (_tekst(club['city']).isNotEmpty)
+                Text(_tekst(club['city']), style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
+            ])),
+            Text('${wateren.length}', style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            Icon(uit ? Icons.expand_less : Icons.expand_more, size: 20, color: Colors.black38),
+          ]),
+        ),
+      ),
+      if (uit) ...[
+        for (final w in wateren) Padding(padding: const EdgeInsets.only(left: 10), child: _waterRij(c, w as Map)),
+        if (href.isNotEmpty)
+          Align(alignment: Alignment.centerLeft, child: TextButton(
+            onPressed: () => _openVereniging(href, _tekst(club['name'])),
+            style: TextButton.styleFrom(foregroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(horizontal: 10)),
+            child: Text(gt(c, 'fw_club_profile')),
+          )),
+      ],
+      const Divider(height: 1),
+    ]);
+  }
+
+  Widget _waterRij(BuildContext c, Map w) {
+    final id = (w['id'] as num?)?.toInt();
+    final soort = _tekst(w['permit_type']);
+    return InkWell(
+      onTap: id == null ? null : () => _openWater(id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(children: [
+          const Icon(Icons.place_outlined, size: 15, color: AppColors.teal),
+          const SizedBox(width: 6),
+          Expanded(child: Text(_tekst(w['name']), maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13.5, color: AppColors.navy))),
+          if (w['marina'] == true) Padding(padding: const EdgeInsets.only(right: 6),
+              child: Text('⛵ ${gt(c, 'wm_badge')}', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: Color(0xFF0E7490)))),
+          if (soort.isNotEmpty) Text(gt(c, 'pt_$soort'), style: const TextStyle(fontSize: 11, color: Colors.black38)),
+          const Icon(Icons.chevron_right, size: 16, color: Colors.black26),
+        ]),
+      ),
+    );
+  }
+
+  /// Alle aangesloten verenigingen, per provincie, met zoekveld — zoals het web ze toont.
+  List<Widget> _verenigingenBlok(BuildContext c, Map f) {
+    final alle = _lijst(f['clubs']);
+    if (alle.isEmpty) return const [];
+    final zoek = _clubFilter.trim().toLowerCase();
+    final lijst = alle.where((v) =>
+        zoek.isEmpty || '${(v as Map)['name']} ${v['city'] ?? ''}'.toLowerCase().contains(zoek)).toList();
+
+    final groepen = <String, List>{};
+    for (final v in lijst) {
+      final p = _tekst((v as Map)['province']).isEmpty ? gt(c, 'prov_unknown') : _tekst(v['province']);
+      groepen.putIfAbsent(p, () => []).add(v);
+    }
+    final provincies = groepen.keys.toList()
+      ..sort((a, b) => a == gt(c, 'prov_unknown') ? 1 : b == gt(c, 'prov_unknown') ? -1 : a.compareTo(b));
+
+    // Bij honderden verenigingen tonen we eerst de eerste provincies; anders bouwt het scherm
+    // duizenden regels die niemand ziet.
+    final tonen = _alleVerenigingen || zoek.isNotEmpty ? provincies : provincies.take(3).toList();
+
+    return [
+      const Divider(height: 32),
+      _kopje(c, Icons.groups_outlined, '${gt(c, 'fed_clubs')} (${alle.length})'),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _clubZoek,
+        onChanged: (v) => setState(() => _clubFilter = v),
+        decoration: InputDecoration(
+          isDense: true,
+          prefixIcon: const Icon(Icons.search, size: 18),
+          hintText: gt(c, 'search'),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+      const SizedBox(height: 6),
+      if (lijst.isEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(gt(c, 'dir_empty'), style: const TextStyle(fontSize: 13, color: Colors.black45))),
+      for (final p in tonen) ...[
+        Padding(padding: const EdgeInsets.fromLTRB(0, 12, 0, 2),
+            child: Text('$p (${groepen[p]!.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54))),
+        for (final v in groepen[p]!) _verenigingRij(c, v as Map),
+      ],
+      if (tonen.length < provincies.length)
+        Align(alignment: Alignment.centerLeft, child: TextButton(
+          onPressed: () => setState(() => _alleVerenigingen = true),
+          child: Text(gt(c, 'org_count', {'n': '${lijst.length}'})),
+        )),
+    ];
+  }
+
+  Widget _verenigingRij(BuildContext c, Map v) {
+    final n = (v['waters_count'] as num?)?.toInt() ?? 0;
+    return InkWell(
+      onTap: () => _openVereniging(_tekst(v['href']), _tekst(v['name'])),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_tekst(v['name']), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5)),
+            if (_tekst(v['city']).isNotEmpty || n > 0)
+              Text([
+                if (_tekst(v['city']).isNotEmpty) _tekst(v['city']),
+                if (n > 0) gt(c, 'club_waters', {'n': '$n'}),
+              ].join(' · '), style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
+          ])),
+          const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+        ]),
+      ),
+    );
+  }
+
+  /// Een aangesloten vereniging openen (gidsvermelding of eigen profiel).
+  void _openVereniging(String href, String naam) {
+    if (href.isEmpty) return;
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => OrganisatieScreen(href: href, naam: naam.isEmpty ? null : naam),
+    ));
+  }
+
+  /// Een water openen op de kaart — precies zoals `/kaart?w=<id>` op het web.
+  void _openWater(int id) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MapScreen(focusWaterId: id)));
   }
 
   /// Onderliggende/bovenliggende organisatie openen; het pad uit de API is `/federatie/<slug>`.
