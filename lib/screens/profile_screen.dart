@@ -175,7 +175,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final u = context.watch<AuthState>().user;
     final rt = context.watch<RealtimeService>();
-    return ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
+    // Bewust géén ListView: die bouwt alleen wat in beeld staat, en dan bestaan de tegels
+    // verderop nog niet. De rondleiding kon ze daardoor niet vinden en sloeg die stappen stil
+    // over (20-09-2026). Het zijn een stuk of dertig tegeltjes met iconen — die mogen in één
+    // keer gebouwd worden.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SizedBox(height: 8),
       Center(child: Avatar(name: u?.username, src: u?.avatarPath, size: 84)),
       const SizedBox(height: 10),
@@ -231,6 +237,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.settings_outlined, context.tr('p.settings'), const SettingsScreen(), anker: 'menu-instellingen'),
         if (u?.canModerate == true) _tile(Icons.shield_outlined, context.tr('p.moderation'), const ModerationScreen()),
       ]),
-    ]);
+    ]));
   }
 }

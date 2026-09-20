@@ -1876,9 +1876,30 @@ class _MapScreenState extends State<MapScreen> {
     } catch (e) { messenger.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : failMsg))); }
   }
 
+  /// De kopbalk van de kaart. Staat ook al op het laadscherm, zodat de balk niet ineens
+  /// binnenspringt en de rondleiding de zoek- en lagenknop meteen kan aanwijzen (20-09-2026).
+  PreferredSizeWidget _kop({bool bezig = false}) => AppBar(
+    title: Text(context.tr('map.title')),
+    actions: [
+      TourAnker(id: 'kaart-zoeken', child: IconButton(
+        icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'),
+        onPressed: bezig ? null : _openPlaceSearch)),
+      TourAnker(id: 'kaart-lagen', child: TextButton.icon(
+        onPressed: bezig ? null : _showLayers,
+        icon: Icon(Icons.layers, size: 20,
+            color: (_depthOn || _flowOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
+        label: Text(mui(context, 'layers_title'),
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+      )),
+      const SizedBox(width: 4),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_loading) {
+      return Scaffold(appBar: _kop(bezig: true), body: const Center(child: CircularProgressIndicator()));
+    }
     final detail = _zoom >= 12.5; // losse stek-/vangstpinnen pas bij ver inzoomen (anti-wirwar; stekken vind je via de dobber)
     // Stek-aantallen per water in ÉÉN keer berekenen (i.p.v. per dobber → veel sneller bij slepen).
     _spotCountByWater = {};
@@ -1918,15 +1939,7 @@ class _MapScreenState extends State<MapScreen> {
       canPop: _placing == null && !_editShape,
       onPopInvokedWithResult: (didPop, _) { if (!didPop) setState(() { _placing = null; _movingSpot = null; _editShape = false; _draftPts = []; _shapeMsg = ''; }); },
       child: Scaffold(
-      appBar: AppBar(title: Text(context.tr('map.title')), actions: [
-        TourAnker(id: 'kaart-zoeken', child: IconButton(icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'), onPressed: _openPlaceSearch)),
-        TourAnker(id: 'kaart-lagen', child: TextButton.icon(
-          onPressed: _showLayers,
-          icon: Icon(Icons.layers, size: 20, color: (_depthOn || _flowOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
-          label: Text(mui(context, 'layers_title'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-        )),
-        const SizedBox(width: 4),
-      ]),
+      appBar: _kop(),
       // Knoppen alleen tonen als je niet in plaats-/teken-modus zit.
       floatingActionButton: (_placing != null || _editShape) ? null : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
         FloatingActionButton.small(

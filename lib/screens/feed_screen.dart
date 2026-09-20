@@ -11,6 +11,7 @@ import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/realtime_service.dart';
 import '../core/i18n.dart';
+import '../core/rondleiding.dart';
 import '../widgets/avatar.dart';
 import '../widgets/photo_viewer.dart';
 import '../widgets/report.dart';
@@ -545,7 +546,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
                 IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
                 IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
                 const Spacer(),
-                FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post'))),
+                TourAnker(id: 'feed-plaatsen', child: FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post')))),
               ]),
             ])));
           }

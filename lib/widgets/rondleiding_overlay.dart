@@ -94,6 +94,19 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// overgeslagen stap uit springt. Zonder dit kom je nooit terug langs zo'n stap.
   int _richting = 1;
 
+  /// Zoeken we nog stilletjes naar de knop van een optionele stap?
+  ///
+  /// Zo'n stap gaat over iets dat er niet altijd is. Vinden we de knop niet, dan slaan we hem
+  /// over — maar dan mag het lid hem ook nooit gezien hebben. Toonden we hem eerst wél, dan las
+  /// je een stap en sprong hij na een seconde uit zichzelf door (Richard 20-09-2026: "gaat soms
+  /// extra stappen zelf vooruit"). Daarom: eerst zoeken, dan pas tonen.
+  bool _stilZoeken = false;
+
+  /// Hebben we voor deze stap al naar de knop gescrold, en hoeveel tikken wachten we nog op de
+  /// scrol? Zonder dat wachten meten we het vlak midden in de beweging en wijst de cirkel mis.
+  bool _gescrold = false;
+  int _naScroll = 0;
+
   Stap get _stap => _stappen[_i];
 
   @override
@@ -114,6 +127,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
     _i = i;
     _vlak = null;
     final s = _stap;
+    _stilZoeken = s.optioneel && s.zoek != null;
     if (!eerste) Rondleiding._meld('step', stap: s.id);
     setState(() {});
     // Van tabblad wisselen doet setState op het hoofdscherm. Gebeurt dat terwijl deze laag nog
@@ -131,25 +145,46 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   void _zoekAnker() {
     _zoeker?.cancel();
     if (_stap.zoek == null) return;
+    _gescrold = false;
+    _naScroll = 0;
     _zoeker = Timer.periodic(const Duration(milliseconds: 100), (t) {
       final r = TourAnkers.vlak(_stap.zoek!);
       if (r != null) {
+        if (!mounted) { t.cancel(); return; }
+        final scherm = MediaQuery.of(context).size;
+        // Staat de knop (deels) buiten beeld, dan halen we hem er eerst bij. Een menu-tegel die
+        // verderop in de lijst staat is niet "afwezig" — je moet er alleen even naartoe.
+        if (!_gescrold && (r.top < 0 || r.bottom > scherm.height)) {
+          _gescrold = true;
+          _naScroll = 4;
+          TourAnkers.inBeeld(_stap.zoek!);
+          return;
+        }
+        if (_naScroll > 0) { _naScroll--; return; }
         t.cancel();
-        if (mounted) setState(() => _vlak = r);
+        setState(() { _vlak = r; _stilZoeken = false; });
         return;
       }
-      if (++_pogingen >= 12) {
+      // Ruim de tijd: de kaart is zwaar en heeft na een tabwissel een paar seconden nodig voor
+      // zijn knoppenbalk er staat. Met 1,2 seconde sloeg de rondleiding 'zoeken' en 'lagen'
+      // over terwijl die knoppen er even later gewoon waren (gemeten 20-09-2026).
+      if (++_pogingen >= 30) {
         t.cancel();
         // Optionele stap zonder knop slaan we over — die gaat over iets dat er nu niet is
         // (nog geen vangsten, geen reeks). Overslaan gebeurt in de richting waarin het lid
         // loopt, anders kun je met Vorige nooit langs zo'n stap terug: hij duwt je meteen
         // weer vooruit.
-        if (_stap.optioneel && mounted) {
+        if (!mounted) return;
+        if (_stap.optioneel) {
+          // Nooit getoond, dus ook niets zichtbaars om over te slaan.
           if (_richting < 0) {
             _vorige();
           } else {
             _volgende();
           }
+        } else {
+          // Verplichte stap zonder knop: uitleg gewoon in het midden tonen.
+          setState(() => _stilZoeken = false);
         }
       }
     });
@@ -196,11 +231,18 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
     );
     if (bij.width < 8 || bij.height < 8) return null;              // buiten beeld gescrold
     if (bij.height > scherm.height * 0.72) return null;            // vult het scherm: wijst niets aan
+    // Ligt de knop grotendeels buiten beeld, dan is wat overblijft niet die knop maar een streepje
+    // tegen de rand. Dat tekenden we wél, en zo kwam de groene cirkel over de tabbalk te staan bij
+    // een menu-tegel die verderop in de lijst stond (screenshots Richard 20-09-2026). Liever geen
+    // cirkel dan een cirkel om het verkeerde.
+    if (bij.width * bij.height < v.width * v.height * 0.6) return null;
     return bij;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Nog aan het zoeken naar een optionele knop: niets tonen. Zo flitst er geen stap voorbij.
+    if (_stilZoeken) return const SizedBox.shrink();
     final taal = _taal(context);
     final scherm = MediaQuery.of(context).size;
     final v = _bruikbaarVlak(_vlak, scherm);

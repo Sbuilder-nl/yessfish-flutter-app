@@ -245,11 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.phishing, color: AppColors.mint),
             onPressed: _openQuickSpot,
           ),
-          IconButton(
+          TourAnker(id: 'vangst-concepten', child: IconButton(
             tooltip: _qt(const {'nl': 'Concepten', 'en': 'Drafts', 'de': 'Entwurfe', 'fr': 'Brouillons', 'es': 'Borradores', 'pl': 'Szkice'}),
             icon: const Icon(Icons.pending_actions, color: AppColors.mint),
             onPressed: _openDrafts,
-          ),
+          )),
           Consumer<RealtimeService>(builder: (_, rt, __) => Stack(alignment: Alignment.center, children: [
             IconButton(icon: const Icon(Icons.notifications_outlined, color: AppColors.mint),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),

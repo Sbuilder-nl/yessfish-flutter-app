@@ -33,6 +33,17 @@ class TourAnkers {
     // de uitleg in het midden dan een cirkel op een rand die het lid niet ziet.
     return r.width <= 0 || r.height <= 0 ? null : r;
   }
+
+  /// Scrol de knop naar het midden van zijn lijst.
+  ///
+  /// Zonder dit sloeg de rondleiding menu-tegels over die gewoon bestaan, maar verderop in de
+  /// lijst staan: het vlak viel buiten beeld en dan valt er niets aan te wijzen (20-09-2026).
+  static void inBeeld(String id) {
+    final ctx = _ankers[id]?.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(ctx,
+        alignment: 0.45, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+  }
 }
 
 /// Zet dit om een knop heen zodat de rondleiding hem kan aanwijzen.
