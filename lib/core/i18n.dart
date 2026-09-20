@@ -80,6 +80,12 @@ class I18n extends ChangeNotifier {
 /// App-specifieke vertalingen die niet in het web-woordenboek staan (NL/EN/DE/FR).
 const Map<String, Map<String, String>> kAppExtra = {
   'nl': {
+    'userprofile.block': 'Blokkeren',
+    'userprofile.unblock': 'Deblokkeren',
+    'userprofile.block_confirm': 'Weet je zeker dat je deze visser wilt blokkeren? Jullie zien elkaars feed dan niet meer.',
+    'userprofile.blocked_notice': 'Je hebt deze visser geblokkeerd — jullie zien elkaars feed niet meer.',
+    'userprofile.blocked_by_notice': 'Dit profiel is niet beschikbaar.',
+
     "login.remember": "Ingelogd blijven",
     "login.forgot": "Wachtwoord vergeten?",
     "forgot.title": "Wachtwoord vergeten",
@@ -106,6 +112,12 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mailmeldingen', 'online.now': 'online', 'feed.translate': 'Vertalen', 'feed.show_original': 'Origineel tonen', 'set.logout': 'Uitloggen', 'set.delete': 'Account verwijderen',
   },
   'en': {
+    'userprofile.block': 'Block',
+    'userprofile.unblock': 'Unblock',
+    'userprofile.block_confirm': 'Are you sure you want to block this angler? You will no longer see each other’s feed.',
+    'userprofile.blocked_notice': 'You blocked this angler — you no longer see each other’s feed.',
+    'userprofile.blocked_by_notice': 'This profile is unavailable.',
+
     "login.remember": "Stay logged in",
     "login.forgot": "Forgot password?",
     "forgot.title": "Forgot password",
@@ -132,6 +144,12 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mail notifications', 'online.now': 'online', 'feed.translate': 'Translate', 'feed.show_original': 'Show original', 'set.logout': 'Log out', 'set.delete': 'Delete account',
   },
   'de': {
+    'userprofile.block': 'Blockieren',
+    'userprofile.unblock': 'Entsperren',
+    'userprofile.block_confirm': 'Möchtest du diesen Angler wirklich blockieren? Ihr seht dann gegenseitig euren Feed nicht mehr.',
+    'userprofile.blocked_notice': 'Du hast diesen Angler blockiert — ihr seht gegenseitig euren Feed nicht mehr.',
+    'userprofile.blocked_by_notice': 'Dieses Profil ist nicht verfügbar.',
+
     "login.remember": "Angemeldet bleiben",
     "login.forgot": "Passwort vergessen?",
     "forgot.title": "Passwort vergessen",
@@ -158,6 +176,12 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-Mail-Benachrichtigungen', 'online.now': 'online', 'feed.translate': 'Übersetzen', 'feed.show_original': 'Original anzeigen', 'set.logout': 'Abmelden', 'set.delete': 'Konto löschen',
   },
   'fr': {
+    'userprofile.block': 'Bloquer',
+    'userprofile.unblock': 'Débloquer',
+    'userprofile.block_confirm': 'Voulez-vous vraiment bloquer ce pêcheur ? Vous ne verrez plus vos fils respectifs.',
+    'userprofile.blocked_notice': 'Vous avez bloqué ce pêcheur — vous ne voyez plus vos fils respectifs.',
+    'userprofile.blocked_by_notice': 'Ce profil n’est pas disponible.',
+
     "login.remember": "Rester connecté",
     "login.forgot": "Mot de passe oublié ?",
     "forgot.title": "Mot de passe oublié",
@@ -184,6 +208,12 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'Notifications par e-mail', 'online.now': 'en ligne', 'feed.translate': 'Traduire', 'feed.show_original': 'Voir l\'original', 'set.logout': 'Se déconnecter', 'set.delete': 'Supprimer le compte',
   },
   'es': {
+    'userprofile.block': 'Bloquear',
+    'userprofile.unblock': 'Desbloquear',
+    'userprofile.block_confirm': '¿Seguro que quieres bloquear a este pescador? Ya no veréis el feed del otro.',
+    'userprofile.blocked_notice': 'Has bloqueado a este pescador — ya no veis el feed del otro.',
+    'userprofile.blocked_by_notice': 'Este perfil no está disponible.',
+
     "login.remember": "Mantener sesión iniciada",
     "login.forgot": "¿Olvidaste tu contraseña?",
     "forgot.title": "Olvidaste tu contraseña",
@@ -249,6 +279,12 @@ const Map<String, Map<String, String>> kAppExtra = {
     "set.delete": "Eliminar cuenta",
   },
   'pl': {
+    'userprofile.block': 'Zablokuj',
+    'userprofile.unblock': 'Odblokuj',
+    'userprofile.block_confirm': 'Czy na pewno chcesz zablokować tego wędkarza? Nie będziecie już widzieć nawzajem swoich aktualności.',
+    'userprofile.blocked_notice': 'Zablokowałeś tego wędkarza — nie widzicie już nawzajem swoich aktualności.',
+    'userprofile.blocked_by_notice': 'Ten profil jest niedostępny.',
+
     "login.remember": "Pozostań zalogowany",
     "login.forgot": "Nie pamiętasz hasła?",
     "forgot.title": "Nie pamiętasz hasła",

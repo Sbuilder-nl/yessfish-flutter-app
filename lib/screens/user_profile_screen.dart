@@ -40,6 +40,49 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     finally { if (mounted) setState(() => _busy = false); }
   }
 
+  /// Blokkeren en deblokkeren. Melden kon al in de app, blokkeren niet — terwijl Google Play en
+  /// Apple allebei eisen dat je bij gebruikersinhoud kunt melden én blokkeren (20-09-2026).
+  Future<void> _blokkeer(int id) async {
+    final vraag = context.tr('userprofile.block_confirm');
+    final knop = context.tr('userprofile.block');
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      content: Text(vraag),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
+        FilledButton(onPressed: () => Navigator.pop(c, true),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          child: Text(knop)),
+      ],
+    ));
+    if (ok != true) return;
+    if (!mounted) return;
+    setState(() => _busy = true);
+    final m = ScaffoldMessenger.of(context);
+    final mislukt = context.tr('userprofile.failed');
+    try {
+      await Api.post('/users/$id/block');
+      await _load();
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : mislukt)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _deblokkeer(int id) async {
+    setState(() => _busy = true);
+    final m = ScaffoldMessenger.of(context);
+    final mislukt = context.tr('userprofile.failed');
+    try {
+      await Api.delete('/users/$id/block');
+      await _load();
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : mislukt)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -60,7 +103,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ]);
         case 'pending_sent': return OutlinedButton(onPressed: null, child: Text(context.tr('userprofile.request_pending')));
         case 'pending_received': return FilledButton.icon(onPressed: _busy ? null : () => _act(status, fid), icon: const Icon(Icons.check, size: 18), label: Text(context.tr('userprofile.accept_request')));
-        case 'blocked': return Text(context.tr('userprofile.blocked'), style: const TextStyle(color: AppColors.danger));
+        case 'blocked': return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Text(context.tr('userprofile.blocked_notice'), textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+          const SizedBox(height: 6),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : () => _deblokkeer((u['id'] as num).toInt()),
+            icon: const Icon(Icons.lock_open, size: 17),
+            label: Text(context.tr('userprofile.unblock'))),
+        ]);
+        case 'blocked_by': return Text(context.tr('userprofile.blocked_by_notice'), textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.danger, fontSize: 13));
         default: return FilledButton.icon(onPressed: _busy ? null : () => _act('none', null), icon: const Icon(Icons.person_add_alt, size: 18), label: Text(context.tr('userprofile.add_friend')));
       }
     }
@@ -68,6 +121,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(u['username'] ?? context.tr('userprofile.title')), actions: [
         if (status != 'self') IconButton(icon: const Icon(Icons.flag_outlined), tooltip: context.tr('userprofile.report'), onPressed: () => showReportSheet(context, type: 'user', targetId: u['id'])),
+        if (status != 'self' && status != 'blocked' && status != 'blocked_by')
+          IconButton(icon: const Icon(Icons.block), tooltip: context.tr('userprofile.block'),
+            onPressed: _busy ? null : () => _blokkeer((u['id'] as num).toInt())),
       ]),
       body: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         const SizedBox(height: 6),
