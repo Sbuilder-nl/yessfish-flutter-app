@@ -7,6 +7,7 @@ import '../core/i18n.dart';
 import '../core/realtime_service.dart';
 import '../widgets/avatar.dart';
 import 'chat_screen.dart';
+import '../core/rondleiding.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -23,10 +24,57 @@ class _MessagesScreenState extends State<MessagesScreen> {
     try { final r = await Api.get('/conversations'); setState(() { _convs = r is List ? r : (r['data'] ?? []); _loading = false; }); }
     catch (_) { setState(() => _loading = false); }
   }
+
+  /// Een gesprek beginnen met een vismaat.
+  ///
+  /// De app kon alleen antwoorden op een bestaand gesprek: zonder deze knop was er geen enkele
+  /// manier om zelf iemand aan te schrijven, terwijl de rondleiding daar wél over vertelt
+  /// (Richard 20-09-2026).
+  Future<void> _nieuwBericht() async {
+    List maten = [];
+    try { final f = await Api.get('/friends'); maten = f is List ? f : (f['data'] ?? []); } catch (_) {}
+    if (!mounted) return;
+    if (maten.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('messages.no_friends'))));
+      return;
+    }
+    final gekozen = await showModalBottomSheet<Map>(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6), child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(c.tr('messages.pick'),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)))),
+        Flexible(child: ListView(shrinkWrap: true, children: [
+          for (final m in maten)
+            ListTile(
+              leading: Avatar(name: (m as Map)['username'], src: m['avatar_path'], size: 40),
+              title: Text('${m['username'] ?? ''}'),
+              onTap: () => Navigator.pop(c, m),
+            ),
+        ])),
+        const SizedBox(height: 8),
+      ])),
+    );
+    if (gekozen == null || !mounted) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(
+        recipientId: (gekozen['id'] as num?)?.toInt(),
+        recipientName: '${gekozen['username'] ?? ''}')));
+    if (mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final myId = context.read<AuthState>().user?.id;
     return Scaffold(appBar: AppBar(title: Text(context.tr('messages.title'))),
+      floatingActionButton: TourAnker(id: 'berichten-nieuw', child: FloatingActionButton.extended(
+        backgroundColor: AppColors.teal,
+        onPressed: _nieuwBericht,
+        icon: const Icon(Icons.edit_outlined, color: Colors.white),
+        label: Text(context.tr('messages.new'), style: const TextStyle(color: Colors.white)),
+      )),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _convs.isEmpty
         ? Center(child: Text(context.tr('messages.empty'), style: const TextStyle(color: Colors.black45)))
         : RefreshIndicator(onRefresh: _load, child: ListView.builder(itemCount: _convs.length, itemBuilder: (_, i) {

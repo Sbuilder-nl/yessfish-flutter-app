@@ -17,8 +17,27 @@ class Rondleiding {
   /// Zet door HomeScreen, zodat de rondleiding naar het juiste tabblad kan springen.
   static void Function(int tab)? gaNaarTab;
 
-  /// Zet door schermen die iets kunnen klaarzetten (bijvoorbeeld een waterblad openen).
-  static void Function(String vraag)? opVraag;
+  /// Schermen die iets kunnen klaarzetten (een waterblad, het lagenmenu, de reacties).
+  ///
+  /// Eerst was dit één enkele functie, die de kaart voor zichzelf opeiste. Daardoor kon alleen
+  /// de kaart iets openzetten en bleef de rest van de rondleiding praten over panelen die dicht
+  /// waren (Richard 20-09-2026: "alles openen wat geopend moet worden ... en indien nodig het
+  /// ook weer sluiten"). Nu mag elk scherm meeluisteren zolang het open staat.
+  static final Map<String, void Function(String vraag)> _luisteraars = {};
+
+  static void luister(String sleutel, void Function(String vraag) bij) =>
+      _luisteraars[sleutel] = bij;
+
+  static void stopLuisteren(String sleutel, void Function(String vraag) bij) {
+    if (identical(_luisteraars[sleutel], bij)) _luisteraars.remove(sleutel);
+  }
+
+  /// Stuur een verzoek naar alle schermen die nu luisteren; wie het niet kent doet niets.
+  static void vraagAan(String vraag) {
+    for (final f in List.of(_luisteraars.values)) {
+      f(vraag);
+    }
+  }
 
   /// Zet door HomeScreen: opent (of sluit) een los scherm, zodat de rondleiding ook kan vertellen
   /// over alles wat achter een menutegel zit. null = terug naar de tabbladen.
@@ -110,6 +129,10 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// scrol? Zonder dat wachten meten we het vlak midden in de beweging en wijst de cirkel mis.
   int _naScroll = 0;
   int _scrolPogingen = 0;
+  bool _zoekAfgerond = false;
+
+  /// Welk paneel de rondleiding heeft laten openzetten (null = niets).
+  String? _openVraag;
 
   /// Welk los scherm nu open staat voor de rondleiding (null = de tabbladen).
   String? _openScherm;
@@ -124,15 +147,28 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// zien wélke stap in beeld staat, en juist dat wilden we controleren (Richard 20-09-2026:
   /// "mis nog veel stappen die web wel heeft in app").
   static const bool _zelfTest = bool.fromEnvironment('TOUR_AUTOTEST');
+  /// Hoe lang een stap blijft staan tijdens de zelftest. Langer als je van elke stap
+  /// een schermafdruk wilt maken: `--dart-define=TOUR_AUTOTEST_MS=2500`.
+  static const int _testPauze = int.fromEnvironment('TOUR_AUTOTEST_MS', defaultValue: 500);
   Timer? _testLus;
   int _gemeld = -1;
+  int _wachtTellen = 0;
 
   void _startZelfTest() {
     _testLus = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (!mounted) return;
       final s = _stap;
-      final klaar = !_stilZoeken && (s.zoek == null || _vlak != null || _pogingen >= 30);
-      if (!klaar || _gemeld == _i) return;
+      final klaar = !_stilZoeken && (s.zoek == null || _zoekAfgerond);
+      if (!klaar) {
+        // Diagnose: blijft de rondleiding hangen, dan zie je hier waaróp hij wacht.
+        if (++_wachtTellen % 8 == 0) {
+          debugPrint('YFWAIT ${_i + 1}/89 id=${s.id} zoek=${s.zoek} stil=$_stilZoeken '
+              'vlak=${_vlak != null} pogingen=$_pogingen scrol=$_scrolPogingen naScroll=$_naScroll');
+        }
+        return;
+      }
+      _wachtTellen = 0;
+      if (_gemeld == _i) return;
       _gemeld = _i;
       final v = _vlak;
       final waar = v == null
@@ -140,7 +176,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
           : '${v.left.round()},${v.top.round()},${v.right.round()},${v.bottom.round()}';
       debugPrint('YFTOUR ${_i + 1}/${_stappen.length} id=${s.id} zoek=${s.zoek ?? '-'} '
           'scherm=${s.scherm ?? '-'} tab=${s.tab ?? '-'} vlak=$waar');
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: _testPauze), () {
         if (mounted && _gemeld == _i) _volgende();
       });
     });
@@ -177,11 +213,18 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // Een ander scherm dan bij de vorige stap? Dan eerst dáárheen; de rest van deze stap wacht.
       if (s.scherm != _openScherm) {
         _openScherm = s.scherm;
+        _openVraag = null;   // een ander scherm sluit de bladen sowieso
         await Rondleiding.naarScherm?.call(s.scherm);
         if (!mounted) return;
       }
       if (s.tab != null) Rondleiding.gaNaarTab?.call(s.tab!);
-      if (s.vraag != null) Rondleiding.opVraag?.call(s.vraag!);
+      // Gaat deze stap over een ander paneel dan de vorige? Dan eerst het oude dicht. Zo blijft
+      // er nooit een blad over de knop liggen die we juist willen aanwijzen.
+      if (s.vraag != _openVraag) {
+        if (_openVraag != null) Rondleiding.vraagAan('sluit');
+        _openVraag = s.vraag;
+        if (s.vraag != null) Rondleiding.vraagAan(s.vraag!);
+      }
     });
     _zoekAnker();
   }
@@ -189,9 +232,10 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// Blijf even zoeken: na een tabwissel moet het scherm eerst opbouwen.
   void _zoekAnker() {
     _zoeker?.cancel();
-    if (_stap.zoek == null) return;
+    if (_stap.zoek == null) { _zoekAfgerond = true; return; }
     _naScroll = 0;
     _scrolPogingen = 0;
+    _zoekAfgerond = false;
     _zoeker = Timer.periodic(const Duration(milliseconds: 100), (t) {
       final r = TourAnkers.vlak(_stap.zoek!);
       if (r != null) {
@@ -210,18 +254,24 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
         // 'Beoordelingen' en 'Foto's en video's' onder de schermrand bleven staan en de
         // rondleiding een cirkel tekende die niemand zag (gemeten 20-09-2026).
         if (midden < bovenGrens || midden > onderGrens) {
-          if (_scrolPogingen < 3) {
+          if (_scrolPogingen < 4) {
             _scrolPogingen++;
-            _naScroll = 6;
-            TourAnkers.inBeeld(_stap.zoek!);
+            _naScroll = 10;
+            TourAnkers.inBeeld(_stap.zoek!, uitlijning: _scrolPogingen > 2 ? 0.5 : 0.32);
             return;
           }
         }
         t.cancel();
-        // Lukt het echt niet om hem in beeld te krijgen, dan liever de uitleg in het midden dan
-        // een cirkel buiten het scherm.
-        final buitenBeeld = r.bottom > scherm.height || r.top < 0;
-        setState(() { _vlak = buitenBeeld ? null : r; _stilZoeken = false; });
+        _zoekAfgerond = true;
+        // Hoeveel van de knop staat er nog in beeld? Een blok dat net met zijn onderrand
+        // buiten het scherm valt is prima aan te wijzen; pas als er bijna niets van te zien is
+        // tonen we de uitleg in het midden (21-09-2026).
+        final zichtbaar = Rect.fromLTRB(
+            r.left.clamp(0.0, scherm.width), r.top.clamp(0.0, scherm.height),
+            r.right.clamp(0.0, scherm.width), r.bottom.clamp(0.0, scherm.height));
+        final vlakOpp = r.width * r.height;
+        final deel = vlakOpp <= 0 ? 0.0 : (zichtbaar.width * zichtbaar.height) / vlakOpp;
+        setState(() { _vlak = deel < 0.35 ? null : r; _stilZoeken = false; });
         return;
       }
       // Ruim de tijd: de kaart is zwaar en heeft na een tabwissel een paar seconden nodig voor
@@ -229,6 +279,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // over terwijl die knoppen er even later gewoon waren (gemeten 20-09-2026).
       if (++_pogingen >= 60) {
         t.cancel();
+        _zoekAfgerond = true;
         // Optionele stap zonder knop slaan we over — die gaat over iets dat er nu niet is
         // (nog geen vangsten, geen reeks). Overslaan gebeurt in de richting waarin het lid
         // loopt, anders kun je met Vorige nooit langs zo'n stap terug: hij duwt je meteen

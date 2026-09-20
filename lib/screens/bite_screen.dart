@@ -111,11 +111,11 @@ class _BiteScreenState extends State<BiteScreen> {
           const SizedBox(height: 14),
           Text(context.tr('bite.sun_moon'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const SizedBox(height: 8),
-          Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+          TourAnker(id: 'tijden-locatie', child: Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
             _solItem(Icons.wb_sunny_outlined, context.tr('bite.sunrise'), _sol!['sun']?['rise']?.toString() ?? '—'),
             _solItem(Icons.nightlight_outlined, context.tr('bite.sunset'), _sol!['sun']?['set']?.toString() ?? '—'),
             _solItem(Icons.brightness_3, _moonName(_sol!['moon']?['phase']), _sol!['moon']?['illumination'] != null ? '${((_sol!['moon']['illumination'] as num) * (((_sol!['moon']['illumination'] as num) <= 1) ? 100 : 1)).round()}%' : '—'),
-          ]))),
+          ])))),
         ],
         const SizedBox(height: 14),
         Text(context.tr('bite.factors'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),

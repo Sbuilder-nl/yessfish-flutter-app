@@ -59,7 +59,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> {
         if (_error != null) Padding(padding: const EdgeInsets.only(top: 14),
           child: Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
             child: Text(_error!, style: const TextStyle(color: AppColors.danger)))),
-        if (r != null && !_busy) Padding(padding: const EdgeInsets.only(top: 16), child: Card(child: Padding(padding: const EdgeInsets.all(16),
+        if (r != null && !_busy) Padding(padding: const EdgeInsets.only(top: 16), child: TourAnker(id: 'herken-resultaat', child: Card(child: Padding(padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Icon(isFish ? Icons.set_meal : Icons.help_outline, color: isFish ? AppColors.teal : Colors.black38),
@@ -80,7 +80,7 @@ class _IdentifyScreenState extends State<IdentifyScreen> {
                 child: FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SpeciesDetailScreen(id: r['species_id'], name: (r['species_nl'] ?? '').toString()))),
                   icon: const Icon(Icons.menu_book), label: Text(context.tr('identify.view_in_guide')))),
             ] else Text(context.tr('identify.try_clear_photo'), style: const TextStyle(color: Colors.black54)),
-          ]))) ),
+          ])))) ),
       ]),
     );
   }

@@ -196,12 +196,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
             IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.edit_outlined, size: 19, color: Colors.black38), onPressed: () => _bewerk(l)),
             IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.delete_outline, size: 19, color: Colors.black38), onPressed: () => _verwijder(l)),
           ]),
-          _PasFotos(
+          TourAnker(id: 'documenten-foto', child: _PasFotos(
             id: (l['id'] as num).toInt(),
             heeftVoor: l['heeft_foto_voor'] == true,
             heeftAchter: l['heeft_foto_achter'] == true,
             opWijziging: _laad,
-          ),
+          )),
         ]),
       ),
     );

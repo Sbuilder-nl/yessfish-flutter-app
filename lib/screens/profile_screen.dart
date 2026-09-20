@@ -196,14 +196,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       const SizedBox(height: 12),
       Center(child: OutlinedButton.icon(onPressed: () => _open(const EditProfileScreen()), icon: const Icon(Icons.edit, size: 16), label: Text(context.tr('p.edit')))),
       _statsCard(),
-      _section(context.tr('sec.social'), [
+      TourAnker(id: 'menu-inhoud', child: _section(context.tr('sec.social'), [
         _tile(Icons.notifications_outlined, context.tr('p.notifications'), const NotificationsScreen(), badge: rt.unread),
         _tile(Icons.chat_bubble_outline, context.tr('p.messages'), const MessagesScreen(), badge: rt.messagesUnread, anker: 'menu-berichten'),
         _tile(Icons.people_outline, context.tr('p.friends'), const FriendsScreen(), badge: rt.pendingFriends),
         _tile(Icons.emoji_events_outlined, context.tr('p.leaderboard'), const LeaderboardScreen()),
         _tile(Icons.leaderboard_outlined, context.tr('toplist.title'), const ToplistScreen()),
         _tile(Icons.groups_outlined, context.tr('nav.clubs'), const ClubsScreen()),
-      ]),
+      ])),
       _section(context.tr('sec.fishing'), [
         _tile(Icons.style_outlined, dui(context, 'title'), const DisciplineDashboardsScreen()),
         _tile(Icons.handyman_outlined, vtt(context, 'title'), const VistijlToolsScreen()),

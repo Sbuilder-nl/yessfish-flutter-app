@@ -465,6 +465,14 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
   }
 
+
+  /// Geef alleen het eerste bericht een rondleiding-anker.
+  ///
+  /// Elk bericht dezelfde anker-id geven werkt niet: de laatste die zich registreert wint, en
+  /// dat is een bericht ver onderaan de lijst (20-09-2026).
+  Widget _eersteAnker(String id, bool eerste, Widget kind) =>
+      eerste ? TourAnker(id: id, child: kind) : kind;
+
   void _openComments(Map p) {
     final meId = context.read<AuthState>().user?.id;
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => CommentsSheet(
@@ -633,18 +641,18 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
             if (p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(youtubeId: p['youtube_id']?.toString())),
             const Divider(height: 22),
             Row(children: [
-              _reactieKnop(p),
+              _eersteAnker('feed-reacties', idx == 2, _reactieKnop(p)),
               const SizedBox(width: 20),
-              InkWell(onTap: () => _openComments(p), child: Row(children: [const Icon(Icons.mode_comment_outlined, size: 18, color: Colors.black38), const SizedBox(width: 5), Text('${p['comments_count'] ?? 0}')])),
+              _eersteAnker('feed-comments', idx == 2, InkWell(onTap: () => _openComments(p), child: Row(children: [const Icon(Icons.mode_comment_outlined, size: 18, color: Colors.black38), const SizedBox(width: 5), Text('${p['comments_count'] ?? 0}')]))),
               if ((p['visibility'] ?? 'public') == 'public') ...[
                 const SizedBox(width: 20),
-                InkWell(onTap: () {
+                _eersteAnker('feed-delen', idx == 2, InkWell(onTap: () {
                   // Eigen code meesturen: wie via jouw link binnenkomt telt mee voor je
                   // wedstrijdpunten. Zonder ?ref= telde een gedeelde link uit de app nooit mee.
                   final ref = _deelCode == null || _deelCode!.isEmpty ? '' : '?ref=${Uri.encodeComponent(_deelCode!)}';
                   Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/bericht/${p['id']}$ref'));
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.link_copied'))));
-                }, child: Row(children: [const Icon(Icons.share_outlined, size: 18, color: Colors.black38), SizedBox(width: 5), Text(context.tr('common.share'), style: const TextStyle(color: Colors.black54))])),
+                }, child: Row(children: [const Icon(Icons.share_outlined, size: 18, color: Colors.black38), SizedBox(width: 5), Text(context.tr('common.share'), style: const TextStyle(color: Colors.black54))]))),
               ],
             ]),
           ])));

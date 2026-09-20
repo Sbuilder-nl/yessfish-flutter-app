@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -138,6 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'herkennen': () => const IdentifyScreen(),
     'visai': () => const VisAiScreen(),
     'stijlen': () => const DisciplineDashboardsScreen(),
+    'stijlen-kiezen': () => const DisciplinesScreen(),
     'stijl-tools': () => const VistijlToolsScreen(),
     'schone-stek': () => const SchoneStekScreen(),
     'clubs': () => const ClubsScreen(),
@@ -157,7 +159,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (sleutel == null) return;
     final bouwer = _rondleidingSchermen[sleutel];
     if (bouwer == null) return;
-    await nav.push(MaterialPageRoute(builder: (_) => bouwer()));
+    // NIET await'en op de push: die belofte komt pas terug als het scherm weer dichtgaat, dus
+    // de rondleiding bleef er voorgoed op wachten. Met 24 schermstappen liepen die hangende
+    // wachtjes op tot de rondleiding op de Dobbers-stap stil bleef staan (gemeten 21-09-2026).
+    // We wachten alleen even tot het scherm is opgebouwd, zodat de knop er staat.
+    unawaited(nav.push(MaterialPageRoute(builder: (_) => bouwer())));
+    await Future<void>.delayed(const Duration(milliseconds: 350));
   }
 
   @override

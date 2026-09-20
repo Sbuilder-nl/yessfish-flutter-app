@@ -99,22 +99,53 @@ class _MapScreenState extends State<MapScreen> {
     _init();
     // De rondleiding kan zelf een blad openzetten, zodat hij ook kan uitleggen wat er ín het
     // waterblad of het lagenmenu staat. Zonder dit waren die stappen niet te tonen (20-09-2026).
-    Rondleiding.opVraag = _rondleidingVraag;
+    Rondleiding.luister('kaart', _rondleidingVraag);
   }
 
   /// Wat de rondleiding wil laten zien: 'lagen' = lagenmenu open, 'waterblad' = eerste water open.
+  /// Welk blad de rondleiding heeft opengezet ('lagen' of 'waterblad'), of null.
+  ///
+  /// Zonder dit opende elke stap die om hetzelfde blad vroeg er wéér een bovenop: vijf
+  /// lagenbladen en zeven waterbladen op elkaar. Je zag er maar één, maar de terugknop moest
+  /// er zeven keer doorheen en de rondleiding mat het verkeerde vlak (Richard 20-09-2026:
+  /// "de rondleiding ook nog niet goed").
+  String? _rondleidingBlad;
+
+
+  /// De laatste openbare vangsten bij dit water. Eén keer ophalen per water.
+  final Map<int, Future<List>> _vangstCache = {};
+
+  Future<List> _vangstenBij(Map w) {
+    final id = (w['id'] as num?)?.toInt() ?? -1;
+    return _vangstCache.putIfAbsent(id, () async {
+      try {
+        final r = await Api.get('/waters/$id/catches');
+        return r is List ? r : (r['data'] as List? ?? const []);
+      } catch (_) {
+        return const [];
+      }
+    });
+  }
+
   void _rondleidingVraag(String vraag) {
     if (!mounted) return;
+    if (vraag == _rondleidingBlad) return;   // staat al open, niets te doen
+    // Iets anders open? Eerst dicht, anders stapelen de bladen alsnog.
+    if (_rondleidingBlad != null) Navigator.of(context).popUntil((r) => r.isFirst);
     switch (vraag) {
       case 'lagen':
+        _rondleidingBlad = 'lagen';
         _showLayers();
         break;
       case 'waterblad':
         final w = _waters.cast<Map?>().firstWhere(
             (x) => x != null && x['latitude'] != null, orElse: () => null);
-        if (w != null) _showWater(w);
+        if (w == null) { _rondleidingBlad = null; return; }
+        _rondleidingBlad = 'waterblad';
+        _showWater(w);
         break;
       case 'sluit':
+        _rondleidingBlad = null;
         Navigator.of(context).popUntil((r) => r.isFirst);
         break;
     }
@@ -122,7 +153,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    if (Rondleiding.opVraag == _rondleidingVraag) Rondleiding.opVraag = null;
+    Rondleiding.stopLuisteren('kaart', _rondleidingVraag);
     _timer?.cancel();
     _moveDebounce?.cancel();
     super.dispose();
@@ -760,6 +791,35 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 6),
           Wrap(spacing: 6, runSpacing: 6, children: species.map((s) => Chip(label: Text('$s'), visualDensity: VisualDensity.compact, materialTapTargetSize: MaterialTapTargetSize.shrinkWrap)).toList()),
         ],
+        // Recente vangsten hier: op het web een eigen blok in het waterblad, in de app zat het
+        // verstopt achter de fotoknop. De rondleiding vertelde erover terwijl er niets stond
+        // (Richard 20-09-2026).
+        TourAnker(id: 'blad-vangsten', child: FutureBuilder<List>(
+          future: _vangstenBij(w),
+          builder: (_, snap) {
+            final lijst = snap.data ?? const [];
+            if (snap.connectionState != ConnectionState.done) return const SizedBox(height: 4);
+            if (lijst.isEmpty) return const SizedBox.shrink();
+            return Padding(padding: const EdgeInsets.only(top: 12), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(mui(context, 'catches_here'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
+                const SizedBox(height: 6),
+                for (final c in lijst.take(5))
+                  Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(children: [
+                    const Icon(Icons.set_meal, size: 15, color: AppColors.teal),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(
+                        '${(c as Map)['species_text'] ?? c['species']?['name'] ?? ''}'.trim().isEmpty
+                            ? mui(context, 'catches_here')
+                            : '${c['species_text'] ?? c['species']?['name']}',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13))),
+                    Text('${c['caught_at'] ?? ''}'.split(' ').first,
+                        style: const TextStyle(fontSize: 11, color: Colors.black38)),
+                  ])),
+              ]));
+          },
+        )),
         const SizedBox(height: 12),
         Text('${mui(context, 'spots_at_water')} (${near.length})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
         if (near.isEmpty)
@@ -812,7 +872,7 @@ class _MapScreenState extends State<MapScreen> {
           );
         })),
         // Dieptelaag + AI-analyse van dit water (sterren-model).
-        WaterDepthPanel(waterId: (w['id'] as num).toInt()),
+        TourAnker(id: 'blad-analyse', child: WaterDepthPanel(waterId: (w['id'] as num).toInt())),
         // Vorm-knoppen werken bij zodra de info geladen is (venster zelf opent meteen).
         ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
           final hasShape = m?['has_shape'] == true;

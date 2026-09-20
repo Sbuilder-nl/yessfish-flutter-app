@@ -173,7 +173,7 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
           ? Center(child: TextButton(onPressed: _laad, child: Text(gt(context, 'error'))))
           : _items == null
               ? Center(child: Text(gt(context, 'loading')))
-              : RefreshIndicator(onRefresh: _laad, child: _body(context, taal, items, zoek))),
+              : RefreshIndicator(onRefresh: _laad, child: TourAnker(id: 'gids-lijst', child: _body(context, taal, items, zoek)))),
     ]);
   }
 

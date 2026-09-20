@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/disciplines_i18n.dart';
@@ -108,13 +109,13 @@ class _DisciplinesScreenState extends State<DisciplinesScreen> {
                       padding: const EdgeInsets.all(16),
                       child: SizedBox(
                         width: double.infinity,
-                        child: FilledButton(
+                        child: TourAnker(id: 'stijlen-opslaan', child: FilledButton(
                           style: FilledButton.styleFrom(backgroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(vertical: 15)),
                           onPressed: _saving ? null : _save,
                           child: _saving
                               ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : Text(dui(context, 'save')),
-                        ),
+                        )),
                       ),
                     ),
                   ),
