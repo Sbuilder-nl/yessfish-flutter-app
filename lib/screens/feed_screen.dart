@@ -45,6 +45,13 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
   String? _youtube;            // YouTube-link/ID (sluit media uit)
   bool _videoUploading = false;
   bool _posting = false;
+
+  /// Zichtbaarheid van het bericht dat je nu schrijft. Stond vast op 'public': een lid kon in de
+  /// app dus nooit iets alleen met zijn vismaten delen, op het web wel (20-09-2026).
+  String _zicht = 'public';
+
+  /// Je eigen uitnodigingscode; die gaat mee in een gedeelde link (?ref=), net als op het web.
+  String? _deelCode;
   final Map<int, Map> _trans = {}; // post-id → {content, shown, busy}
   StreamSubscription? _liveSub;
 
@@ -53,6 +60,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _load();
+    _haalDeelCode();
     _composer.addListener(_composerChanged);
     _liveSub = context.read<RealtimeService>().feedPosts.listen((post) {
       if (mounted && !_posts.any((p) => p['id'] == post['id'])) setState(() => _posts.insert(0, post));
@@ -243,6 +251,16 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     setState(() => _mentionSuggesties = []);
   }
 
+  Future<void> _haalDeelCode() async {
+    try {
+      final r = await Api.get('/streak');
+      final code = (r is Map && r['invite'] is Map) ? r['invite']['code'] : null;
+      if (mounted && code != null) setState(() => _deelCode = '$code');
+    } catch (_) {
+      // Zonder code delen kan ook; dan telt hij alleen niet mee voor de punten.
+    }
+  }
+
   Future<void> _post() async {
     if (_composer.text.trim().isEmpty && _media.isEmpty && (_youtube == null || _youtube!.isEmpty)) return;
     if (_videoUploading) return;
@@ -250,7 +268,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     setState(() => _posting = true);
     try {
       await Api.post('/posts', {
-        'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': 'public',
+        'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': _zicht,
         if (_media.isNotEmpty) 'media': [for (final m in _media) {'type': m['type'], 'path': m['path']}],
         if (_youtube != null && _youtube!.isNotEmpty) 'youtube_id': _youtube,
         // vrienden wiens @naam in de tekst staat als tag meesturen (zoals de site)
@@ -263,7 +281,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
       if (hadVideo) { Future.delayed(const Duration(seconds: 12), () { if (mounted) _load(); }); Future.delayed(const Duration(seconds: 30), () { if (mounted) _load(); }); }
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     } finally { setState(() => _posting = false); }
   }
 
@@ -545,6 +563,26 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
                 IconButton(onPressed: _videoUploading ? null : () => _pickVideo(ImageSource.camera), icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.record')),
                 IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
                 IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
+                const SizedBox(width: 4),
+                // Voor wie is dit bericht? Twee knopjes, net als op het web.
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    for (final optie in const [['public', Icons.public], ['friends', Icons.people_outline]])
+                      InkWell(
+                        onTap: () => setState(() => _zicht = optie[0] as String),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                          color: _zicht == optie[0] ? AppColors.teal : Colors.transparent,
+                          child: Icon(optie[1] as IconData, size: 17,
+                              color: _zicht == optie[0] ? Colors.white : Colors.black45),
+                        ),
+                      ),
+                  ]),
+                ),
                 const Spacer(),
                 TourAnker(id: 'feed-plaatsen', child: FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post')))),
               ]),
@@ -601,9 +639,12 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
               if ((p['visibility'] ?? 'public') == 'public') ...[
                 const SizedBox(width: 20),
                 InkWell(onTap: () {
-                  Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/bericht/${p['id']}'));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link gekopieerd — plak \'m om te delen 🔗')));
-                }, child: const Row(children: [Icon(Icons.share_outlined, size: 18, color: Colors.black38), SizedBox(width: 5), Text('Delen', style: TextStyle(color: Colors.black54))])),
+                  // Eigen code meesturen: wie via jouw link binnenkomt telt mee voor je
+                  // wedstrijdpunten. Zonder ?ref= telde een gedeelde link uit de app nooit mee.
+                  final ref = _deelCode == null || _deelCode!.isEmpty ? '' : '?ref=${Uri.encodeComponent(_deelCode!)}';
+                  Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/bericht/${p['id']}$ref'));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.link_copied'))));
+                }, child: Row(children: [const Icon(Icons.share_outlined, size: 18, color: Colors.black38), SizedBox(width: 5), Text(context.tr('common.share'), style: const TextStyle(color: Colors.black54))])),
               ],
             ]),
           ])));
@@ -698,7 +739,7 @@ class CommentsSheetState extends State<CommentsSheet> {
     final body = _input.text.trim(); _input.clear();
     final parentId = _replyTo?['id'];
     try { final c = await Api.post('/posts/${widget.postId}/comments', {'body': body, if (parentId != null) 'parent_id': parentId}); setState(() { _comments.insert(0, c); _replyTo = null; }); widget.onCount(1); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
   @override
   Widget build(BuildContext context) {

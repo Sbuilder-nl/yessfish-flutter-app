@@ -80,6 +80,10 @@ class I18n extends ChangeNotifier {
 /// App-specifieke vertalingen die niet in het web-woordenboek staan (NL/EN/DE/FR).
 const Map<String, Map<String, String>> kAppExtra = {
   'nl': {
+    'common.error': 'Er ging iets mis',
+    'common.share': 'Delen',
+    'common.link_copied': 'Link gekopieerd — plak hem om te delen 🔗',
+
     'settings.push_notif': 'Push-notificaties',
     'settings.visibility': 'Profiel zichtbaar voor',
     'settings.auto_translate': 'Berichten automatisch vertalen',
@@ -119,6 +123,10 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mailmeldingen', 'online.now': 'online', 'feed.translate': 'Vertalen', 'feed.show_original': 'Origineel tonen', 'set.logout': 'Uitloggen', 'set.delete': 'Account verwijderen',
   },
   'en': {
+    'common.error': 'Something went wrong',
+    'common.share': 'Share',
+    'common.link_copied': 'Link copied — paste it to share 🔗',
+
     'settings.push_notif': 'Push notifications',
     'settings.visibility': 'Profile visible to',
     'settings.auto_translate': 'Auto-translate posts',
@@ -158,6 +166,10 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mail notifications', 'online.now': 'online', 'feed.translate': 'Translate', 'feed.show_original': 'Show original', 'set.logout': 'Log out', 'set.delete': 'Delete account',
   },
   'de': {
+    'common.error': 'Etwas ist schiefgelaufen',
+    'common.share': 'Teilen',
+    'common.link_copied': 'Link kopiert — zum Teilen einfügen 🔗',
+
     'settings.push_notif': 'Push-Benachrichtigungen',
     'settings.visibility': 'Profil sichtbar für',
     'settings.auto_translate': 'Beiträge automatisch übersetzen',
@@ -197,6 +209,10 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-Mail-Benachrichtigungen', 'online.now': 'online', 'feed.translate': 'Übersetzen', 'feed.show_original': 'Original anzeigen', 'set.logout': 'Abmelden', 'set.delete': 'Konto löschen',
   },
   'fr': {
+    'common.error': 'Un problème est survenu',
+    'common.share': 'Partager',
+    'common.link_copied': 'Lien copié — colle-le pour partager 🔗',
+
     'settings.push_notif': 'Notifications push',
     'settings.visibility': 'Profil visible par',
     'settings.auto_translate': 'Traduire automatiquement les posts',
@@ -236,6 +252,10 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'Notifications par e-mail', 'online.now': 'en ligne', 'feed.translate': 'Traduire', 'feed.show_original': 'Voir l\'original', 'set.logout': 'Se déconnecter', 'set.delete': 'Supprimer le compte',
   },
   'es': {
+    'common.error': 'Algo ha salido mal',
+    'common.share': 'Compartir',
+    'common.link_copied': 'Enlace copiado: pégalo para compartir 🔗',
+
     'settings.push_notif': 'Notificaciones push',
     'settings.visibility': 'Perfil visible para',
     'settings.auto_translate': 'Traducir publicaciones automáticamente',
@@ -314,6 +334,10 @@ const Map<String, Map<String, String>> kAppExtra = {
     "set.delete": "Eliminar cuenta",
   },
   'pl': {
+    'common.error': 'Coś poszło nie tak',
+    'common.share': 'Udostępnij',
+    'common.link_copied': 'Skopiowano link — wklej, aby udostępnić 🔗',
+
     'settings.push_notif': 'Powiadomienia push',
     'settings.visibility': 'Profil widoczny dla',
     'settings.auto_translate': 'Automatycznie tłumacz posty',

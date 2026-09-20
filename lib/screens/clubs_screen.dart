@@ -42,7 +42,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
     )));
     if (ok != true || name.text.trim().isEmpty) return;
     try { await Api.post('/clubs', {'name': name.text.trim(), 'country': country, if (city.text.isNotEmpty) 'city': city.text.trim()}); _load(); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
 
   @override

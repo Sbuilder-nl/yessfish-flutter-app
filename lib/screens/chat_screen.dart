@@ -119,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       _input.text = body; // bericht terugzetten zodat het niet verloren gaat
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     }
   }
 

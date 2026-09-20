@@ -32,14 +32,14 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     } catch (_) { setState(() => _loading = false); }
   }
 
-  Future<void> _join() async { setState(() => _busy = true); try { await Api.post('/clubs/${widget.clubId}/join'); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); } await _load(); if (mounted) setState(() => _busy = false); }
+  Future<void> _join() async { setState(() => _busy = true); try { await Api.post('/clubs/${widget.clubId}/join'); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); } await _load(); if (mounted) setState(() => _busy = false); }
   Future<void> _leave() async { await Api.post('/clubs/${widget.clubId}/leave').catchError((_) => null); if (mounted) Navigator.pop(context); }
 
   Future<void> _postFeed() async {
     if (_post.text.trim().isEmpty) return;
     final body = _post.text.trim(); _post.clear();
     try { await Api.post('/clubs/${widget.clubId}/feed', {'content': body}); await _load(); }
-    catch (e) { _post.text = body; if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { _post.text = body; if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
 
   Future<void> _newCompetition() async {
@@ -52,7 +52,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     ));
     if (ok != true || name.text.trim().isEmpty) return;
     try { await Api.post('/clubs/${widget.clubId}/competitions', {'name': name.text.trim()}); _load(); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
 
   @override

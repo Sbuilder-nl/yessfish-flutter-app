@@ -121,7 +121,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
       });
       if (mounted) { setState(() => _c = r['data']); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('catchdetail.saved')))); }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     }
   }
 
@@ -137,7 +137,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
       await Api.delete('/catches/${widget.catchId}');
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     }
   }
 
@@ -161,7 +161,7 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('catchdetail.postedToFeed'))));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     } finally { if (mounted) setState(() => _storyBusy = false); }
   }
 
@@ -190,9 +190,9 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
     ];
     return Scaffold(
       appBar: AppBar(title: Text(c['species'] ?? context.tr('catchdetail.catch')), actions: [
-        IconButton(icon: const Icon(Icons.share_outlined), tooltip: 'Delen', onPressed: () {
+        IconButton(icon: const Icon(Icons.share_outlined), tooltip: context.tr('common.share'), onPressed: () {
           Clipboard.setData(ClipboardData(text: 'https://yessfish.com/deel/${widget.catchId}'));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link gekopieerd — plak \'m om te delen 🔗')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.link_copied'))));
         }),
         if (mine) IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _edit),
         if (mine) IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),

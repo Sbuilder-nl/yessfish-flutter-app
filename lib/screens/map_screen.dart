@@ -994,7 +994,7 @@ class _MapScreenState extends State<MapScreen> {
             final up = await Api.uploadImage(x.path);
             await Api.post('/waters/$wid/media', {'type': 'photo', 'path': up['path']});
             if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(mui(ctx, 'media_submitted'))));
-          } catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+          } catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
         }
         Future<void> addVideo() async {
           final ctrl = TextEditingController();
@@ -1009,7 +1009,7 @@ class _MapScreenState extends State<MapScreen> {
           try {
             await Api.post('/waters/$wid/media', {'type': 'video', 'url': ctrl.text.trim()});
             if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(mui(ctx, 'media_submitted'))));
-          } catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+          } catch (e) { if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
         }
         void addSheet() => showModalBottomSheet(context: context, builder: (_) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(leading: const Icon(Icons.add_a_photo_outlined), title: Text(mui(context, 'media_add_photo')), onTap: () { Navigator.pop(context); addPhoto(); }),

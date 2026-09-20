@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _s['weight_unit'] = v);
     Units.unit = v;
     try { await Api.put('/profile/settings', {'weight_unit': v}); }
-    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
 
   Future<void> _setZichtbaarheid(String? v) async {
@@ -45,14 +45,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() => _s['profile_visibility'] = vorige);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+        SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error'))));
     }
   }
 
   Future<void> _set(String key, bool v) async {
     setState(() => _s[key] = v);
     try { await Api.put('/profile/settings', {key: v}); }
-    catch (e) { if (mounted) setState(() => _s[key] = !v); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
+    catch (e) { if (mounted) setState(() => _s[key] = !v); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : context.tr('common.error')))); }
   }
 
   Future<void> _deleteAccount() async {
