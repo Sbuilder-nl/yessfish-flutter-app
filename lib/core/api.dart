@@ -78,6 +78,31 @@ class Api {
     throw ApiException(res.statusCode, data);
   }
 
+  /// Een bestand naar een eigen route sturen (bv. de foto van een visdocument).
+  ///
+  /// `uploadImage` gaat altijd naar /uploads en levert een openbaar pad op. De foto van een
+  /// vergunning hoort juist NIET in die map: die gaat naar een afgeschermde map en is alleen met
+  /// je eigen inlog op te halen. Daarom een eigen verzending (20-09-2026).
+  static Future<Map<String, dynamic>> uploadNaar(String path, String filePath, {String veld = 'file'}) async {
+    final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}$path'));
+    req.headers['Accept'] = 'application/json';
+    req.headers['X-App-Lang'] = lang;
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    req.files.add(await http.MultipartFile.fromPath(veld, filePath));
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 60)));
+    final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+    if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data ?? {});
+    throw ApiException(res.statusCode, data);
+  }
+
+  /// Rauwe bytes ophalen mét inlog — voor afbeeldingen die niet openbaar mogen zijn.
+  static Future<List<int>> bytes(String path) async {
+    final res = await http.get(Uri.parse('${Config.apiBase}$path'), headers: _headers())
+        .timeout(const Duration(seconds: 30));
+    if (res.statusCode >= 200 && res.statusCode < 300) return res.bodyBytes;
+    throw ApiException(res.statusCode, null);
+  }
+
   // Feed-video-upload: stuurt de rauwe video; de server transcodeert async (poster + web-MP4).
   static Future<Map<String, dynamic>> uploadVideo(String filePath) async {
     final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}/uploads/video'));
