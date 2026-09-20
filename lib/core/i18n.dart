@@ -80,6 +80,13 @@ class I18n extends ChangeNotifier {
 /// App-specifieke vertalingen die niet in het web-woordenboek staan (NL/EN/DE/FR).
 const Map<String, Map<String, String>> kAppExtra = {
   'nl': {
+    'settings.push_notif': 'Push-notificaties',
+    'settings.visibility': 'Profiel zichtbaar voor',
+    'settings.auto_translate': 'Berichten automatisch vertalen',
+    'settings.auto_translate_desc': 'Toon feed-berichten automatisch in jouw taal',
+    'vis.friends_only': 'Alleen vrienden',
+    'settings.privacy': 'Privacy',
+
     'userprofile.block': 'Blokkeren',
     'userprofile.unblock': 'Deblokkeren',
     'userprofile.block_confirm': 'Weet je zeker dat je deze visser wilt blokkeren? Jullie zien elkaars feed dan niet meer.',
@@ -112,6 +119,13 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mailmeldingen', 'online.now': 'online', 'feed.translate': 'Vertalen', 'feed.show_original': 'Origineel tonen', 'set.logout': 'Uitloggen', 'set.delete': 'Account verwijderen',
   },
   'en': {
+    'settings.push_notif': 'Push notifications',
+    'settings.visibility': 'Profile visible to',
+    'settings.auto_translate': 'Auto-translate posts',
+    'settings.auto_translate_desc': 'Show feed posts automatically in your language',
+    'vis.friends_only': 'Friends only',
+    'settings.privacy': 'Privacy',
+
     'userprofile.block': 'Block',
     'userprofile.unblock': 'Unblock',
     'userprofile.block_confirm': 'Are you sure you want to block this angler? You will no longer see each other’s feed.',
@@ -144,6 +158,13 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-mail notifications', 'online.now': 'online', 'feed.translate': 'Translate', 'feed.show_original': 'Show original', 'set.logout': 'Log out', 'set.delete': 'Delete account',
   },
   'de': {
+    'settings.push_notif': 'Push-Benachrichtigungen',
+    'settings.visibility': 'Profil sichtbar für',
+    'settings.auto_translate': 'Beiträge automatisch übersetzen',
+    'settings.auto_translate_desc': 'Feed-Beiträge automatisch in deiner Sprache anzeigen',
+    'vis.friends_only': 'Nur Freunde',
+    'settings.privacy': 'Privatsphäre',
+
     'userprofile.block': 'Blockieren',
     'userprofile.unblock': 'Entsperren',
     'userprofile.block_confirm': 'Möchtest du diesen Angler wirklich blockieren? Ihr seht dann gegenseitig euren Feed nicht mehr.',
@@ -176,6 +197,13 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'E-Mail-Benachrichtigungen', 'online.now': 'online', 'feed.translate': 'Übersetzen', 'feed.show_original': 'Original anzeigen', 'set.logout': 'Abmelden', 'set.delete': 'Konto löschen',
   },
   'fr': {
+    'settings.push_notif': 'Notifications push',
+    'settings.visibility': 'Profil visible par',
+    'settings.auto_translate': 'Traduire automatiquement les posts',
+    'settings.auto_translate_desc': 'Afficher les posts du fil automatiquement dans votre langue',
+    'vis.friends_only': 'Amis uniquement',
+    'settings.privacy': 'Confidentialité',
+
     'userprofile.block': 'Bloquer',
     'userprofile.unblock': 'Débloquer',
     'userprofile.block_confirm': 'Voulez-vous vraiment bloquer ce pêcheur ? Vous ne verrez plus vos fils respectifs.',
@@ -208,6 +236,13 @@ const Map<String, Map<String, String>> kAppExtra = {
     'set.notif': 'Notifications par e-mail', 'online.now': 'en ligne', 'feed.translate': 'Traduire', 'feed.show_original': 'Voir l\'original', 'set.logout': 'Se déconnecter', 'set.delete': 'Supprimer le compte',
   },
   'es': {
+    'settings.push_notif': 'Notificaciones push',
+    'settings.visibility': 'Perfil visible para',
+    'settings.auto_translate': 'Traducir publicaciones automáticamente',
+    'settings.auto_translate_desc': 'Muestra las publicaciones del feed automáticamente en tu idioma',
+    'vis.friends_only': 'Solo amigos',
+    'settings.privacy': 'Privacidad',
+
     'userprofile.block': 'Bloquear',
     'userprofile.unblock': 'Desbloquear',
     'userprofile.block_confirm': '¿Seguro que quieres bloquear a este pescador? Ya no veréis el feed del otro.',
@@ -279,6 +314,13 @@ const Map<String, Map<String, String>> kAppExtra = {
     "set.delete": "Eliminar cuenta",
   },
   'pl': {
+    'settings.push_notif': 'Powiadomienia push',
+    'settings.visibility': 'Profil widoczny dla',
+    'settings.auto_translate': 'Automatycznie tłumacz posty',
+    'settings.auto_translate_desc': 'Pokazuj posty z aktualności automatycznie w Twoim języku',
+    'vis.friends_only': 'Tylko znajomi',
+    'settings.privacy': 'Prywatność',
+
     'userprofile.block': 'Zablokuj',
     'userprofile.unblock': 'Odblokuj',
     'userprofile.block_confirm': 'Czy na pewno chcesz zablokować tego wędkarza? Nie będziecie już widzieć nawzajem swoich aktualności.',

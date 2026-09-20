@@ -225,7 +225,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _section(gt(context, 'sec_gids'), [
         _tile(Icons.anchor, gt(context, 'clubs'), const GidsScreen(startTab: 0), anker: 'menu-gids'),
         _tile(Icons.storefront_outlined, gt(context, 'shops'), const GidsScreen(startTab: 1)),
-        _tile(Icons.sailing_outlined, gt(context, 'marinas'), const GidsScreen(startTab: 2)),
+        _tile(Icons.confirmation_number_outlined, gt(context, 'p_betaalwater'), const GidsScreen(startTab: 2)),
+        _tile(Icons.sailing_outlined, gt(context, 'marinas'), const GidsScreen(startTab: 3)),
         _tile(Icons.card_giftcard_outlined, _rt(const {'nl': 'Winacties', 'en': 'Giveaways', 'de': 'Gewinnspiele', 'fr': 'Jeux-concours', 'es': 'Sorteos', 'pl': 'Konkursy'}), const WinactiesScreen(), anker: 'menu-winacties'),
       ]),
       _section(gt(context, 'sec_partners'), [

@@ -35,6 +35,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis'))); }
   }
 
+  Future<void> _setZichtbaarheid(String? v) async {
+    if (v == null) return;
+    final vorige = _s['profile_visibility'];
+    setState(() => _s['profile_visibility'] = v);
+    try {
+      await Api.put('/profile/settings', {'profile_visibility': v});
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _s['profile_visibility'] = vorige);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e is ApiException ? e.message : 'Er ging iets mis')));
+    }
+  }
+
   Future<void> _set(String key, bool v) async {
     setState(() => _s[key] = v);
     try { await Api.put('/profile/settings', {key: v}); }
@@ -120,7 +134,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.share_catches')),
             subtitle: Text(context.tr('settings.share_catches_sub')),
             value: _s['share_catches_community'] != false, onChanged: (v) => _set('share_catches_community', v)),
+          // Deze drie stonden alleen op het web. Pushmeldingen niet kunnen uitzetten in de app
+          // terwijl het op de site wel kan, was de vreemdste van de drie (20-09-2026).
+          SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.push_notif')),
+            value: _s['push_notifications'] != false, onChanged: (v) => _set('push_notifications', v)),
+          SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.auto_translate')),
+            subtitle: Text(context.tr('settings.auto_translate_desc'), style: const TextStyle(fontSize: 12)),
+            value: _s['auto_translate'] == true, onChanged: (v) => _set('auto_translate', v)),
         ])),
+        const SizedBox(height: 12),
+        Card(child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.shield_outlined, size: 17, color: AppColors.teal),
+              const SizedBox(width: 6),
+              Text(context.tr('settings.privacy'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+            ]),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: const ['public', 'friends_only', 'private'].contains('${_s['profile_visibility']}')
+                  ? '${_s['profile_visibility']}' : 'public',
+              decoration: InputDecoration(isDense: true, labelText: context.tr('settings.visibility'), border: const OutlineInputBorder()),
+              items: [
+                DropdownMenuItem(value: 'public', child: Text(context.tr('vis.public'))),
+                DropdownMenuItem(value: 'friends_only', child: Text(context.tr('vis.friends'))),
+                DropdownMenuItem(value: 'private', child: Text(context.tr('vis.private'))),
+              ],
+              onChanged: (v) => _setZichtbaarheid(v),
+            ),
+          ]),
+        )),
         const SizedBox(height: 16),
         Card(child: ListTile(
           leading: const Icon(Icons.gavel_outlined, color: AppColors.teal),

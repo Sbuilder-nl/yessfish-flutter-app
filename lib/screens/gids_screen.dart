@@ -29,8 +29,9 @@ class GidsScreen extends StatefulWidget {
 }
 
 class _GidsScreenState extends State<GidsScreen> with SingleTickerProviderStateMixin {
-  static const _types = ['clubs', 'shops', 'marinas'];
-  late final TabController _tab = TabController(length: 3, vsync: this, initialIndex: widget.startTab);
+  // Vier soorten, net als op het web: verenigingen, winkels, betaalwateren, jachthavens.
+  static const _types = ['clubs', 'shops', 'betaalwateren', 'marinas'];
+  late final TabController _tab = TabController(length: 4, vsync: this, initialIndex: widget.startTab);
   String _land = 'NL';
   final _q = TextEditingController();
 
@@ -54,6 +55,7 @@ class _GidsScreenState extends State<GidsScreen> with SingleTickerProviderStateM
         bottom: TabBar(controller: _tab, labelColor: Colors.white, unselectedLabelColor: Colors.white70, indicatorColor: AppColors.mint, tabs: [
           Tab(icon: const Icon(Icons.anchor, size: 18), text: gt(context, 'clubs')),
           Tab(icon: const Icon(Icons.storefront_outlined, size: 18), text: gt(context, 'shops')),
+          Tab(icon: const Icon(Icons.confirmation_number_outlined, size: 18), text: gt(context, 'p_betaalwater')),
           Tab(icon: const Icon(Icons.sailing_outlined, size: 18), text: gt(context, 'marinas')),
         ]),
       ),
@@ -418,7 +420,8 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
     final n = (it['waters_count'] as num?)?.toInt() ?? 0;
     final icoon = widget.type == 'clubs'
         ? (it['kind'] == 'club' ? Icons.groups_outlined : Icons.account_balance_outlined)
-        : widget.type == 'shops' ? Icons.storefront_outlined : Icons.sailing_outlined;
+        : widget.type == 'shops' ? Icons.storefront_outlined
+        : widget.type == 'betaalwateren' ? Icons.confirmation_number_outlined : Icons.sailing_outlined;
     final tegel = ListTile(
       contentPadding: kaal ? null : const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       leading: CircleAvatar(
