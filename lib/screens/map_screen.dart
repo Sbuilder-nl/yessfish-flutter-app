@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/water_vissen_info.dart';
 import '../core/gids_i18n.dart';
+import 'organisatie_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -272,6 +273,22 @@ class _MapScreenState extends State<MapScreen> {
     return const Color(0xFF172554);
   }
 
+  // Winkels, verenigingen, jachthavens en betaalwateren op de kaart — zelfde laag als op het web.
+  // Een lid dat aan de waterkant staat wil kunnen zien waar de dichtstbijzijnde winkel zit; via
+  // alleen de gidslijst vind je dat niet (20-09-2026).
+  bool _partnersOn = true;
+  List<dynamic> _partners = [];
+
+  static const Map<String, Color> _partnerKleur = {
+    'club': Color(0xFF0A3D62), 'shop': Color(0xFF1F8A70),
+    'marina': Color(0xFF2F9FD0), 'betaalwater': Color(0xFFD4A017),
+  };
+
+  static const Map<String, IconData> _partnerIcoon = {
+    'club': Icons.groups_outlined, 'shop': Icons.storefront_outlined,
+    'marina': Icons.anchor, 'betaalwater': Icons.euro,
+  };
+
   // Stromingslaag (rivieren, m3/s via WaterAPI/GloFAS) — zelfde kleuren als de site.
   bool _flowOn = false;
   List<dynamic> _flowPoints = [];
@@ -307,6 +324,55 @@ class _MapScreenState extends State<MapScreen> {
       final r = await Api.get('/map/flow?bbox=${b.west},${b.south},${b.east},${b.north}');
       if (r is Map && r['data'] is List && mounted) setState(() => _flowPoints = r['data']);
     } catch (_) {}
+  }
+
+  Future<void> _loadPartners() async {
+    if (!_partnersOn) return;
+    try {
+      final b = _map.camera.visibleBounds;
+      final r = await Api.get('/partners/map?bbox=${b.south},${b.west},${b.north},${b.east}');
+      if (r is Map && r['data'] is List && mounted) setState(() => _partners = r['data']);
+    } catch (_) {
+      // Geen partners kunnen ophalen mag de kaart nooit stukmaken.
+    }
+  }
+
+  void _setPartners(bool on) {
+    setState(() { _partnersOn = on; if (!on) _partners = []; });
+    if (on) _loadPartners();
+  }
+
+  /// Blad met wat er over deze winkel/vereniging/jachthaven bekend is, en de weg naar het profiel.
+  void _toonPartner(Map p) {
+    final soort = '${p['type'] ?? 'shop'}';
+    final pad = soort == 'club' ? '/vereniging/' : soort == 'marina' ? '/jachthaven/'
+        : soort == 'betaalwater' ? '/betaalwater/' : '/winkel/';
+    showModalBottomSheet(context: context, builder: (c) => SafeArea(child: Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(gt(c, 'p_$soort').toUpperCase(),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.black38)),
+        const SizedBox(height: 2),
+        Text('${p['name'] ?? ''}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.navy)),
+        if ('${p['city'] ?? ''}'.isNotEmpty)
+          Text('${p['city']}', style: const TextStyle(fontSize: 13.5, color: Colors.black54)),
+        if (p['open_now'] != null) Padding(padding: const EdgeInsets.only(top: 4),
+            child: Text(gt(c, p['open_now'] == true ? 'open_now' : 'closed_now'),
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600,
+                    color: p['open_now'] == true ? const Color(0xFF047857) : Colors.black54))),
+        const SizedBox(height: 14),
+        FilledButton.icon(
+          onPressed: '${p['slug'] ?? ''}'.isEmpty ? null : () {
+            Navigator.pop(c);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OrganisatieScreen(
+              href: '$pad${p['slug']}', naam: p['name']?.toString())));
+          },
+          style: FilledButton.styleFrom(backgroundColor: AppColors.teal, minimumSize: const Size.fromHeight(44)),
+          icon: const Icon(Icons.open_in_new, size: 17),
+          label: Text(gt(c, 'map_more')),
+        ),
+      ]),
+    )));
   }
 
   Future<void> _loadDepth() async {
@@ -1198,6 +1264,10 @@ class _MapScreenState extends State<MapScreen> {
         )),
         SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
           value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); }),
+        SwitchListTile(
+          secondary: const Icon(Icons.storefront_outlined, color: Color(0xFFE8590C)),
+          title: Text(gt(ctx, 'map_layer')),
+          value: _partnersOn, onChanged: (v) { _setPartners(v); setS(() {}); }),
         const Divider(height: 8),
         Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 4), child: Text(mui(ctx, 'layers_spots'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
@@ -1659,6 +1729,44 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _waterPin(String level) => _schijfMarker(level);
 
+  /// Pin van een winkel/vereniging/jachthaven/betaalwater — zelfde vorm en kleur als op het web:
+  /// een witte schijf met een gekleurde rand, en het logo als dat er is.
+  Widget _partnerPin(Map p) {
+    final soort = '${p['type'] ?? 'shop'}';
+    final kleur = _partnerKleur[soort] ?? AppColors.teal;
+    final logo = '${p['logo'] ?? ''}';
+    return SizedBox(
+      width: 34, height: 34,
+      child: Stack(children: [
+        Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(
+            color: Colors.white, shape: BoxShape.circle,
+            border: Border.all(color: kleur, width: 3),
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 1))],
+          ),
+        ),
+        Positioned(
+          left: 5, top: 5, width: 24, height: 24,
+          child: logo.isEmpty
+              ? Icon(_partnerIcoon[soort] ?? Icons.storefront_outlined, size: 18, color: kleur)
+              : ClipOval(child: Image.network(logo, width: 24, height: 24, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(_partnerIcoon[soort] ?? Icons.storefront_outlined, size: 18, color: kleur))),
+        ),
+      ]),
+    );
+  }
+
+  List<Marker> _partnerMarkers() => [
+        for (final p in _partners)
+          if ((p as Map)['latitude'] != null && p['longitude'] != null)
+            Marker(
+              point: LatLng(double.parse('${p['latitude']}'), double.parse('${p['longitude']}')),
+              width: 34, height: 34,
+              child: GestureDetector(onTap: () => _toonPartner(p), child: _partnerPin(p)),
+            ),
+      ];
+
   /// Betaalwater: zelfde schijf en drukte-ring, met een gouden €-munt rechtsboven — als op het web.
   Widget _paidPin(String level) => _schijfMarker(level, badge: Container(
     width: 16, height: 16,
@@ -1975,7 +2083,7 @@ class _MapScreenState extends State<MapScreen> {
             cameraConstraint: CameraConstraint.contain(
               bounds: LatLngBounds(const LatLng(34.0, -15.0), const LatLng(71.5, 42.0)),
             ),
-            onMapReady: _loadWaters,
+            onMapReady: () { _loadWaters(); _loadPartners(); },
             onTap: (_, latlng) {
               if (_editShape) { setState(() => _draftPts = [..._draftPts, latlng]); return; } // intekenen: punt toevoegen
               if (_placing != null) return; // in plaats-modus richt je met het kruis; tik doet niets
@@ -1998,7 +2106,7 @@ class _MapScreenState extends State<MapScreen> {
               // In plaats-modus altijd hertekenen: de balk toont live de kruis-coördinaten.
               if ((crossed || _placing != null) && mounted) setState(() {});
               _moveDebounce?.cancel();
-              _moveDebounce = Timer(const Duration(milliseconds: 600), () { _loadWaters(); _loadDepth(); _loadFlow(); });
+              _moveDebounce = Timer(const Duration(milliseconds: 600), () { _loadWaters(); _loadDepth(); _loadFlow(); _loadPartners(); });
             },
           ),
           children: [
@@ -2038,6 +2146,7 @@ class _MapScreenState extends State<MapScreen> {
             // Eigen, simpele clustering (geen lib, geen animatie → geen wegzakken): ingezoomd (≥12) losse dobbers,
             // uitgezoomd nette bolletjes per gebied die op hun eigen plek blijven staan.
             MarkerLayer(markers: _clusterWaterMarkers()),
+            if (_partnersOn) MarkerLayer(markers: _partnerMarkers()),
             MarkerLayer(markers: markers),
             // "Hier ben jij" — blauwe stip op de eigen GPS-locatie.
             if (_userPos != null)

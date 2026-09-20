@@ -4,6 +4,14 @@ import 'i18n.dart';
 
 /// Gids (verenigingen, winkels, jachthavens) en partners — 6 talen, gelijk aan de website.
 const Map<String, Map<String, String>> _gids = {
+"closed_now": {"nl": "Nu gesloten", "en": "Closed now", "de": "Jetzt geschlossen", "fr": "Fermé maintenant", "es": "Cerrado ahora", "pl": "Teraz zamknięte"},
+  "map_layer": {"nl": "Winkels & verenigingen", "en": "Shops & clubs", "de": "Läden & Vereine", "fr": "Magasins & associations", "es": "Tiendas y clubes", "pl": "Sklepy i koła"},
+  "map_more": {"nl": "Meer info", "en": "More info", "de": "Mehr Infos", "fr": "Plus d’infos", "es": "Más información", "pl": "Więcej informacji"},
+  "open_now": {"nl": "Nu open", "en": "Open now", "de": "Jetzt geöffnet", "fr": "Ouvert maintenant", "es": "Abierto ahora", "pl": "Teraz otwarte"},
+  "p_club": {"nl": "Visvereniging", "en": "Angling club", "de": "Angelverein", "fr": "Association de pêche", "es": "Club de pesca", "pl": "Koło wędkarskie"},
+  "p_marina": {"nl": "Jachthaven", "en": "Marina", "de": "Yachthafen", "fr": "Port de plaisance", "es": "Puerto deportivo", "pl": "Przystań jachtowa"},
+  "p_shop": {"nl": "Hengelsportwinkel", "en": "Tackle shop", "de": "Angelgeschäft", "fr": "Magasin de pêche", "es": "Tienda de pesca", "pl": "Sklep wędkarski"},
+  "p_betaalwater": {"nl": "Betaalwater", "en": "Paid water", "de": "Zahlgewässer", "fr": "Eau payante", "es": "Agua de pago", "pl": "Łowisko płatne"},
   "club_waters": {"nl": "{n} wateren", "en": "{n} waters", "de": "{n} Gewässer", "fr": "{n} plans d’eau", "es": "{n} aguas", "pl": "{n} łowisk"},
   "dir_empty": {"nl": "Nog geen vermeldingen in dit land.", "en": "No listings in this country yet.", "de": "Noch keine Einträge in diesem Land.", "fr": "Aucune fiche dans ce pays pour l’instant.", "es": "Aún no hay fichas en este país.", "pl": "Brak wpisów w tym kraju."},
   "dir_regions_sub": {"nl": "In dit land regel je het niet via een vereniging maar per gebied. Kies waar je gaat vissen.", "en": "In this country it is not arranged through a club but per area. Pick where you are going.", "de": "In diesem Land läuft es nicht über einen Verein, sondern pro Gebiet. Wähle, wo du angeln gehst.", "fr": "Dans ce pays, cela ne passe pas par une association mais par zone. Choisis où tu vas pêcher.", "es": "En este país no se gestiona por club sino por zona. Elige dónde vas a pescar.", "pl": "W tym kraju nie załatwia się tego przez klub, lecz według obszaru. Wybierz, gdzie się wybierasz."},
