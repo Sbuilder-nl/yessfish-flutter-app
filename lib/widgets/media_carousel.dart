@@ -21,8 +21,14 @@ class _MediaCarouselState extends State<MediaCarousel> {
   Widget build(BuildContext context) {
     final media = widget.media;
     if (media.isEmpty) return const SizedBox.shrink();
-    // Alle foto-URL's voor de fullscreen-viewer (video's doen daar niet aan mee).
-    final fotoUrls = [for (final m in media) if (m['type'] == 'image' && m['url'] != null) m['url'].toString()];
+    // Álle media voor de fullscreen-viewer, in dezelfde volgorde als hier. Eerst gingen alleen
+    // de foto's mee en verdwenen de video's zodra je een foto opende (Richard 21-09-2026).
+    final items = [
+      for (final m in media)
+        if (m['url'] != null)
+          MediaItem(url: m['url'].toString(),
+              video: m['type'] == 'video', poster: m['poster']?.toString()),
+    ];
     return Column(children: [
       ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -47,7 +53,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
               }
               final url = m['url']?.toString() ?? '';
               return GestureDetector(
-                onTap: () => PhotoViewer.open(context, fotoUrls, fotoUrls.indexOf(url).clamp(0, fotoUrls.length - 1)),
+                onTap: () => PhotoViewer.openMedia(context, items, i),
                 child: CachedNetworkImage(
                   imageUrl: url,
                   fit: BoxFit.cover,
