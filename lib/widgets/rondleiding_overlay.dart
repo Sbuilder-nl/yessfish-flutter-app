@@ -152,9 +152,14 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       if (r != null) {
         if (!mounted) { t.cancel(); return; }
         final scherm = MediaQuery.of(context).size;
-        // Staat de knop (deels) buiten beeld, dan halen we hem er eerst bij. Een menu-tegel die
-        // verderop in de lijst staat is niet "afwezig" — je moet er alleen even naartoe.
-        if (!_gescrold && (r.top < 0 || r.bottom > scherm.height)) {
+        // Niet alleen "staat hij in beeld", maar "staat hij er fatsoenlijk". Een tegel die pal
+        // onder de titelbalk of half achter de tabbalk hangt is technisch zichtbaar, maar je ziet
+        // niet wat er wordt aangewezen (Richard 20-09-2026, stap 16 en 26). Daarom scrollen we
+        // hem naar een rustige band in het bovenste derde deel van het scherm.
+        final bovenGrens = scherm.height * 0.20;
+        final onderGrens = scherm.height * 0.52;
+        final midden = r.top + r.height / 2;
+        if (!_gescrold && (midden < bovenGrens || midden > onderGrens)) {
           _gescrold = true;
           _naScroll = 4;
           TourAnkers.inBeeld(_stap.zoek!);

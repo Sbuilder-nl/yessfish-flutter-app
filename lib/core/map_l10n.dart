@@ -4,6 +4,13 @@ import 'i18n.dart';
 
 /// Labels voor de drukte-meter / check-in op de kaart (6-talig).
 const Map<String, Map<String, String>> kMapUi = {
+  "no_spots": {"nl": "Je hebt nog geen stekken gezet.", "en": "You have no spots yet.", "de": "Du hast noch keine Stellen.", "fr": "Tu n’as pas encore de spots.", "es": "Aún no tienes sitios.", "pl": "Nie masz jeszcze stanowisk."},
+  "spot": {"nl": "Stek", "en": "Spot", "de": "Stelle", "fr": "Spot", "es": "Sitio", "pl": "Stanowisko"},
+
+  "streetview": {"nl": "Street View", "en": "Street View", "de": "Street View", "fr": "Street View", "es": "Street View", "pl": "Street View"},
+  "satellite": {"nl": "Luchtfoto", "en": "Satellite", "de": "Satellit", "fr": "Satellite", "es": "Satélite", "pl": "Zdjęcie satelitarne"},
+  "my_spots": {"nl": "Mijn stekken", "en": "My spots", "de": "Meine Stellen", "fr": "Mes spots", "es": "Mis sitios", "pl": "Moje stanowiska"},
+
 "rules_third": {"nl": "Derde hengel", "en": "Third rod", "de": "Dritte Rute", "fr": "Troisième canne", "es": "Tercera caña", "pl": "Trzecia wędka"},
   "rules_boat": {"nl": "Vanaf de boot", "en": "From a boat", "de": "Vom Boot", "fr": "Depuis un bateau", "es": "Desde barca", "pl": "Z łodzi"},
   "rules_release": {"nl": "Terugzetten", "en": "Catch & release", "de": "Zurücksetzen", "fr": "Remise à l’eau", "es": "Captura y suelta", "pl": "Wypuszczanie"},

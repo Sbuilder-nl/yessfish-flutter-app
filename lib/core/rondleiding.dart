@@ -38,11 +38,11 @@ class TourAnkers {
   ///
   /// Zonder dit sloeg de rondleiding menu-tegels over die gewoon bestaan, maar verderop in de
   /// lijst staan: het vlak viel buiten beeld en dan valt er niets aan te wijzen (20-09-2026).
-  static void inBeeld(String id) {
+  static void inBeeld(String id, {double uitlijning = 0.32}) {
     final ctx = _ankers[id]?.currentContext;
     if (ctx == null) return;
     Scrollable.ensureVisible(ctx,
-        alignment: 0.45, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+        alignment: uitlijning, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
   }
 }
 

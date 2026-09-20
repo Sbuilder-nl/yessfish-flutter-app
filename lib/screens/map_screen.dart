@@ -697,7 +697,16 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(width: 8),
           Expanded(child: OutlinedButton.icon(onPressed: () { Navigator.pop(ctx2); _startSpotAt(w); }, icon: const Icon(Icons.add_location_alt_outlined, size: 18), label: Text(mui(context, 'plus_spot')))),
         ])),
-        if (la0 != null && lo0 != null) Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => _openNavigation(la0, lo0), icon: const Icon(Icons.directions, size: 16), label: Text(mui(context, 'navigate')))),
+        if (la0 != null && lo0 != null) Row(children: [
+          TextButton.icon(onPressed: () => _openNavigation(la0, lo0), icon: const Icon(Icons.directions, size: 16), label: Text(mui(context, 'navigate'))),
+          // Even kijken hoe het er aan de waterkant uitziet; stond alleen op het web (20-09-2026).
+          TextButton.icon(
+            onPressed: () => _openLink('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=$la0,$lo0'),
+            icon: const Icon(Icons.streetview, size: 16), label: Text(mui(context, 'streetview'))),
+          TextButton.icon(
+            onPressed: () => _openLink('https://www.google.com/maps/search/?api=1&query=$la0,$lo0'),
+            icon: const Icon(Icons.satellite_alt, size: 16), label: Text(mui(context, 'satellite'))),
+        ]),
         // Betaalwater: prominente boek-kaart met info + "Boek nu".
         if (w['is_paid'] == true) Container(
           margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(12),
@@ -1190,7 +1199,66 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _placing = 'spot');
   }
 
+  /// Overzicht van je eigen stekken: aantikken vliegt ernaartoe, en je kunt er een weghalen.
+  void _toonMijnStekken() {
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (c) => StatefulBuilder(
+      builder: (c, setBlad) {
+        final eigen = [for (final s in _spots) if (s is Map && s['is_mine'] != false) s];
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.95, expand: false,
+          builder: (_, scroll) => Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              child: Row(children: [
+                const Icon(Icons.place_outlined, size: 18, color: AppColors.teal),
+                const SizedBox(width: 6),
+                Text('${mui(c, 'my_spots')} (${eigen.length})',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.navy)),
+              ]),
+            ),
+            Expanded(child: eigen.isEmpty
+              ? Center(child: Padding(padding: const EdgeInsets.all(24),
+                  child: Text(mui(c, 'no_spots'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45))))
+              : ListView.separated(
+                  controller: scroll,
+                  itemCount: eigen.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final st = eigen[i];
+                    return ListTile(
+                      leading: Icon(Icons.place, color: _spotKleur(st)),
+                      title: Text('${st['name'] ?? mui(c, 'spot')}'),
+                      subtitle: Text(_spotZichtbaarheid(c, st), style: TextStyle(fontSize: 11.5, color: _spotKleur(st))),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.black38),
+                        onPressed: () async {
+                          Navigator.pop(c);
+                          await _verwijderStek(st);
+                        },
+                      ),
+                      onTap: () {
+                        Navigator.pop(c);
+                        final la = double.tryParse('${st['latitude']}');
+                        final lo = double.tryParse('${st['longitude']}');
+                        if (la != null && lo != null) {
+                          _map.move(LatLng(la, lo), 16);
+                          setState(() { _activeWaterId = st['water_id']; _activeSpots = _spotsForWater(st['water_id']); });
+                          _showSpot(st);
+                        }
+                      },
+                    );
+                  },
+                )),
+          ]),
+        );
+      },
+    ));
+  }
+
   void _openNavigation(double la, double lo) => launchUrl(Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$la,$lo'), mode: LaunchMode.externalApplication);
+
+  /// Een kaartlink openen (Street View, luchtfoto) in de kaart-app van de telefoon.
+  void _openLink(String url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
   // Lagen: alle aan/uit-schakelaars op één plek (dieptelaag, stroming, stekken-filter, land, auto-inchecken, uitleg).
   String _mt(BuildContext c, Map<String, String> m) {
@@ -1303,6 +1371,14 @@ class _MapScreenState extends State<MapScreen> {
           secondary: const Icon(Icons.storefront_outlined, color: Color(0xFFE8590C)),
           title: Text(gt(ctx, 'map_layer')),
           value: _partnersOn, onChanged: (v) { _setPartners(v); setS(() {}); }),
+        // Je eigen stekken op een rij. In de app kon je ze alleen vinden via de dobber van hun
+        // water of als pin bij ver inzoomen; op het web stond er al een lijst (20-09-2026).
+        ListTile(
+          leading: const Icon(Icons.place_outlined, color: AppColors.teal),
+          title: Text(mui(ctx, 'my_spots')),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () { Navigator.pop(ctx); _toonMijnStekken(); },
+        ),
         const Divider(height: 8),
         Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 4), child: Text(mui(ctx, 'layers_spots'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
