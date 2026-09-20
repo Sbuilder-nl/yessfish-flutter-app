@@ -4,6 +4,17 @@ import 'i18n.dart';
 
 /// Labels voor de drukte-meter / check-in op de kaart (6-talig).
 const Map<String, Map<String, String>> kMapUi = {
+"rules_third": {"nl": "Derde hengel", "en": "Third rod", "de": "Dritte Rute", "fr": "Troisième canne", "es": "Tercera caña", "pl": "Trzecia wędka"},
+  "rules_boat": {"nl": "Vanaf de boot", "en": "From a boat", "de": "Vom Boot", "fr": "Depuis un bateau", "es": "Desde barca", "pl": "Z łodzi"},
+  "rules_release": {"nl": "Terugzetten", "en": "Catch & release", "de": "Zurücksetzen", "fr": "Remise à l’eau", "es": "Captura y suelta", "pl": "Wypuszczanie"},
+  "rules_shelter": {"nl": "Schuilmiddel", "en": "Shelter", "de": "Schirm/Zelt", "fr": "Abri", "es": "Refugio", "pl": "Parasol/namiot"},
+  "clean_count": {"nl": "{n}× schoon achtergelaten", "en": "{n}× left clean", "de": "{n}× sauber hinterlassen", "fr": "{n}× laissé propre", "es": "{n}× dejado limpio", "pl": "{n}× zostawione czyste"},
+  "clean_by": {"nl": "door {n} vissers", "en": "by {n} anglers", "de": "von {n} Anglern", "fr": "par {n} pêcheurs", "es": "por {n} pescadores", "pl": "przez {n} wędkarzy"},
+  "spot_public": {"nl": "Openbaar", "en": "Public", "de": "Öffentlich", "fr": "Public", "es": "Público", "pl": "Publiczne"},
+  "spot_friends": {"nl": "Vismaten", "en": "Fishing buddies", "de": "Angelfreunde", "fr": "Copains de pêche", "es": "Colegas de pesca", "pl": "Kumple wędkarscy"},
+  "spot_private": {"nl": "Privé", "en": "Private", "de": "Privat", "fr": "Privé", "es": "Privado", "pl": "Prywatne"},
+  "spot_delete": {"nl": "Stek verwijderen", "en": "Delete spot", "de": "Stelle löschen", "fr": "Supprimer le spot", "es": "Eliminar el sitio", "pl": "Usuń stanowisko"},
+  "spot_delete_ask": {"nl": "Deze stek verwijderen? Dat kan niet ongedaan worden gemaakt.", "en": "Delete this spot? This cannot be undone.", "de": "Diese Stelle löschen? Das lässt sich nicht rückgängig machen.", "fr": "Supprimer ce spot ? C’est définitif.", "es": "¿Eliminar este sitio? No se puede deshacer.", "pl": "Usunąć to stanowisko? Nie można tego cofnąć."},
   'checkin_here': {'nl': 'Ik vis hier', 'en': "I'm fishing here", 'de': 'Ich angle hier', 'fr': 'Je pêche ici', 'es': 'Estoy pescando aquí', 'pl': 'Łowię tutaj'},
   'leave':        {'nl': 'Ik ben weg', 'en': "I've left", 'de': 'Ich bin weg', 'fr': 'Je suis parti', 'es': 'Ya no estoy', 'pl': 'Już mnie nie ma'},
   'busy':         {'nl': 'Drukte', 'en': 'Busyness', 'de': 'Andrang', 'fr': 'Affluence', 'es': 'Afluencia', 'pl': 'Ruch'},

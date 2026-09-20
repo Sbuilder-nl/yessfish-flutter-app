@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/water_vissen_info.dart';
 import '../core/gids_i18n.dart';
 import 'organisatie_screen.dart';
+import 'bite_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -319,6 +320,8 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadFlow() async {
     if (!_flowOn) return;
+    // Heel ver uitgezoomd heeft deze laag geen zin; het web haalt hem daar ook niet op.
+    if (_zoom < 8) return;
     try {
       final b = _map.camera.visibleBounds;
       final r = await Api.get('/map/flow?bbox=${b.west},${b.south},${b.east},${b.north}');
@@ -377,7 +380,9 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadDepth() async {
     if (!_depthOn) return;
-    if (_zoom < 13) { if (_depthCells.isNotEmpty && mounted) setState(() => _depthCells = []); return; }
+    // Zelfde drempel als het web (zoom 10). Met 13 leek de laag kapot: je zette hem aan en er
+    // gebeurde niets tot je flink inzoomde (20-09-2026).
+    if (_zoom < 10) { if (_depthCells.isNotEmpty && mounted) setState(() => _depthCells = []); return; }
     try {
       final b = _map.camera.visibleBounds;
       final r = await Api.get('/depth/grid?minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}');
@@ -653,9 +658,34 @@ class _MapScreenState extends State<MapScreen> {
           _permitChip(w),
           ValueListenableBuilder<int?>(valueListenable: bite, builder: (_, sc, __) {
             final kleur = sc == null ? Colors.grey.shade600 : sc >= 70 ? const Color(0xFF16A34A) : sc >= 45 ? const Color(0xFFEA580C) : const Color(0xFF64748B);
-            return Chip(avatar: Icon(Icons.water_outlined, size: 16, color: kleur),
+            // Tikken opent het bijtkansscherm voor dít water — op het web linkt de chip ook door.
+            return ActionChip(
+              onPressed: la0 == null || lo0 == null ? null : () {
+                Navigator.pop(ctx2);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => _BijtkansVoorWater(
+                  lat: la0, lng: lo0, naam: '${w['name'] ?? ''}')));
+              },
+              avatar: Icon(Icons.water_outlined, size: 16, color: kleur),
               label: Text(sc == null ? mui(context, 'bite_loading') : mui(context, 'bite_chip').replaceFirst('%s', '$sc'), style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5)),
               backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact);
+          }),
+          // Hoe vaak is dit water schoon achtergelaten? Stond al op het web en is precies het
+          // soort schouderklopje dat we willen laten zien (20-09-2026).
+          ValueListenableBuilder<Map?>(valueListenable: detail, builder: (_, d, __) {
+            final schoon = d?['schoon'];
+            final aantal = schoon is Map ? (schoon['count'] as num?)?.toInt() ?? 0 : 0;
+            final vissers = schoon is Map ? (schoon['anglers'] as num?)?.toInt() ?? 0 : 0;
+            if (aantal <= 0) return const SizedBox.shrink();
+            const groen = Color(0xFF047857);
+            return Chip(
+              avatar: const Text('🧹', style: TextStyle(fontSize: 13)),
+              label: Text([
+                mui(context, 'clean_count').replaceFirst('{n}', '$aantal'),
+                if (vissers > 0) mui(context, 'clean_by').replaceFirst('{n}', '$vissers'),
+              ].join(' · '), style: const TextStyle(color: groen, fontWeight: FontWeight.w700, fontSize: 12.5)),
+              backgroundColor: groen.withValues(alpha: 0.10),
+              side: BorderSide(color: groen.withValues(alpha: 0.4)),
+              visualDensity: VisualDensity.compact);
           }),
         ])),
         // 1b. Wie heeft hier het visrecht + waar en hoe je hier mag vissen (officiële bron).
@@ -699,7 +729,7 @@ class _MapScreenState extends State<MapScreen> {
         else
           ...near.map((s) => ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.place, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared),
+            leading: Icon(Icons.place, color: _spotKleur(s)),
             title: Text('${s['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text(_privacyLabel(s['privacy']), style: const TextStyle(fontSize: 12)),
             trailing: const Icon(Icons.chevron_right, size: 18),
@@ -826,6 +856,11 @@ class _MapScreenState extends State<MapScreen> {
             statusRow(Icons.badge_outlined, mui(context, 'rules_license'), '${r['license_required'] ?? 'unknown'}', true),
             statusRow(Icons.nightlight_round, mui(context, 'rules_night'), '${r['night_fishing'] ?? 'unknown'}', false),
             statusRow(Icons.event_busy, mui(context, 'rules_season'), '${r['closed_season'] ?? 'unknown'}', false),
+            // Deze vier stonden wel in de serverregels maar niet in de app; op het web al langer.
+            statusRow(Icons.phishing, mui(context, 'rules_third'), '${r['third_rod'] ?? 'unknown'}', false),
+            statusRow(Icons.sailing_outlined, mui(context, 'rules_boat'), '${r['from_boat'] ?? 'unknown'}', false),
+            statusRow(Icons.replay, mui(context, 'rules_release'), '${r['catch_release'] ?? 'unknown'}', false),
+            statusRow(Icons.umbrella_outlined, mui(context, 'rules_shelter'), '${r['shelter'] ?? 'unknown'}', false),
             if (w['permit_type'] == null || '${w['permit_type']}' == 'onbekend') Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(padding: const EdgeInsets.all(12),
@@ -1601,7 +1636,9 @@ class _MapScreenState extends State<MapScreen> {
       child: Padding(
       padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom + 20),
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.place, color: mine ? AppColors.teal : AppColors.shared), const SizedBox(width: 8), Expanded(child: Text(s['name'] ?? context.tr('map.spot'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
+        Row(children: [Icon(Icons.place, color: _spotKleur(s)), const SizedBox(width: 8), Expanded(child: Text(s['name'] ?? context.tr('map.spot'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
+        if (mine) Padding(padding: const EdgeInsets.only(top: 2, left: 32),
+          child: Text(_spotZichtbaarheid(context, s), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _spotKleur(s)))),
         const SizedBox(height: 6),
         if (!mine && owner != null) Text('${context.tr('map.shared_by')} @$owner', style: const TextStyle(color: Colors.black54)),
         if (waterName != null) Text('${context.tr('map.water')}: $waterName', style: const TextStyle(color: Colors.black54)),
@@ -1679,9 +1716,40 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () { Navigator.pop(ctx); _startMoveSpot(s); },
             icon: const Icon(Icons.open_with, size: 18),
             label: Text(mui(ctx, 'move_spot')))),
+          const SizedBox(height: 4),
+          // Een verkeerd gezette stek kon je in de app niet weg krijgen; op het web wel (20-09-2026).
+          SizedBox(width: double.infinity, child: TextButton.icon(
+            onPressed: () { Navigator.pop(ctx); _verwijderStek(s); },
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            label: Text(mui(ctx, 'spot_delete')))),
         ],
       ])),
     ))));
+  }
+
+  /// Stek verwijderen, met bevestiging — want dit kan niet ongedaan worden gemaakt.
+  Future<void> _verwijderStek(Map s) async {
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      content: Text(mui(c, 'spot_delete_ask')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
+        FilledButton(onPressed: () => Navigator.pop(c, true),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
+          child: Text(mui(c, 'spot_delete'))),
+      ],
+    ));
+    if (ok != true) return;
+    try {
+      await Api.delete('/spots/${s['id']}');
+      _spots.removeWhere((x) => x is Map && x['id'] == s['id']);
+      if (mounted) setState(() { _activeSpots = _activeWaterId == null ? [] : _spotsForWater(_activeWaterId); });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : mui(context, 'spot_delete'))));
+      }
+    }
   }
 
   void _showCatch(Map c) {
@@ -1725,6 +1793,25 @@ class _MapScreenState extends State<MapScreen> {
         if (badge != null) Positioned(right: -3, top: -3, child: badge),
       ]),
     );
+  }
+
+  /// Kleur van een stek: van iemand anders = blauw; van jou = naar zichtbaarheid, zodat je in één
+  /// oogopslag ziet of een eigen stek openbaar staat (zelfde kleuren als op het web).
+  static Color _spotKleur(Map s) {
+    if (s['is_mine'] == false) return AppColors.shared;
+    switch ('${s['privacy'] ?? ''}') {
+      case 'public': return const Color(0xFF1F8A70);
+      case 'friends': return const Color(0xFFF59E0B);
+      default: return const Color(0xFF64748B);
+    }
+  }
+
+  String _spotZichtbaarheid(BuildContext c, Map s) {
+    switch ('${s['privacy'] ?? ''}') {
+      case 'public': return mui(c, 'spot_public');
+      case 'friends': return mui(c, 'spot_friends');
+      default: return mui(c, 'spot_private');
+    }
   }
 
   Widget _waterPin(String level) => _schijfMarker(level);
@@ -1844,22 +1931,63 @@ class _MapScreenState extends State<MapScreen> {
     } catch (_) {}
   }
 
+  /// Is dit water in OSM een lijn (kanaal, vaart, beek) in plaats van een vlak?
+  static bool _isLijnGeo(dynamic g) => g is Map && g['type'] == 'LineString';
+
+  /// Bbox-oppervlak van een vorm: grote vormen eerst tekenen, kleine erbovenop. Zonder dit legt
+  /// een rivier zich over een plas heen en lijkt de kleur te "wisselen" (zelfde truc als op het web).
+  static double _vormGrootte(dynamic g) {
+    if (g is! Map) return 0;
+    final co = g['coordinates'];
+    final ring = g['type'] == 'LineString' ? co : (co is List && co.isNotEmpty ? co.first : null);
+    if (ring is! List || ring.length < 2) return 0;
+    double minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (final p in ring) {
+      if (p is! List || p.length < 2 || p[0] is! num || p[1] is! num) continue;
+      final x = (p[0] as num).toDouble(), y = (p[1] as num).toDouble();
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    return maxX <= minX ? 0 : (maxX - minX) * (maxY - minY);
+  }
+
+  /// Wateren met een vorm, grootste eerst — zodat een rivier een plas niet overdekt.
+  List<Map> _vormenOpGrootte() {
+    final uit = [for (final w in _waters) if ((w as Map)['polygon'] != null) w];
+    uit.sort((a, b) => _vormGrootte(b['polygon']).compareTo(_vormGrootte(a['polygon'])));
+    return uit;
+  }
+
   List<LatLng> _ringFromGeo(dynamic g) {
+    // Een kanaal of vaart staat in OSM als lijn. Accepteerden we die niet, dan werd zo'n water
+    // helemaal niet getekend en was hij ook niet aan te tikken (20-09-2026).
+    if (g is Map && g['type'] == 'LineString' && g['coordinates'] is List) {
+      final out = _punten(g['coordinates'] as List);
+      return out.length >= 2 ? out : [];
+    }
     if (g is Map && g['type'] == 'Polygon' && g['coordinates'] is List && (g['coordinates'] as List).isNotEmpty) {
       final ring = (g['coordinates'] as List).first;
       if (ring is List) {
-        final out = <LatLng>[];
-        for (final p in ring) {
-          if (p is! List || p.length < 2 || p[0] is! num || p[1] is! num) continue;
-          final lat = (p[1] as num).toDouble(), lng = (p[0] as num).toDouble();
-          // Ongeldige/rotte punten (buiten bereik of pal op 0,0) overslaan → geen rare vorm-lijn.
-          if (lat.abs() > 90 || lng.abs() > 180 || (lat.abs() < 0.01 && lng.abs() < 0.01)) continue;
-          out.add(LatLng(lat, lng));
-        }
+        final out = _punten(ring);
         return out.length >= 3 ? out : [];
       }
     }
     return [];
+  }
+
+  /// GeoJSON-punten ([lng,lat]) → kaartpunten, met rotte punten eruit.
+  static List<LatLng> _punten(List ruw) {
+    final out = <LatLng>[];
+    for (final p in ruw) {
+      if (p is! List || p.length < 2 || p[0] is! num || p[1] is! num) continue;
+      final lat = (p[1] as num).toDouble(), lng = (p[0] as num).toDouble();
+      // Ongeldige/rotte punten (buiten bereik of pal op 0,0) overslaan → geen rare vorm-lijn.
+      if (lat.abs() > 90 || lng.abs() > 180 || (lat.abs() < 0.01 && lng.abs() < 0.01)) continue;
+      out.add(LatLng(lat, lng));
+    }
+    return out;
   }
 
   // Inkleur-kleur per watertype (vorm-vulling). Dobber blijft de drukte-kleur.
@@ -1933,12 +2061,36 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Map? _waterAtPoint(LatLng pt) {
-    for (final w in _waters) {
-      if (w is! Map || w['polygon'] == null) continue;
-      final ring = _ringFromGeo(w['polygon']);
-      if (ring.length >= 3 && _pointInRing(pt, ring)) return w;
+    // Kleine vormen eerst, anders "vangt" een rivier elke tik die eigenlijk op een plas erin hoort.
+    final opVolgorde = _vormenOpGrootte().reversed;
+    for (final w in opVolgorde) {
+      final geo = w['polygon'];
+      final ring = _ringFromGeo(geo);
+      if (_isLijnGeo(geo)) {
+        // Een kanaal is een lijn zonder binnenkant: raak je hem dichtbij genoeg, dan telt dat.
+        if (ring.length >= 2 && _dichtbijLijn(pt, ring)) return w;
+      } else if (ring.length >= 3 && _pointInRing(pt, ring)) {
+        return w;
+      }
     }
     return null;
+  }
+
+  /// Ligt het tikpunt vlak bij een lijnvorm? De marge schaalt mee met het zoomniveau, zodat een
+  /// vaart op elk niveau even makkelijk te raken is (ongeveer een vingerbreedte).
+  bool _dichtbijLijn(LatLng pt, List<LatLng> lijn) {
+    final marge = 0.00025 * (1 << (15 - _zoom.round().clamp(8, 15)));
+    for (var i = 0; i < lijn.length - 1; i++) {
+      final a = lijn[i], b = lijn[i + 1];
+      final dx = b.longitude - a.longitude, dy = b.latitude - a.latitude;
+      final lengte = dx * dx + dy * dy;
+      var t = lengte == 0 ? 0.0 : ((pt.longitude - a.longitude) * dx + (pt.latitude - a.latitude) * dy) / lengte;
+      t = t.clamp(0.0, 1.0);
+      final cx = a.longitude + t * dx, cy = a.latitude + t * dy;
+      final ax = (pt.longitude - cx), ay = (pt.latitude - cy);
+      if (ax * ax + ay * ay <= marge * marge) return true;
+    }
+    return false;
   }
 
   void _startEditShape() {
@@ -1995,7 +2147,7 @@ class _MapScreenState extends State<MapScreen> {
       TourAnker(id: 'kaart-lagen', child: TextButton.icon(
         onPressed: bezig ? null : _showLayers,
         icon: Icon(Icons.layers, size: 20,
-            color: (_depthOn || _flowOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
+            color: (_depthOn || _flowOn || !_partnersOn || _spotFilter != 'all') ? AppColors.mint : Colors.white),
         label: Text(mui(context, 'layers_title'),
             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
       )),
@@ -2033,7 +2185,7 @@ class _MapScreenState extends State<MapScreen> {
         child: GestureDetector(onTap: () => _showSpot(s as Map), child: Stack(alignment: Alignment.center, children: [
           const Icon(Icons.location_on, size: 44, color: Colors.white,
             shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1))]),
-          Icon(Icons.location_on, size: 36, color: s['is_mine'] == true ? AppColors.teal : AppColors.shared),
+          Icon(Icons.location_on, size: 36, color: _spotKleur(s)),
           const Positioned(top: 11, child: Icon(Icons.phishing, size: 14, color: Colors.white)),
         ])))),
       // Vangsten (alleen bij inzoomen).
@@ -2088,8 +2240,12 @@ class _MapScreenState extends State<MapScreen> {
               if (_editShape) { setState(() => _draftPts = [..._draftPts, latlng]); return; } // intekenen: punt toevoegen
               if (_placing != null) return; // in plaats-modus richt je met het kruis; tik doet niets
               final w = _waterAtPoint(latlng);
-              if (w != null) { // tik in de ingekleurde vorm → de STEKKEN van dat water tonen (dobber = info)
+              if (w != null) {
+                // Tik op de ingekleurde vorm: stekken tonen én het waterblad openen. Bij een groot
+                // water staat de dobber vaak buiten beeld; dan voelde een tik als "er gebeurt
+                // niets" (zelfde gedrag als op het web, 20-09-2026).
                 setState(() { _activeWaterId = w['id']; _activeSpots = _spotsForWater(w['id']); });
+                _showWater(w);
                 return;
               }
               if (_activeSpots.isNotEmpty) setState(() { _activeSpots = []; _activeWaterId = null; }); // lege kaart = stek-pins verbergen
@@ -2116,13 +2272,23 @@ class _MapScreenState extends State<MapScreen> {
             // Vergunning-regio's (kleur per vereniging) bewust NIET meer getekend —
             // schone kaart; vergunning-info komt via tik op het water zelf.
             // Alle ingetekende waters altijd opgelicht (vanaf zoom 11), ingekleurd per watertype.
+            // Vlakken (plassen, meren) en lijnen (kanalen, vaarten, beken) apart tekenen: een lijn
+            // krijgt geen vulling maar een dikkere streep, anders zie je een vaart niet. Grote
+            // vormen eerst, kleine erbovenop — precies als op het web.
             if (!_editShape && _zoom >= 11)
               PolygonLayer(polygons: [
-                for (final w in _waters)
-                  if (w['polygon'] != null)
+                for (final w in _vormenOpGrootte())
+                  if (!_isLijnGeo(w['polygon']))
                     () { final ring = _ringFromGeo(w['polygon']); final c = _typeColor('${w['type']}');
                       return Polygon(points: ring, color: c.withValues(alpha: 0.50), borderColor: c, borderStrokeWidth: 2.5); }(),
               ].where((p) => p.points.length >= 3).toList()),
+            if (!_editShape && _zoom >= 11)
+              PolylineLayer(polylines: [
+                for (final w in _vormenOpGrootte())
+                  if (_isLijnGeo(w['polygon']))
+                    () { final ring = _ringFromGeo(w['polygon']); final c = _typeColor('${w['type']}');
+                      return Polyline(points: ring, color: c.withValues(alpha: 0.85), strokeWidth: 4); }(),
+              ].where((p) => p.points.length >= 2).toList()),
             // Dieptelaag: per ~40 m-vak de (gewogen) gemiddelde diepte, boven de watervormen.
             if (_depthOn && _depthCells.isNotEmpty)
               CircleLayer(circles: [
@@ -2259,4 +2425,18 @@ class _MapScreenState extends State<MapScreen> {
       ]),
     ));
   }
+}
+
+/// Bijtkans van één water, geopend vanaf de kaart. BiteScreen is de inhoud van een tabblad en
+/// heeft zelf geen titelbalk; vandaar dit jasje eromheen (zelfde aanpak als bij meldingen).
+class _BijtkansVoorWater extends StatelessWidget {
+  const _BijtkansVoorWater({required this.lat, required this.lng, required this.naam});
+  final double lat, lng;
+  final String naam;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(naam.isEmpty ? context.tr('nav.bite') : naam)),
+        body: BiteScreen(lat: lat, lng: lng, plaats: naam),
+      );
 }

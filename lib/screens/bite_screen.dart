@@ -8,7 +8,13 @@ import '../core/i18n.dart';
 import '../core/rondleiding.dart';
 
 class BiteScreen extends StatefulWidget {
-  const BiteScreen({super.key});
+  /// Zonder plek gebruikt dit scherm je GPS. Kom je vanaf een water op de kaart, dan geef je die
+  /// plek mee — dan zie je de bijtkans van dát water, net als /vistijden?lat=..&lng=.. op het web.
+  const BiteScreen({super.key, this.lat, this.lng, this.plaats});
+  final double? lat;
+  final double? lng;
+  final String? plaats;
+
   @override
   State<BiteScreen> createState() => _BiteScreenState();
 }
@@ -28,10 +34,18 @@ class _BiteScreenState extends State<BiteScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _err = null; });
     try {
-      final loc = await currentLocation();
-      final r = await Api.get('/bite-forecast?lat=${loc.lat}&lng=${loc.lng}');
+      double lat, lng;
+      if (widget.lat != null && widget.lng != null) {
+        lat = widget.lat!;
+        lng = widget.lng!;
+      } else {
+        final loc = await currentLocation();
+        lat = loc.lat;
+        lng = loc.lng;
+      }
+      final r = await Api.get('/bite-forecast?lat=$lat&lng=$lng');
       Map? sol;
-      try { sol = await Api.get('/solunar?lat=${loc.lat}&lng=${loc.lng}') as Map?; } catch (_) {}
+      try { sol = await Api.get('/solunar?lat=$lat&lng=$lng') as Map?; } catch (_) {}
       setState(() { _data = r; _sol = sol; _loading = false; });
       StreakData.load(force: true);   // bijtkans bekeken = reeks-dag → balk direct bijwerken
     } catch (e) {
