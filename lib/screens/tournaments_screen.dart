@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/i18n.dart';
 
@@ -27,7 +28,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('tournaments.title'))),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : _items.isEmpty ? Center(child: Text(context.tr('tournaments.empty'), style: const TextStyle(color: Colors.black45))) : ListView.builder(
+      body: _loading ? const Center(child: CircularProgressIndicator()) : _items.isEmpty ? Center(child: Text(context.tr('tournaments.empty'), style: const TextStyle(color: Colors.black45))) : TourAnker(id: 'toernooi-lijst', child: ListView.builder(
         padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _items.length,
         itemBuilder: (_, i) {
           final t = _items[i] as Map; final id = t['id'] as int;
@@ -43,6 +44,6 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
               })),
             ],
           ));
-        }));
+        })));
   }
 }

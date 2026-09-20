@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
@@ -64,14 +65,14 @@ class _DisciplineDashboardsScreenState extends State<DisciplineDashboardsScreen>
                   ? _empty()
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: ListView.separated(
+                      child: TourAnker(id: 'stijlen-lijst', child: ListView.separated(
                         // extra onderruimte i.v.m. edge-to-edge: laatste kaart valt anders
                         // deels achter de systeem-navigatiebalk.
                         padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom),
                         itemCount: _dash.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 14),
                         itemBuilder: (c, i) => _card(_dash[i]),
-                      ),
+                      )),
                     ),
     );
   }

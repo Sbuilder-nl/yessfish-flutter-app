@@ -1,4 +1,5 @@
 import "package:yessfish/widgets/dobber_text.dart";
+import '../core/rondleiding.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/api.dart';
@@ -159,14 +160,14 @@ class _VisAiScreenState extends State<VisAiScreen> {
         title: Row(mainAxisSize: MainAxisSize.min, children: [
           Flexible(child: Text(t['title']!, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
-          Container(
+          TourAnker(id: 'ai-kosten', child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
                 color: _unlimited ? AppColors.accent : Colors.white24,
                 borderRadius: BorderRadius.circular(6)),
             child: Text(_unlimited ? 'YessFish+' : t['free']!,
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-          ),
+          )),
         ]),
         actions: [
           IconButton(
@@ -243,7 +244,7 @@ class _VisAiScreenState extends State<VisAiScreen> {
             padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
             child: Row(children: [
               Expanded(
-                child: TextField(
+                child: TourAnker(id: 'ai-vraag', child: TextField(
                   controller: _ctrl,
                   onSubmitted: (_) => _send(),
                   textInputAction: TextInputAction.send,
@@ -260,7 +261,7 @@ class _VisAiScreenState extends State<VisAiScreen> {
                         borderRadius: BorderRadius.circular(24),
                         borderSide: const BorderSide(color: AppColors.border)),
                   ),
-                ),
+                )),
               ),
               const SizedBox(width: 8),
               FilledButton(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
 import '../core/config.dart';
@@ -24,7 +25,7 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('species.title'))),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : GridView.builder(
+      body: _loading ? const Center(child: CircularProgressIndicator()) : TourAnker(id: 'soorten-lijst', child: GridView.builder(
         padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.82, crossAxisSpacing: 10, mainAxisSpacing: 10),
         itemCount: _list.length,
@@ -36,6 +37,6 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
               : const ColoredBox(color: AppColors.bg, child: Icon(Icons.set_meal, color: AppColors.teal, size: 40))),
             Padding(padding: const EdgeInsets.all(8), child: Text(speciesName(context, s), style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
           ])));
-        }));
+        })));
   }
 }

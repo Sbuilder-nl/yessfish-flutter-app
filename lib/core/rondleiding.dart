@@ -84,6 +84,21 @@ class _TourAnkerState extends State<TourAnker> {
   Widget build(BuildContext context) => KeyedSubtree(key: _key, child: widget.child);
 }
 
+/// Zelfde als [TourAnker], maar voor een tabbalk onder de titelbalk.
+///
+/// `AppBar.bottom` wil een [PreferredSizeWidget]; een gewone TourAnker past daar niet in.
+class TourAnkerBalk extends StatelessWidget implements PreferredSizeWidget {
+  const TourAnkerBalk({super.key, required this.id, required this.child});
+  final String id;
+  final PreferredSizeWidget child;
+
+  @override
+  Size get preferredSize => child.preferredSize;
+
+  @override
+  Widget build(BuildContext context) => TourAnker(id: id, child: child);
+}
+
 /// Eén stap van de rondleiding.
 class Stap {
   const Stap({
@@ -95,6 +110,7 @@ class Stap {
     this.klik = false,
     this.optioneel = false,
     this.vraag,
+    this.scherm,
   });
 
   final String id;
@@ -114,6 +130,13 @@ class Stap {
 
   /// Signaal aan het scherm om iets klaar te zetten (bijvoorbeeld een waterblad openen).
   final String? vraag;
+
+  /// Welk los scherm hierbij open moet staan (bv. 'sterren', 'wedstrijd', 'instellingen').
+  ///
+  /// De rondleiding kon eerst alleen tussen de vijf tabbladen springen. Bijna de helft van de
+  /// stappen op het web gaat over een scherm dat je vanuit het menu opent — die waren in de app
+  /// dus niet te vertellen (20-09-2026).
+  final String? scherm;
 
   final Map<String, String> titel;
   final Map<String, String> tekst;

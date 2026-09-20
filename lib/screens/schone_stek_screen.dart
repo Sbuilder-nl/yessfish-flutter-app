@@ -212,7 +212,7 @@ class _SchoneStekScreenState extends State<SchoneStekScreen> {
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + MediaQuery.of(context).padding.bottom),
                 children: [
                   if (_laadfout != null) _foutBlok(),
-                  _uitlegBlok(),
+                  TourAnker(id: 'schoon-uitleg', child: _uitlegBlok()),
                   const SizedBox(height: 12),
                   _open != null ? _lopendeSessieBlok() : _startBlok(),
                   const SizedBox(height: 12),

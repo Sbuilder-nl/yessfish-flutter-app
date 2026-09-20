@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../core/rondleiding.dart';
 
 import 'package:flutter/material.dart';
 import '../core/api.dart';
@@ -97,11 +98,11 @@ class _TackleScreenState extends State<TackleScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(title: Text(context.tr('gear.title'))),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: TourAnker(id: 'uitrusting-nieuw', child: FloatingActionButton.extended(
         onPressed: _newSet,
         icon: const Icon(Icons.add),
         label: Text(context.tr('gear.new_set')),
-      ),
+      )),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -336,7 +337,7 @@ class _GearSetEditorScreenState extends State<GearSetEditorScreen> {
           if (!isNew) IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
         ],
       ),
-      body: ListView(
+      body: TourAnker(id: 'uitrusting-lijst', child: ListView(
         padding: const EdgeInsets.all(14) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
         children: [
           TextField(
@@ -380,7 +381,7 @@ class _GearSetEditorScreenState extends State<GearSetEditorScreen> {
           ),
           const SizedBox(height: 30),
         ],
-      ),
+      )),
     );
   }
 

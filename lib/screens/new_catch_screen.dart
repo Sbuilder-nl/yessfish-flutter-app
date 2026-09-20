@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exif/exif.dart';
@@ -385,16 +386,16 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
             ]),
           )),
         if (_photos.isNotEmpty) const SizedBox(height: 8),
-        Row(children: [
+        TourAnker(id: 'vangst-foto', child: Row(children: [
           Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.camera), icon: const Icon(Icons.camera_alt), label: Text(context.tr('newcatch.camera')))),
           const SizedBox(width: 8),
           Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.gallery), icon: const Icon(Icons.photo), label: Text(context.tr('newcatch.gallery')))),
-        ]),
+        ])),
         if (_uploading) const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator()),
         if (_photos.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
-          child: FilledButton.icon(onPressed: _identifying ? null : _identify,
+          child: TourAnker(id: 'vangst-ai', child: FilledButton.icon(onPressed: _identifying ? null : _identify,
             icon: _identifying ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome),
-            label: Text(context.tr('newcatch.identify')))),
+            label: Text(context.tr('newcatch.identify'))))),
         if (_aiTip != null) Padding(padding: const EdgeInsets.only(top: 8),
           child: Container(width: double.infinity, padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
@@ -412,7 +413,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         _aantalVeld(_aantal, _t(context, const {
           'nl': 'Aantal', 'en': 'Number', 'de': 'Anzahl', 'fr': 'Nombre', 'es': 'Cantidad', 'pl': 'Liczba'})),
         const SizedBox(height: 12),
-        _extraSoorten(),
+        TourAnker(id: 'vangst-meer', child: _extraSoorten()),
         const SizedBox(height: 12),
         TextField(controller: _bait, decoration: InputDecoration(labelText: context.tr('newcatch.bait'))),
         const SizedBox(height: 12),
@@ -429,7 +430,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        InkWell(
+        TourAnker(id: 'vangst-water', child: InkWell(
           onTap: _pickWater,
           child: InputDecorator(
             decoration: InputDecoration(labelText: context.tr('newcatch.water')),
@@ -441,7 +442,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
               const Icon(Icons.arrow_drop_down, color: Colors.black45),
             ]),
           ),
-        ),
+        )),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           initialValue: _privacy,
@@ -454,7 +455,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           onChanged: (v) => setState(() => _privacy = v!),
         ),
         if (_privacy == 'public')
-          CheckboxListTile(
+          TourAnker(id: 'vangst-zichtbaar', child: CheckboxListTile(
             value: _showInFeed,
             onChanged: (v) => setState(() => _showInFeed = v ?? true),
             controlAffinity: ListTileControlAffinity.leading,
@@ -462,7 +463,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
             dense: true,
             title: Text(context.tr('newcatch.showInFeed')),
             subtitle: Text(context.tr('newcatch.feedBonus'), style: const TextStyle(fontSize: 12, color: Color(0xFF1f8a70), fontWeight: FontWeight.w600)),
-          ),
+          )),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: _addLocation,

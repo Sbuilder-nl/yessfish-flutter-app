@@ -152,7 +152,8 @@ class _BiteScreenState extends State<BiteScreen> {
           ]);
         })])),
         const SizedBox(height: 16),
-        if (windows.isNotEmpty) ...[
+        if (windows.isNotEmpty)
+          TourAnker(id: 'bijt-periodes', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(context.tr('bite.windows'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
           const SizedBox(height: 8),
           ...windows.map((w) => Card(child: ListTile(
@@ -161,7 +162,7 @@ class _BiteScreenState extends State<BiteScreen> {
             title: Text('${w['start']} – ${w['end']}'),
             subtitle: Text(w['type'] == 'major' ? context.tr('bite.window_major') : context.tr('bite.window_minor')),
           ))),
-        ],
+        ])),
         if (species.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(context.tr('bite.likely_species'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),

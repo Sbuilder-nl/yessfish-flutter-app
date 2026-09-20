@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:flutter/services.dart';
 import '../core/api.dart';
 import '../core/config.dart';
@@ -79,7 +80,7 @@ class _ParentalScreenState extends State<ParentalScreen> {
             else ..._kids.map((k) => _childCard(k as Map)),
 
             const SizedBox(height: 20),
-            _linkCard(),
+            TourAnker(id: 'ouder-koppel', child: _linkCard()),
             const SizedBox(height: 20),
             _childCodeCard(),
           ]),
@@ -111,7 +112,7 @@ class _ParentalScreenState extends State<ParentalScreen> {
           onChanged: (v) { if (v != null) _save(k, {'profile_visibility': v}); },
         ),
       ]),
-      _toggle(pt(context, 'loc'), s['show_location'] == true, (v) => _save(k, {'show_location': v})),
+      TourAnker(id: 'ouder-instel', child: _toggle(pt(context, 'loc'), s['show_location'] == true, (v) => _save(k, {'show_location': v}))),
       _toggle(pt(context, 'auto'), s['auto_checkin'] == true, (v) => _save(k, {'auto_checkin': v})),
       _toggle(pt(context, 'share'), s['share_catches_community'] == true, (v) => _save(k, {'share_catches_community': v})),
       Padding(padding: const EdgeInsets.only(top: 4), child: Text(pt(context, 'rec'), style: const TextStyle(color: Colors.black38, fontSize: 11.5))),

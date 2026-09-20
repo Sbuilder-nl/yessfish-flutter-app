@@ -147,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// De rondleiding nog eens doen. Staat bewust in het menu en niet alleen bij de eerste keer:
   /// een lid moet hem altijd terug kunnen kijken (Richard 19-09-2026).
-  Widget _rondleidingTegel() => InkWell(
+  Widget _rondleidingTegel() => TourAnker(id: 'menu-rondleiding', child: InkWell(
     onTap: () => Rondleiding.opnieuw(context),
     borderRadius: BorderRadius.circular(14),
     child: Container(
@@ -161,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: const TextStyle(fontSize: 11.5, height: 1.1, color: Color(0xFF334155), fontWeight: FontWeight.w500)),
       ]),
     ),
-  );
+  ));
 
   String _rt(Map<String, String> m) { final l = context.read<I18n>().locale; return m[l] ?? m['en'] ?? m['nl'] ?? ''; }
 

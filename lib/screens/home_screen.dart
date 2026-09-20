@@ -17,6 +17,29 @@ import '../core/api.dart';
 import '../core/disciplines_i18n.dart';
 import '../core/app_config.dart';
 import 'disciplines_screen.dart';
+import 'sterren_screen.dart';
+import 'wedstrijd_screen.dart';
+import 'gids_screen.dart';
+import 'settings_screen.dart';
+import 'friends_screen.dart';
+import 'messages_screen.dart';
+import 'albums_screen.dart';
+import 'tackle_screen.dart';
+import 'licenses_screen.dart';
+import 'mijn_data_screen.dart';
+import 'species_screen.dart';
+import 'weather_screen.dart';
+import 'identify_screen.dart';
+import 'vis_ai_screen.dart';
+import 'discipline_dashboards_screen.dart';
+import 'vistijl_tools_screen.dart';
+import 'schone_stek_screen.dart';
+import 'clubs_screen.dart';
+import 'tournaments_screen.dart';
+import 'leaderboard_screen.dart';
+import 'toplist_screen.dart';
+import 'parental_screen.dart';
+import 'new_catch_screen.dart';
 import '../widgets/yf_logo.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'quick_catch_screen.dart';
@@ -25,8 +48,6 @@ import 'drafts_screen.dart';
 import 'package:home_widget/home_widget.dart';
 import '../core/home_widget_service.dart';
 import 'catch_detail_screen.dart';
-import 'albums_screen.dart';
-import 'sterren_screen.dart';
 import '../widgets/streak_card.dart';
 import '../core/rondleiding.dart';
 import '../widgets/rondleiding_overlay.dart';
@@ -92,12 +113,57 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.read<AuthState>();
     if (auth.user != null) context.read<RealtimeService>().start(auth.user!.id);
     Rondleiding.gaNaarTab = _naarTab;
+    Rondleiding.naarScherm = _rondleidingNaarScherm;
     WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); AppConfig.load(); context.read<AuthState>().refresh(); _initQuickActions(); _initHomeWidget(); _startVragen(); });
+  }
+
+  /// Welk los scherm de rondleiding kan openen. De sleutel staat bij de stap (`scherm:`).
+  ///
+  /// Zonder dit kon de rondleiding alleen tussen de vijf tabbladen springen, en bleef alles achter
+  /// een menutegel onverteld — bijna de helft van het verhaal dat de site wél vertelt.
+  static final Map<String, Widget Function()> _rondleidingSchermen = {
+    'sterren': () => const SterrenScreen(),
+    'wedstrijd': () => const WedstrijdScreen(),
+    'gids': () => const GidsScreen(),
+    'instellingen': () => const SettingsScreen(),
+    'vismaten': () => const FriendsScreen(),
+    'berichten': () => const MessagesScreen(),
+    'meldingen': () => const NotificationsScreen(),
+    'albums': () => const AlbumsScreen(),
+    'uitrusting': () => const TackleScreen(),
+    'documenten': () => const LicensesScreen(),
+    'mijndata': () => const MijnDataScreen(),
+    'soorten': () => const SpeciesScreen(),
+    'weer': () => const WeatherScreen(),
+    'herkennen': () => const IdentifyScreen(),
+    'visai': () => const VisAiScreen(),
+    'stijlen': () => const DisciplineDashboardsScreen(),
+    'stijl-tools': () => const VistijlToolsScreen(),
+    'schone-stek': () => const SchoneStekScreen(),
+    'clubs': () => const ClubsScreen(),
+    'toernooien': () => const TournamentsScreen(),
+    'ranglijst': () => const LeaderboardScreen(),
+    'toplijst': () => const ToplistScreen(),
+    'ouder': () => const ParentalScreen(),
+    'nieuwe-vangst': () => const NewCatchScreen(),
+  };
+
+  /// Open (of sluit) een scherm voor de rondleiding. null = terug naar de tabbladen.
+  Future<void> _rondleidingNaarScherm(String? sleutel) async {
+    if (!mounted) return;
+    final nav = Navigator.of(context);
+    // Eerst terug naar het hoofdscherm, zodat schermen niet op elkaar stapelen.
+    nav.popUntil((r) => r.isFirst);
+    if (sleutel == null) return;
+    final bouwer = _rondleidingSchermen[sleutel];
+    if (bouwer == null) return;
+    await nav.push(MaterialPageRoute(builder: (_) => bouwer()));
   }
 
   @override
   void dispose() {
     if (Rondleiding.gaNaarTab == _naarTab) Rondleiding.gaNaarTab = null;
+    if (Rondleiding.naarScherm == _rondleidingNaarScherm) Rondleiding.naarScherm = null;
     super.dispose();
   }
 
@@ -235,11 +301,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: _i == 3 ? null : AppBar(
         title: const YfLogo(size: 30, light: true),
         actions: [
-          IconButton(
+          TourAnker(id: 'vangst-snel', child: IconButton(
             tooltip: _qt(const {'nl': 'Snelvangst', 'en': 'Quick catch', 'de': 'Schnellfang', 'fr': 'Prise rapide', 'es': 'Captura rapida', 'pl': 'Szybki polow'}),
             icon: const Icon(Icons.set_meal, color: AppColors.mint),
             onPressed: _openQuickCatch,
-          ),
+          )),
           IconButton(
             tooltip: _qt(const {'nl': 'Nieuwe stek', 'en': 'New spot', 'de': 'Neue Stelle', 'fr': 'Nouveau spot', 'es': 'Nuevo spot', 'pl': 'Nowe miejsce'}),
             icon: const Icon(Icons.phishing, color: AppColors.mint),

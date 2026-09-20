@@ -113,7 +113,7 @@ class _WedstrijdScreenState extends State<WedstrijdScreen> {
                     const SizedBox(height: 12),
                     TourAnker(id: 'wedstrijd-stand', child: _standKaart()),
                     const SizedBox(height: 12),
-                    _puntenKaart(),
+                    TourAnker(id: 'wedstrijd-punten', child: _puntenKaart()),
                   ],
                 ],
               ),

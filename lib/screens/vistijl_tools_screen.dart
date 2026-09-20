@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
@@ -67,10 +68,10 @@ class _VistijlToolsScreenState extends State<VistijlToolsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _selected.isEmpty
               ? _emptyState()
-              : ListView(
+              : TourAnker(id: 'tools-lijst', child: ListView(
                   padding: EdgeInsets.fromLTRB(14, 14, 14, 14 + MediaQuery.of(context).padding.bottom),
                   children: _buildTools(active),
-                ),
+                )),
     );
   }
 

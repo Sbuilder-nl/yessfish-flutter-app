@@ -533,7 +533,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
             return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
               Row(children: [
                 Avatar(name: me?.username, src: me?.avatarPath, size: 38), const SizedBox(width: 10),
-                Expanded(child: TextField(controller: _composer, maxLines: null, textCapitalization: TextCapitalization.sentences, decoration: InputDecoration(hintText: context.tr('feed.composerHint'), border: InputBorder.none, filled: false))),
+                TourAnker(id: 'feed-nieuw', child: Expanded(child: TextField(controller: _composer, maxLines: null, textCapitalization: TextCapitalization.sentences, decoration: InputDecoration(hintText: context.tr('feed.composerHint'), border: InputBorder.none, filled: false)))),
               ]),
               if (_mentionSuggesties.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: Wrap(spacing: 6, runSpacing: 6, children: [
                 for (final f in _mentionSuggesties) ActionChip(
@@ -559,13 +559,13 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
                 }))),
               if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
               Row(children: [
-                IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera')),
+                TourAnker(id: 'feed-media', child: IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera'))),
                 IconButton(onPressed: _videoUploading ? null : () => _pickVideo(ImageSource.camera), icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.record')),
                 IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
                 IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
                 const SizedBox(width: 4),
                 // Voor wie is dit bericht? Twee knopjes, net als op het web.
-                Container(
+                TourAnker(id: 'feed-zicht', child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: AppColors.border),
                     borderRadius: BorderRadius.circular(8),
@@ -582,7 +582,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
                         ),
                       ),
                   ]),
-                ),
+                )),
                 const Spacer(),
                 TourAnker(id: 'feed-plaatsen', child: FilledButton(onPressed: _posting ? null : _post, child: Text(context.tr('feed.post')))),
               ]),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -49,7 +50,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(length: 3, child: Scaffold(
-      appBar: AppBar(title: Text(context.tr('friends.title')), bottom: TabBar(tabs: [
+      appBar: AppBar(title: Text(context.tr('friends.title')), bottom: TourAnkerBalk(id: 'vrienden-tabs', child: TabBar(tabs: [
         Tab(text: context.tr('friends.tab_friends')),
         Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(context.tr('friends.tab_requests')),
@@ -59,7 +60,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             child: Text('${_pending.length}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)))),
         ])),
         Tab(text: context.tr('friends.tab_search')),
-      ])),
+      ]))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : TabBarView(children: [
         ListView(children: _friends.map((u) => ListTile(leading: Avatar(name: u['username'], src: u['avatar_path'], size: 40), title: Text(u['username'] ?? ''), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u['id']))), trailing: IconButton(icon: const Icon(Icons.chat_bubble_outline, color: AppColors.teal), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(recipientId: u['id'], recipientName: u['username'])))))).toList()),
         _pending.isEmpty

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
@@ -52,12 +53,12 @@ class _GidsScreenState extends State<GidsScreen> with SingleTickerProviderStateM
     return Scaffold(
       appBar: AppBar(
         title: Text(gt(context, 'title')),
-        bottom: TabBar(controller: _tab, labelColor: Colors.white, unselectedLabelColor: Colors.white70, indicatorColor: AppColors.mint, tabs: [
+        bottom: TourAnkerBalk(id: 'gids-tabs', child: TabBar(controller: _tab, labelColor: Colors.white, unselectedLabelColor: Colors.white70, indicatorColor: AppColors.mint, tabs: [
           Tab(icon: const Icon(Icons.anchor, size: 18), text: gt(context, 'clubs')),
           Tab(icon: const Icon(Icons.storefront_outlined, size: 18), text: gt(context, 'shops')),
           Tab(icon: const Icon(Icons.confirmation_number_outlined, size: 18), text: gt(context, 'p_betaalwater')),
           Tab(icon: const Icon(Icons.sailing_outlined, size: 18), text: gt(context, 'marinas')),
-        ]),
+        ])),
       ),
       body: TabBarView(controller: _tab, children: [for (final t in _types) _Lijst(key: ValueKey('$t-$_land'), type: t, land: _land, q: _q, onLand: (l) => setState(() => _land = l))]),
     );
@@ -163,10 +164,10 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
           onChanged: (v) { if (v != null) widget.onLand(v); },
         ),
         const SizedBox(width: 10),
-        Expanded(child: TextField(
+        Expanded(child: TourAnker(id: 'gids-zoek', child: TextField(
           controller: widget.q, onChanged: (v) => setState(() => _zoek = v.trim()),
           decoration: InputDecoration(isDense: true, prefixIcon: const Icon(Icons.search, size: 18), hintText: gt(context, 'search'), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-        )),
+        ))),
       ])),
       Expanded(child: _fout
           ? Center(child: TextButton(onPressed: _laad, child: Text(gt(context, 'error'))))

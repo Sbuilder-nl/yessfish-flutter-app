@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -49,7 +50,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('nav.clubs'))),
-      floatingActionButton: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('clubs.fab'), style: const TextStyle(color: Colors.white))),
+      floatingActionButton: TourAnker(id: 'clubs-nieuw', child: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('clubs.fab'), style: const TextStyle(color: Colors.white)))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load,
         child: _clubs.isEmpty

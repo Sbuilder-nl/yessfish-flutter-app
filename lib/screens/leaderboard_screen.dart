@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/units.dart';
 import '../core/config.dart';
@@ -24,7 +25,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('leaderboard.title'))),
-      body: _loading ? const Center(child: CircularProgressIndicator()) : _rows.isEmpty ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(context.tr('leaderboard.empty'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45)))) : ListView.builder(
+      body: _loading ? const Center(child: CircularProgressIndicator()) : _rows.isEmpty ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(context.tr('leaderboard.empty'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45)))) : TourAnker(id: 'rang-lijst', child: ListView.builder(
         padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _rows.length,
         itemBuilder: (_, i) {
           final r = _rows[i] as Map; final u = r['user'] as Map?;
@@ -36,6 +37,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             trailing: Text(Units.weight(r['total_weight_kg'] ?? 0), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.teal)),
             onTap: u?['id'] != null ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,
           ));
-        }));
+        })));
   }
 }

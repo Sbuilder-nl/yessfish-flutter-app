@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -49,7 +50,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text(context.tr('albums.title'))),
-      floatingActionButton: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('albums.album'), style: const TextStyle(color: Colors.white))),
+      floatingActionButton: TourAnker(id: 'albums-maak', child: FloatingActionButton.extended(backgroundColor: AppColors.teal, onPressed: _create, icon: const Icon(Icons.add, color: Colors.white), label: Text(context.tr('albums.album'), style: const TextStyle(color: Colors.white)))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _items.isEmpty ? Center(child: Text(context.tr('albums.empty'), style: const TextStyle(color: Colors.black45))) : RefreshIndicator(onRefresh: _load, child: ListView.builder(
         padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _items.length,
         itemBuilder: (_, i) { final a = _items[i] as Map; return Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(leading: const Icon(Icons.photo_album, color: AppColors.teal), title: Text(a['title'] ?? ''), subtitle: Text('${a['photos_count'] ?? a['photos']?.length ?? 0} ${context.tr('albums.photos')}'), trailing: const Icon(Icons.chevron_right), onTap: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => AlbumDetailScreen(albumId: a['id'], title: a['title']))); _load(); })); })));

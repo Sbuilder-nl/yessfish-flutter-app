@@ -1,4 +1,5 @@
 import "package:yessfish/widgets/dobber_text.dart";
+import '../core/rondleiding.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
@@ -180,13 +181,13 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
           child: DobberText('⭐ $_bobbers', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
       ]),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: TourAnker(id: 'data-import', child: FloatingActionButton.extended(
         onPressed: _busy ? null : _pickAndImport,
         icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.upload_file, color: Colors.white),
         label: Text(mdt(context, _busy ? 'busy' : 'pick'), style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.teal,
-      ),
+      )),
       body: _loading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: _load,
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 90) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
@@ -203,13 +204,13 @@ class _MijnDataScreenState extends State<MijnDataScreen> {
                   '${b['kind'] == 'spots' ? b['spots_count'] : b['depth_count']} ${mdt(context, 'points')} · '
                   '${mdt(context, '${b['visibility']}' == 'private' ? 'private' : 'public')} · ${'${b['created_at'] ?? ''}'.split('T').first}',
                 style: const TextStyle(fontSize: 12)),
-              trailing: PopupMenuButton<String>(
+              trailing: TourAnker(id: 'data-delen', child: PopupMenuButton<String>(
                 onSelected: (v) { if (v == 'vis') { _toggleVisibility(b as Map); } else { _delete(b as Map); } },
                 itemBuilder: (_) => [
                   if (b['kind'] != 'spots') PopupMenuItem(value: 'vis',
                     child: DobberText(mdt(context, b['visibility'] == 'public' ? 'make_private' : 'make_public'))),
                   PopupMenuItem(value: 'del', child: Text(mdt(context, 'delete'))),
-                ]),
+                ])),
             )),
         ]),
       ),

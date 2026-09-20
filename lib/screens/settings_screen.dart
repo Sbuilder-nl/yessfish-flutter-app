@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/auth.dart';
@@ -87,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('settings.title'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
-        Card(child: ListTile(
+        TourAnker(id: 'set-taal', child: Card(child: ListTile(
           leading: const Icon(Icons.language, color: AppColors.teal),
           title: Text(context.tr('settings.language')),
           trailing: DropdownButton<String>(
@@ -96,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             items: I18n.languages.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (v) { if (v != null) context.read<I18n>().setLocale(v); },
           ),
-        )),
+        ))),
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.scale, color: AppColors.teal),
@@ -128,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParentalScreen())),
         )),
         const SizedBox(height: 12),
-        Card(child: Column(children: [
+        TourAnker(id: 'set-meldingen', child: Card(child: Column(children: [
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.email_notifications')),
             value: _s['email_notifications'] != false, onChanged: (v) => _set('email_notifications', v)),
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.share_catches')),
@@ -141,9 +142,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.auto_translate')),
             subtitle: Text(context.tr('settings.auto_translate_desc'), style: const TextStyle(fontSize: 12)),
             value: _s['auto_translate'] == true, onChanged: (v) => _set('auto_translate', v)),
-        ])),
+        ]))),
         const SizedBox(height: 12),
-        Card(child: Padding(
+        TourAnker(id: 'set-privacy', child: Card(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
@@ -164,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (v) => _setZichtbaarheid(v),
             ),
           ]),
-        )),
+        ))),
         const SizedBox(height: 16),
         Card(child: ListTile(
           leading: const Icon(Icons.gavel_outlined, color: AppColors.teal),
@@ -180,8 +181,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => launchUrl(Uri.parse('https://yessfish.com/privacy'), mode: LaunchMode.externalApplication),
         )),
         const SizedBox(height: 8),
-        Card(child: ListTile(leading: const Icon(Icons.logout), title: Text(context.tr('settings.logout')),
-          onTap: () async { final nav = Navigator.of(context); await context.read<AuthState>().logout(); nav.popUntil((r) => r.isFirst); })),
+        TourAnker(id: 'set-account', child: Card(child: ListTile(leading: const Icon(Icons.logout), title: Text(context.tr('settings.logout')),
+          onTap: () async { final nav = Navigator.of(context); await context.read<AuthState>().logout(); nav.popUntil((r) => r.isFirst); }))),
         const SizedBox(height: 8),
         Card(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0xFFFECDD3))),
           child: ListTile(leading: const Icon(Icons.delete_forever, color: AppColors.danger),

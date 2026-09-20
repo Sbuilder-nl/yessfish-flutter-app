@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/location.dart';
@@ -35,13 +36,13 @@ class _WeatherScreenState extends State<WeatherScreen> {
         Center(child: Text(_w!['location'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.navy))),
         Center(child: Text('${(_w!['temperature_c'] as num?)?.round()}°C — ${_w!['description'] ?? ''}', style: const TextStyle(fontSize: 16, color: Colors.black54))),
         const SizedBox(height: 16),
-        GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), childAspectRatio: 1.6, crossAxisSpacing: 10, mainAxisSpacing: 10, children: [
+        TourAnker(id: 'weer-nu', child: GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), childAspectRatio: 1.6, crossAxisSpacing: 10, mainAxisSpacing: 10, children: [
           _tile(Icons.speed, context.tr('weather.pressure'), '${_w!['pressure_hpa']} hPa'),
           _tile(Icons.air, context.tr('weather.wind'), '${(_w!['wind_speed_ms'] as num?)?.toStringAsFixed(1) ?? '–'} m/s ${_compass(context, _w!['wind_deg'])}'.trim()),
           _tile(Icons.explore, context.tr('weather.direction'), _compass(context, _w!['wind_deg'])),
           _tile(Icons.cloud, context.tr('weather.clouds'), '${_w!['clouds_pct']}%'),
           _tile(Icons.water_drop, context.tr('weather.humidity'), '${_w!['humidity']}%'),
-        ]),
+        ])),
       ]));
   }
 }

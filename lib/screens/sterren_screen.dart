@@ -1,4 +1,5 @@
 import "package:yessfish/widgets/dobber_text.dart";
+import '../core/rondleiding.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -153,10 +154,11 @@ class _SterrenScreenState extends State<SterrenScreen> {
           if (_streak != null) ...[
             StreakCard(d: _streak!),
             const SizedBox(height: 10),
-            if (_streak!['invite'] is Map) InviteCard(invite: Map<String, dynamic>.from(_streak!['invite'] as Map), onChanged: _load),
+            if (_streak!['invite'] is Map) TourAnker(id: 'uitnodigen', child: InviteCard(invite: Map<String, dynamic>.from(_streak!['invite'] as Map), onChanged: _load)),
             const SizedBox(height: 14),
           ],
           // Kopen
+          TourAnker(id: 'dobbers-kopen', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('🛒 ${stt(context, 'buy')}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.navy)),
           const SizedBox(height: 4),
           Text(stt(context, 'buy_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
@@ -170,6 +172,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
               if (b != _bundles.last) const SizedBox(width: 8),
             ],
           ]),
+          ])),
           if (_busy) const Padding(padding: EdgeInsets.only(top: 10), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))),
           const SizedBox(height: 14),
           // Doneren aan YessFish (Richards idee: het platform wat gunnen)
@@ -188,15 +191,19 @@ class _SterrenScreenState extends State<SterrenScreen> {
           const SizedBox(height: 18),
           // Verdienen + uitgeven (kort)
           Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('🎣 ${stt(context, 'earn_t')}', style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(stt(context, 'earn_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+            TourAnker(id: 'dobbers-verdienen', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('🎣 ${stt(context, 'earn_t')}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(stt(context, 'earn_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+            ])),
             const Divider(height: 20),
-            Text(stt(context, 'spend_t'), style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            _regel('🗺️', stt(context, 'spend_unlock'), '10 ⭐'),
-            _regel('🤖', stt(context, 'spend_analysis'), '5 ⭐'),
-            _regel('🔒', stt(context, 'spend_private'), '5 ⭐'),
+            TourAnker(id: 'dobbers-uitgeven', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(stt(context, 'spend_t'), style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              _regel('🗺️', stt(context, 'spend_unlock'), '10 ⭐'),
+              _regel('🤖', stt(context, 'spend_analysis'), '5 ⭐'),
+              _regel('🔒', stt(context, 'spend_private'), '5 ⭐'),
+            ])),
           ]))),
           const SizedBox(height: 10),
           Card(child: ListTile(

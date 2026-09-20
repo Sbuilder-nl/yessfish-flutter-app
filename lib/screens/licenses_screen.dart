@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../core/rondleiding.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../core/api.dart';
@@ -95,12 +96,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(dt(context, 'lic.title'))),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: TourAnker(id: 'documenten-add', child: FloatingActionButton.extended(
         backgroundColor: AppColors.teal,
         onPressed: () => _bewerk(),
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(dt(context, 'lic.add'), style: const TextStyle(color: Colors.white)),
-      ),
+      )),
       body: _laden
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(onRefresh: _laad, child: ListView(

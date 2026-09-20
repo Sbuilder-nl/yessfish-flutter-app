@@ -94,10 +94,39 @@ class _MapScreenState extends State<MapScreen> {
   };
 
   @override
-  void initState() { super.initState(); _init(); }
+  void initState() {
+    super.initState();
+    _init();
+    // De rondleiding kan zelf een blad openzetten, zodat hij ook kan uitleggen wat er ín het
+    // waterblad of het lagenmenu staat. Zonder dit waren die stappen niet te tonen (20-09-2026).
+    Rondleiding.opVraag = _rondleidingVraag;
+  }
+
+  /// Wat de rondleiding wil laten zien: 'lagen' = lagenmenu open, 'waterblad' = eerste water open.
+  void _rondleidingVraag(String vraag) {
+    if (!mounted) return;
+    switch (vraag) {
+      case 'lagen':
+        _showLayers();
+        break;
+      case 'waterblad':
+        final w = _waters.cast<Map?>().firstWhere(
+            (x) => x != null && x['latitude'] != null, orElse: () => null);
+        if (w != null) _showWater(w);
+        break;
+      case 'sluit':
+        Navigator.of(context).popUntil((r) => r.isFirst);
+        break;
+    }
+  }
 
   @override
-  void dispose() { _timer?.cancel(); _moveDebounce?.cancel(); super.dispose(); }
+  void dispose() {
+    if (Rondleiding.opVraag == _rondleidingVraag) Rondleiding.opVraag = null;
+    _timer?.cancel();
+    _moveDebounce?.cancel();
+    super.dispose();
+  }
 
   Future<void> _init() async {
     final p = await loc.currentLocation();
@@ -659,7 +688,7 @@ class _MapScreenState extends State<MapScreen> {
           ValueListenableBuilder<int?>(valueListenable: bite, builder: (_, sc, __) {
             final kleur = sc == null ? Colors.grey.shade600 : sc >= 70 ? const Color(0xFF16A34A) : sc >= 45 ? const Color(0xFFEA580C) : const Color(0xFF64748B);
             // Tikken opent het bijtkansscherm voor dít water — op het web linkt de chip ook door.
-            return ActionChip(
+            return TourAnker(id: 'blad-drukte', child: ActionChip(
               onPressed: la0 == null || lo0 == null ? null : () {
                 Navigator.pop(ctx2);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => _BijtkansVoorWater(
@@ -667,7 +696,7 @@ class _MapScreenState extends State<MapScreen> {
               },
               avatar: Icon(Icons.water_outlined, size: 16, color: kleur),
               label: Text(sc == null ? mui(context, 'bite_loading') : mui(context, 'bite_chip').replaceFirst('%s', '$sc'), style: TextStyle(color: kleur, fontWeight: FontWeight.w700, fontSize: 12.5)),
-              backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact);
+              backgroundColor: kleur.withValues(alpha: 0.10), side: BorderSide(color: kleur.withValues(alpha: 0.4)), visualDensity: VisualDensity.compact));
           }),
           // Hoe vaak is dit water schoon achtergelaten? Stond al op het web en is precies het
           // soort schouderklopje dat we willen laten zien (20-09-2026).
@@ -746,15 +775,15 @@ class _MapScreenState extends State<MapScreen> {
           )),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: () => _showRules(w), icon: const Icon(Icons.gavel, size: 18), label: Text(mui(context, 'rules_and_permit'), maxLines: 1, overflow: TextOverflow.ellipsis))),
+          Expanded(child: TourAnker(id: 'blad-regels', child: OutlinedButton.icon(onPressed: () => _showRules(w), icon: const Icon(Icons.gavel, size: 18), label: Text(mui(context, 'rules_and_permit'), maxLines: 1, overflow: TextOverflow.ellipsis)))),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: () => _showMedia(w), icon: const Icon(Icons.photo_library_outlined, size: 18), label: Text(mui(context, 'media_view'), maxLines: 1, overflow: TextOverflow.ellipsis))),
+          Expanded(child: TourAnker(id: 'blad-media', child: OutlinedButton.icon(onPressed: () => _showMedia(w), icon: const Icon(Icons.photo_library_outlined, size: 18), label: Text(mui(context, 'media_view'), maxLines: 1, overflow: TextOverflow.ellipsis)))),
         ]),
         // 4. Meer: beoordeling, dieptelaag + AI-analyse, vorm (moderator) — onderaan, niets weggehaald.
         const Divider(height: 28),
         Text(mui(context, 'more_section'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
         // Visjes-beoordeling van dit water (gemiddelde + jouw score).
-        ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
+        TourAnker(id: 'blad-beoordeling', child: ValueListenableBuilder<Map<String, dynamic>?>(valueListenable: meta, builder: (_, m, __) {
           final rating = m?['rating'] as Map?;
           final avg = (rating?['avg'] as num?)?.toDouble() ?? 0;
           final rc = (rating?['count'] as num?)?.toInt() ?? 0;
@@ -781,7 +810,7 @@ class _MapScreenState extends State<MapScreen> {
               ]),
             ]),
           );
-        }),
+        })),
         // Dieptelaag + AI-analyse van dit water (sterren-model).
         WaterDepthPanel(waterId: (w['id'] as num).toInt()),
         // Vorm-knoppen werken bij zodra de info geladen is (venster zelf opent meteen).
@@ -1365,20 +1394,20 @@ class _MapScreenState extends State<MapScreen> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () { Navigator.pop(ctx); _toonDiepteWateren(); },
         )),
-        SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
-          value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); }),
-        SwitchListTile(
+        TourAnker(id: 'kaart-stroming', child: SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
+          value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); })),
+        TourAnker(id: 'kaart-partners', child: SwitchListTile(
           secondary: const Icon(Icons.storefront_outlined, color: Color(0xFFE8590C)),
           title: Text(gt(ctx, 'map_layer')),
-          value: _partnersOn, onChanged: (v) { _setPartners(v); setS(() {}); }),
+          value: _partnersOn, onChanged: (v) { _setPartners(v); setS(() {}); })),
         // Je eigen stekken op een rij. In de app kon je ze alleen vinden via de dobber van hun
         // water of als pin bij ver inzoomen; op het web stond er al een lijst (20-09-2026).
-        ListTile(
+        TourAnker(id: 'kaart-filters', child: ListTile(
           leading: const Icon(Icons.place_outlined, color: AppColors.teal),
           title: Text(mui(ctx, 'my_spots')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () { Navigator.pop(ctx); _toonMijnStekken(); },
-        ),
+        )),
         const Divider(height: 8),
         Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 4), child: Text(mui(ctx, 'layers_spots'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
@@ -1399,7 +1428,7 @@ class _MapScreenState extends State<MapScreen> {
             _map.move(_countries[c]!, _countryZoom(c)); _loadWaters(); _loadRegions(c);
           }),
         ListTile(leading: const Icon(Icons.info_outline, color: AppColors.navy), title: Text(mui(ctx, 'legend_title')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(ctx); _showLegend(); }),
-        ListTile(leading: const Icon(Icons.help_outline, color: AppColors.navy), title: Text(mui(ctx, 'layers_more')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(ctx); _showHelp(); }),
+        TourAnker(id: 'kaart-boekje', child: ListTile(leading: const Icon(Icons.help_outline, color: AppColors.navy), title: Text(mui(ctx, 'layers_more')), trailing: const Icon(Icons.chevron_right), onTap: () { Navigator.pop(ctx); _showHelp(); })),
       ]),
     )))));
   }
@@ -2278,12 +2307,12 @@ class _MapScreenState extends State<MapScreen> {
       appBar: _kop(),
       // Knoppen alleen tonen als je niet in plaats-/teken-modus zit.
       floatingActionButton: (_placing != null || _editShape) ? null : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
-        FloatingActionButton.small(
+        TourAnker(id: 'kaart-gps', child: FloatingActionButton.small(
           heroTag: 'locateme', backgroundColor: Colors.white,
           onPressed: _centerOnUser,
           tooltip: mui(context, 'locate_me'),
           child: const Icon(Icons.my_location, color: AppColors.teal),
-        ),
+        )),
         const SizedBox(height: 12),
         TourAnker(id: 'kaart-plus', child: FloatingActionButton.large(
           heroTag: 'plus', backgroundColor: AppColors.teal,

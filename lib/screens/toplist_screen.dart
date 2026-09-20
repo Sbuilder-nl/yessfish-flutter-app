@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -35,7 +36,7 @@ class _ToplistScreenState extends State<ToplistScreen> {
         : empty
           ? Center(child: Padding(padding: const EdgeInsets.all(32),
               child: Text(context.tr('toplist.empty'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black45))))
-          : ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
+          : TourAnker(id: 'top-lijst', child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
               Text(context.tr('toplist.intro'), style: const TextStyle(color: Colors.black54)),
               if (waters.isNotEmpty) ...[
                 const SizedBox(height: 18),
@@ -47,7 +48,7 @@ class _ToplistScreenState extends State<ToplistScreen> {
                 _header(Icons.place, context.tr('toplist.spots')),
                 ...spots.asMap().entries.map((e) => _row(e.key + 1, e.value as Map, false)),
               ],
-            ]),
+            ])),
     );
   }
 

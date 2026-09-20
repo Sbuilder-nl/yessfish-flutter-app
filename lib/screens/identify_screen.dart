@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
@@ -49,11 +50,11 @@ class _IdentifyScreenState extends State<IdentifyScreen> {
         if (_photoUrl != null)
           ClipRRect(borderRadius: BorderRadius.circular(12), child: CachedNetworkImage(imageUrl: _photoUrl!, height: 220, width: double.infinity, fit: BoxFit.cover)),
         if (_photoUrl != null) const SizedBox(height: 10),
-        Row(children: [
+        TourAnker(id: 'herken-foto', child: Row(children: [
           Expanded(child: OutlinedButton.icon(onPressed: _busy ? null : () => _pickAndIdentify(ImageSource.camera), icon: const Icon(Icons.camera_alt), label: Text(context.tr('identify.camera')))),
           const SizedBox(width: 8),
           Expanded(child: OutlinedButton.icon(onPressed: _busy ? null : () => _pickAndIdentify(ImageSource.gallery), icon: const Icon(Icons.photo), label: Text(context.tr('identify.gallery')))),
-        ]),
+        ])),
         if (_busy) Padding(padding: const EdgeInsets.all(16), child: Column(children: [const CircularProgressIndicator(), const SizedBox(height: 8), Text(context.tr('identify.identifying'), style: const TextStyle(color: Colors.black45))])),
         if (_error != null) Padding(padding: const EdgeInsets.only(top: 14),
           child: Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
