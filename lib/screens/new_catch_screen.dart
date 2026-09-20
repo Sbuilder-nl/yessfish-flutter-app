@@ -5,6 +5,7 @@ import 'package:exif/exif.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import '../core/api.dart';
+import '../widgets/soort_kiezer.dart';
 import '../core/review.dart';
 import '../core/analytics.dart';
 import '../core/units.dart';
@@ -21,6 +22,10 @@ class NewCatchScreen extends StatefulWidget {
 
 class _NewCatchScreenState extends State<NewCatchScreen> {
   final _species = TextEditingController();
+
+  /// Gekozen soort uit de lijst. Zonder dit hangt de vangst aan geen enkele soort en telt hij
+  /// niet mee in de soortstatistieken, records en visstijl-dashboards (20-09-2026).
+  int? _speciesId;
   final _weight = TextEditingController();
   final _length = TextEditingController();
   final _bait = TextEditingController();
@@ -83,6 +88,9 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       if (r['is_fish'] == true && r['species_nl'] != null) {
         setState(() {
           _species.text = r['species_nl'];
+          // De herkenning geeft de soort er al bij; die koppelen we meteen, anders blijft het
+          // alsnog vrije tekst en telt de vangst niet mee in de statistieken.
+          _speciesId = (r['species_id'] as num?)?.toInt();
           final conf = ((r['confidence'] ?? 0) as num).round();
           _aiTip = '${r['species_nl']} ($conf% ${context.tr('newcatch.sure')})${r['tip'] != null ? '\n${r['tip']}' : ''}';
         });
@@ -189,19 +197,20 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
   /// spookvangst in zijn visboek te krijgen.
   List<Map<String, dynamic>> _rijenVoorSessie() {
     final uit = <Map<String, dynamic>>[];
-    void voegToe(String soort, String gewicht, String lengte, String aantal, String aas) {
+    void voegToe(String soort, String gewicht, String lengte, String aantal, String aas, int? soortId) {
       if (soort.trim().isEmpty) return;
       uit.add({
         'species_text': soort.trim(),
+        if (soortId != null) 'species_id': soortId,
         'aantal': int.tryParse(aantal.trim()) ?? 1,
         if (gewicht.trim().isNotEmpty) 'weight_kg': Units.toKg(gewicht),
         if (lengte.trim().isNotEmpty) 'length_cm': double.tryParse(lengte.replaceAll(',', '.')),
         if (aas.trim().isNotEmpty) 'bait': aas.trim(),
       });
     }
-    voegToe(_species.text, _weight.text, _length.text, _aantal.text, _bait.text);
+    voegToe(_species.text, _weight.text, _length.text, _aantal.text, _bait.text, _speciesId);
     for (final e in _extra) {
-      voegToe(e.soort.text, e.gewicht.text, e.lengte.text, e.aantal.text, '');
+      voegToe(e.soort.text, e.gewicht.text, e.lengte.text, e.aantal.text, '', e.soortId);
     }
     return uit;
   }
@@ -223,8 +232,9 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
           child: Column(children: [
             Row(children: [
-              Expanded(child: TextField(controller: _extra[i].soort,
-                decoration: InputDecoration(labelText: context.tr('newcatch.species'), isDense: true))),
+              Expanded(child: SoortKiezer(controller: _extra[i].soort, isDense: true,
+                label: context.tr('newcatch.species'),
+                onKies: (_, id) => _extra[i].soortId = id)),
               IconButton(
                 tooltip: _t(context, const {'nl': 'Regel weghalen', 'en': 'Remove row', 'de': 'Zeile entfernen', 'fr': 'Retirer la ligne', 'es': 'Quitar fila', 'pl': 'Usuń wiersz'}),
                 icon: const Icon(Icons.close, size: 20, color: Colors.black45),
@@ -293,6 +303,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     try {
       final body = <String, dynamic>{
         'species_text': _species.text.trim(),
+        if (_speciesId != null) 'species_id': _speciesId,
         'privacy': _privacy,
         'show_in_feed': _privacy == 'public' && _showInFeed,
         'caught_at': _caughtAt.toIso8601String(),
@@ -389,7 +400,8 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
             decoration: BoxDecoration(color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: Text(_aiTip!, style: const TextStyle(fontSize: 13)))),
         const SizedBox(height: 14),
-        TextField(controller: _species, decoration: InputDecoration(labelText: context.tr('newcatch.species'))),
+        SoortKiezer(controller: _species, label: context.tr('newcatch.species'),
+          onKies: (_, id) => _speciesId = id),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: TextField(controller: _weight, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: '${context.tr('newcatch.weight')} (${Units.label})'))),
@@ -473,6 +485,9 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
 /// Eén extra vissoort in het vangstformulier: soort, gewicht, lengte en aantal.
 class _ExtraSoort {
   final soort = TextEditingController();
+
+  /// Gekozen soort uit de lijst (null als het lid zelf iets typte).
+  int? soortId;
   final gewicht = TextEditingController();
   final lengte = TextEditingController();
   final aantal = TextEditingController();

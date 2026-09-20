@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/api.dart';
+import '../widgets/uitrusting_bij_vangst.dart';
 import '../core/units.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
@@ -223,6 +224,8 @@ class _CatchDetailScreenState extends State<CatchDetailScreen> {
           Wrap(spacing: 8, runSpacing: 8, children: cond.map((e) => _chip(e.toString())).toList()),
         ],
         if (c['notes'] != null) ...[const SizedBox(height: 18), Text(c['notes'], style: const TextStyle(color: Colors.black54))],
+        // Waarmee is deze vis gevangen? Kon alleen op het web (20-09-2026).
+        UitrustingBijVangst(vangstId: widget.catchId, vanMij: mine),
         if (mine) ...[
           const SizedBox(height: 24),
           OutlinedButton.icon(onPressed: _addingPhoto ? null : _addPhotoSheet,
