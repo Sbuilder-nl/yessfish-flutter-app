@@ -7,6 +7,11 @@ import 'package:provider/provider.dart';
 import '../core/i18n.dart';
 import '../core/rondleiding.dart';
 
+/// Fotostand: bouw ook wat onder de vouw staat, zodat de rondleiding élk anker vindt.
+/// Een ListView bouwt normaal alleen het zichtbare deel; dan blijven ankers verderop leeg en
+/// slaat de rondleiding die stappen over. Voor een lid blijft dit null — niets verandert.
+const double? _fotoCache = bool.fromEnvironment('TOUR_SHOTS') ? 6000.0 : null;
+
 class BiteScreen extends StatefulWidget {
   /// Zonder plek gebruikt dit scherm je GPS. Kom je vanaf een water op de kaart, dan geef je die
   /// plek mee — dan zie je de bijtkans van dát water, net als /vistijden?lat=..&lng=.. op het web.
@@ -91,7 +96,7 @@ class _BiteScreenState extends State<BiteScreen> {
     final weather = d['weather'] as Map?;
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
+      child: ListView(cacheExtent: _fotoCache, padding: const EdgeInsets.all(16) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), children: [
         Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           Text(context.tr('bite.today'), style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 12),

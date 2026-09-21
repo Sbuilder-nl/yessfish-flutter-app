@@ -34,6 +34,11 @@ import '../widgets/feed_video.dart';
 import '../widgets/water_depth_panel.dart';
 import 'quick_catch_screen.dart';
 
+/// Fotostand: bouw ook wat onder de vouw staat, zodat de rondleiding élk anker vindt.
+/// Een ListView bouwt normaal alleen het zichtbare deel; dan blijven ankers verderop leeg en
+/// slaat de rondleiding die stappen over. Voor een lid blijft dit null — niets verandert.
+const double? _fotoCache = bool.fromEnvironment('TOUR_SHOTS') ? 6000.0 : null;
+
 class MapScreen extends StatefulWidget {
   final double? focusLat;
   final double? focusLng;
@@ -706,7 +711,7 @@ class _MapScreenState extends State<MapScreen> {
 
     showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
       expand: false, initialChildSize: 0.55, minChildSize: 0.3, maxChildSize: 0.95,
-      builder: (ctx2, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx2).padding.bottom), children: [
+      builder: (ctx2, scroll) => ListView(controller: scroll, cacheExtent: _fotoCache, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(ctx2).padding.bottom), children: [
         Row(children: [Icon(w['is_paid'] == true ? Icons.euro : Icons.water, color: w['is_paid'] == true ? const Color(0xFFD4A017) : _waterColor(level)), const SizedBox(width: 8), Expanded(child: Text(w['name'] ?? '', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)))]),
         if (sub.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(sub, style: const TextStyle(color: Colors.black54))),
         Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 12, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
