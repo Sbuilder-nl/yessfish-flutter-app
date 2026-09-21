@@ -328,7 +328,11 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // Ruim de tijd: de kaart is zwaar en heeft na een tabwissel een paar seconden nodig voor
       // zijn knoppenbalk er staat. Met 1,2 seconde sloeg de rondleiding 'zoeken' en 'lagen'
       // over terwijl die knoppen er even later gewoon waren (gemeten 20-09-2026).
-      if (++_pogingen >= 60) {
+      // In de fotostand mag het zoeken veel langer duren. Zes seconden was te kort voor de
+      // stappen die eerst iets moeten openen — het waterblad, het herkenresultaat, het
+      // AI-knopje bij een vangst — en juist die acht stappen kregen dan geen afdruk
+      // (gemeten 21-09-2026). Voor een lid blijft het zes seconden: die wil niet wachten.
+      if (++_pogingen >= (_fotoStand ? 250 : 60)) {
         t.cancel();
         _zoekAfgerond = true;
         // Optionele stap zonder knop slaan we over — die gaat over iets dat er nu niet is
