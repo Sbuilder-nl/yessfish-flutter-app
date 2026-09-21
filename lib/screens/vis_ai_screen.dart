@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 
-// Zelfstandige vertalingen (nl/en/de/fr); es/pl vallen terug op en.
+// Zelfstandige vertalingen, alle zes de talen (nl/en/de/fr/es/pl).
 const Map<String, Map<String, String>> _kVisAi = {
   'nl': {
     'title': 'AI-visassistent',

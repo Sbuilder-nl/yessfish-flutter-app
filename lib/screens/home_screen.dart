@@ -117,6 +117,15 @@ class _HomeScreenState extends State<HomeScreen> {
     Rondleiding.gaNaarTab = _naarTab;
     Rondleiding.naarScherm = _rondleidingNaarScherm;
     WidgetsBinding.instance.addPostFrameCallback((_) { _checkUpdate(); AppConfig.load(); context.read<AuthState>().refresh(); _initQuickActions(); _initHomeWidget(); _startVragen(); });
+
+    // Fotostand: de rondleiding zelf starten zodra het beginscherm staat. Anders moet er voor
+    // elke taal met de hand door het menu naar de Handleiding getikt worden, en dat is zes keer
+    // dezelfde kans op een misser. Alleen actief in een build met --dart-define=TOUR_SHOTS=true.
+    if (const bool.fromEnvironment('TOUR_SHOTS')) {
+      Future.delayed(const Duration(seconds: 6), () {
+        if (mounted) Rondleiding.start(context);
+      });
+    }
   }
 
   /// Welk los scherm de rondleiding kan openen. De sleutel staat bij de stap (`scherm:`).

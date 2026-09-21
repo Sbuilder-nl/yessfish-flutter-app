@@ -157,7 +157,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final aan = !_bewaren;
     setState(() => _bewaren = aan);
     try {
-      await Api.post('/conversations//bewaren', {'bewaren': aan});
+      await Api.post('/conversations/$_convId/bewaren', {'bewaren': aan});
     } catch (_) {
       if (mounted) setState(() => _bewaren = !aan);
     }
@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ));
     if (ok != true || _convId == null) return;
     try {
-      await Api.delete('/conversations/');
+      await Api.delete('/conversations/$_convId');
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.error'))));
@@ -196,7 +196,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ));
     if (ok != true) return;
     try {
-      await Api.delete('/messages/');
+      await Api.delete('/messages/$id');
       if (mounted) setState(() => _messages.removeWhere((m) => (m as Map)['id'] == id));
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.error'))));

@@ -567,10 +567,15 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
                 }))),
               if (_youtube != null && _youtube!.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: _mediaChip(Icons.play_circle_fill, 'YouTube', () => setState(() => _youtube = null))),
               Row(children: [
-                TourAnker(id: 'feed-media', child: IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera'))),
-                IconButton(onPressed: _videoUploading ? null : () => _pickVideo(ImageSource.camera), icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.record')),
-                IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
-                IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
+                // Het anker ligt om alle vier de knoppen: de handleiding vertelt over Camera,
+                // Filmen, Galerij en YouTube samen, dus moet het plaatje ze ook alle vier
+                // aanwijzen (Richard 21-09-2026: tekst tegen de screenshot moet kloppen).
+                TourAnker(id: 'feed-media', child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(onPressed: () => _pickPhoto(ImageSource.camera), icon: const Icon(Icons.camera_alt, color: AppColors.teal), tooltip: context.tr('feed.camera')),
+                  IconButton(onPressed: _videoUploading ? null : () => _pickVideo(ImageSource.camera), icon: _videoUploading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal)) : const Icon(Icons.videocam, color: AppColors.teal), tooltip: context.tr('feed.record')),
+                  IconButton(onPressed: _videoUploading ? null : _pickMedia, icon: const Icon(Icons.photo_library, color: AppColors.teal), tooltip: context.tr('feed.gallery')),
+                  IconButton(onPressed: _addYoutube, icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent), tooltip: 'YouTube'),
+                ])),
                 const SizedBox(width: 4),
                 // Voor wie is dit bericht? Twee knopjes, net als op het web.
                 TourAnker(id: 'feed-zicht', child: Container(
