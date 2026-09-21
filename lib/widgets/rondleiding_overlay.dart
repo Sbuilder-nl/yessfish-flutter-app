@@ -232,11 +232,16 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
           // van een blad staat. De coördinaten wijzen dan naar een plek op het scherm waar
           // iets heel anders te zien is — bij "Foto's en video's" naar een leeg stuk kaart.
           // Daarom in de fotostand altijd eerst écht in beeld scrollen en dan pas meten.
-          TourAnkers.inBeeld(s.zoek!, uitlijning: 0.35);
-          await Future.delayed(const Duration(milliseconds: 1200));
-          if (!mounted || _gemeld != ditIs) return;
-          final vers = TourAnkers.vlak(s.zoek!);
-          if (vers != null) setState(() => _vlak = vers);
+          try {
+            TourAnkers.inBeeld(s.zoek!, uitlijning: 0.35);
+            await Future.delayed(const Duration(milliseconds: 1200));
+            if (!mounted || _gemeld != ditIs) return;
+            final vers = TourAnkers.vlak(s.zoek!);
+            if (vers != null) setState(() => _vlak = vers);
+          } catch (_) {
+            // Niet elk anker zit in iets dat kan scrollen. Gaat dat mis, dan meten we gewoon
+            // wat er al stond — zonder deze vangst bleef de hele opname hangen (21-09-2026).
+          }
         }
         final v = _vlak;
         final waar = v == null
