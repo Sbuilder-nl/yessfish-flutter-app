@@ -225,9 +225,16 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // In de fotostand eerst het beeld laten uitrollen en dán pas meten. Een blad dat nog
       // schuift geeft anders een vlak dat bij de afdruk ergens anders ligt: bij "Foto's en
       // video's" wees de rondleiding zo naar een leeg stuk kaart (gemeten 21-09-2026).
-      Future.delayed(Duration(milliseconds: _fotoStand ? 1400 : 0), () {
+      Future.delayed(Duration(milliseconds: _fotoStand ? 300 : 0), () async {
         if (!mounted || _gemeld != ditIs) return;
         if (_fotoStand && s.zoek != null) {
+          // Door de ruime cacheExtent bestaat een anker ook als het bóven het zichtbare deel
+          // van een blad staat. De coördinaten wijzen dan naar een plek op het scherm waar
+          // iets heel anders te zien is — bij "Foto's en video's" naar een leeg stuk kaart.
+          // Daarom in de fotostand altijd eerst écht in beeld scrollen en dan pas meten.
+          TourAnkers.inBeeld(s.zoek!, uitlijning: 0.35);
+          await Future.delayed(const Duration(milliseconds: 1200));
+          if (!mounted || _gemeld != ditIs) return;
           final vers = TourAnkers.vlak(s.zoek!);
           if (vers != null) setState(() => _vlak = vers);
         }
