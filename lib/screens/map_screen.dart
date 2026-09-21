@@ -1896,6 +1896,7 @@ class _MapScreenState extends State<MapScreen> {
   /// Stek verwijderen, met bevestiging — want dit kan niet ongedaan worden gemaakt.
   Future<void> _verwijderStek(Map s) async {
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       content: Text(mui(c, 'spot_delete_ask')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),

@@ -77,6 +77,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
 
   Future<void> _verwijder(Map l) async {
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       content: Text(dt(c, 'lic.confirm_delete')),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: Text(dt(c, 'lic.cancel'))),

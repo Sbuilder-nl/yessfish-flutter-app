@@ -407,7 +407,10 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
   // ── Gedeeld ─────────────────────────────────────────────────────────────────────────────────
   Widget _rijenLijst(BuildContext c, List items) {
     if (items.isEmpty) {
-      return ListView(children: [Padding(padding: const EdgeInsets.all(32), child: Center(child: Text(gt(c, 'empty'), textAlign: TextAlign.center)))]);
+      return ListView(
+        padding: EdgeInsets.fromLTRB(32, 32, 32, 32 + MediaQuery.of(c).padding.bottom),
+        children: [Center(child: Text(gt(c, 'empty'), textAlign: TextAlign.center))],
+      );
     }
     return ListView.separated(
       itemCount: items.length,

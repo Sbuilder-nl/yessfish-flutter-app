@@ -46,6 +46,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final vraag = context.tr('userprofile.block_confirm');
     final knop = context.tr('userprofile.block');
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
       content: Text(vraag),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
