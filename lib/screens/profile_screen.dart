@@ -9,6 +9,7 @@ import '../core/realtime_service.dart';
 import '../core/i18n.dart';
 import '../widgets/avatar.dart';
 import 'licenses_screen.dart';
+import 'handleiding_screen.dart';
 import 'leaderboard_screen.dart';
 import 'toplist_screen.dart';
 import 'clubs_screen.dart';
@@ -148,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// De rondleiding nog eens doen. Staat bewust in het menu en niet alleen bij de eerste keer:
   /// een lid moet hem altijd terug kunnen kijken (Richard 19-09-2026).
   Widget _rondleidingTegel() => TourAnker(id: 'menu-rondleiding', child: InkWell(
-    onTap: () => Rondleiding.opnieuw(context),
+    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HandleidingScreen())),
     borderRadius: BorderRadius.circular(14),
     child: Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
@@ -156,7 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.explore_outlined, color: AppColors.teal, size: 26),
         const SizedBox(height: 7),
-        Text(_rt(const {'nl': 'Rondleiding', 'en': 'Tour', 'de': 'Rundgang', 'fr': 'Visite guidée', 'es': 'Recorrido', 'pl': 'Przewodnik'}),
+        Text(_rt(const {'nl': 'Handleiding', 'en': 'Guide', 'de': 'Anleitung', 'fr': 'Guide', 'es': 'Guía', 'pl': 'Przewodnik'}),
           textAlign: TextAlign.center, maxLines: 2,
           style: const TextStyle(fontSize: 11.5, height: 1.1, color: Color(0xFF334155), fontWeight: FontWeight.w500)),
       ]),

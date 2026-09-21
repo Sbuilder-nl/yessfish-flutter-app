@@ -61,6 +61,22 @@ class Rondleiding {
     unawaited(_meld('start', stap: stappen[index].id));
   }
 
+  /// Eén stap in de échte app laten zien, en het lid het zélf laten doen.
+  ///
+  /// Vanuit de handleiding-met-plaatjes: "Laat het me zien in de app". Startte dat gewoon de
+  /// rondleiding, dan liep die daarna vrolijk verder en drukte het lid nooit zelf op de knop
+  /// (Richard 21-09-2026: "maar dan moeten ze het wel doen he"). Daarom: dit ene stapje, de
+  /// knop licht op, jíj drukt hem in, en daarna is het klaar.
+  static Future<void> losseStap(BuildContext context, String stapId) async {
+    if (_entry != null) return;
+    final stappen = alleStappen();
+    final i = stappen.indexWhere((s) => s.id == stapId);
+    if (i < 0) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    _entry = OverlayEntry(builder: (_) => _RondleidingLaag(startIndex: i, alleenDezeStap: true));
+    overlay.insert(_entry!);
+  }
+
   static void stop() {
     _entry?.remove();
     _entry = null;
@@ -99,8 +115,11 @@ class Rondleiding {
 }
 
 class _RondleidingLaag extends StatefulWidget {
-  const _RondleidingLaag({required this.startIndex});
+  const _RondleidingLaag({required this.startIndex, this.alleenDezeStap = false});
   final int startIndex;
+
+  /// Eén stap laten doen en dan stoppen (vanuit de handleiding), in plaats van doorlopen.
+  final bool alleenDezeStap;
 
   @override
   State<_RondleidingLaag> createState() => _RondleidingLaagState();
@@ -150,6 +169,12 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// Hoe lang een stap blijft staan tijdens de zelftest. Langer als je van elke stap
   /// een schermafdruk wilt maken: `--dart-define=TOUR_AUTOTEST_MS=2500`.
   static const int _testPauze = int.fromEnvironment('TOUR_AUTOTEST_MS', defaultValue: 500);
+
+  /// Fotostand: de rondleiding doet alles (scherm openen, blad opentrekken, scrollen) maar
+  /// tekent zichzelf niet. Zo kunnen we van elke stap een schóne schermafdruk maken voor de
+  /// handleiding-met-plaatjes, mét het vlak dat we later zelf oplichten.
+  /// Aanzetten met `--dart-define=TOUR_SHOTS=true`.
+  static const bool _fotoStand = bool.fromEnvironment('TOUR_SHOTS');
   Timer? _testLus;
   int _gemeld = -1;
   int _wachtTellen = 0;
@@ -353,12 +378,13 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
 
   @override
   Widget build(BuildContext context) {
+    if (_fotoStand) return const SizedBox.shrink();
     // Nog aan het zoeken naar een optionele knop: niets tonen. Zo flitst er geen stap voorbij.
     if (_stilZoeken) return const SizedBox.shrink();
     final taal = _taal(context);
     final scherm = MediaQuery.of(context).size;
     final v = _bruikbaarVlak(_vlak, scherm);
-    final klikbaar = _stap.klik && v != null;
+    final klikbaar = (_stap.klik || widget.alleenDezeStap) && v != null;
 
     return Material(
       type: MaterialType.transparency,
@@ -389,7 +415,9 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: (_) => Future.delayed(const Duration(milliseconds: 650), () {
-                  if (mounted) _volgende();
+                  if (!mounted) return;
+                  // Kwam het lid hier vanuit de handleiding voor één ding, dan is het nu klaar.
+                  widget.alleenDezeStap ? _stoppen() : _volgende();
                 }),
               ),
             )
@@ -452,15 +480,19 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
             ]),
             const SizedBox(height: 8),
             Text(tl(_stap.tekst, taal), style: const TextStyle(fontSize: 14.5, height: 1.4, color: Colors.black87)),
-            if (_stap.klik) Padding(padding: const EdgeInsets.only(top: 8),
+            if (_stap.klik || widget.alleenDezeStap) Padding(padding: const EdgeInsets.only(top: 8),
               child: Text(tl(_tikErop, taal), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1f8a70)))),
             const SizedBox(height: 10),
             Row(children: [
               TextButton(onPressed: _stoppen, child: Text(tl(_stoppenTekst, taal), style: const TextStyle(color: Colors.black54))),
               const Spacer(),
-              if (_i > 0) TextButton(onPressed: _vorige, child: Text(tl(_vorigeTekst, taal))),
-              const SizedBox(width: 4),
-              FilledButton(onPressed: _volgende, child: Text(tl(_i + 1 >= _stappen.length ? _klaarTekst : _volgendeTekst, taal))),
+              // In doe-stand geen Volgende: het lid moet de knop zelf indrukken, anders klikt
+              // hij zich er langs en heeft hij het nog steeds niet gedaan (Richard 21-09-2026).
+              if (!widget.alleenDezeStap) ...[
+                if (_i > 0) TextButton(onPressed: _vorige, child: Text(tl(_vorigeTekst, taal))),
+                const SizedBox(width: 4),
+                FilledButton(onPressed: _volgende, child: Text(tl(_i + 1 >= _stappen.length ? _klaarTekst : _volgendeTekst, taal))),
+              ],
             ]),
           ]),
         ),

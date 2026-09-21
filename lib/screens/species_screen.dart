@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../core/rondleiding.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -59,7 +61,9 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
     final term = _zoek.text.trim().toLowerCase();
     return _list.where((x) {
       final s = x as Map;
-      final landen = (s['countries'] as List?)?.map((e) => '$e').toList();
+      // De server stuurt `countries` soms als lijst en soms als JSON-tekst; allebei afvangen,
+      // anders klapt het scherm eruit met "String is not a subtype of List" (21-09-2026).
+      final landen = _landenVan(s['countries']);
       if (landen != null && landen.isNotEmpty && !landen.contains(_land)) return false;
       final water = '${s['water_type'] ?? ''}';
       if (_soortWater == 'zoet' && !['fresh', 'both'].contains(water)) return false;
@@ -71,6 +75,26 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
       }
       return true;
     }).toList();
+  }
+
+
+  /// De landen waarin een soort voorkomt, ongeacht of de server een lijst of tekst stuurt.
+  static List<String>? _landenVan(dynamic ruw) {
+    if (ruw == null) return null;
+    if (ruw is List) return ruw.map((e) => '$e').toList();
+    if (ruw is String) {
+      final t = ruw.trim();
+      if (t.isEmpty) return null;
+      try {
+        final g = jsonDecode(t);
+        if (g is List) return g.map((e) => '$e').toList();
+      } catch (_) {
+        // Geen JSON: dan is het een simpele opsomming.
+      }
+      return t.split(RegExp(r'[,;]')).map((e) => e.trim().toLowerCase())
+          .where((e) => e.isNotEmpty).toList();
+    }
+    return null;
   }
 
   Widget _waterKnop(String sleutel, String label) {
