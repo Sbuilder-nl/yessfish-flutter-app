@@ -7,6 +7,7 @@ import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/realtime.dart';
 import '../widgets/report.dart';
+import '../core/rondleiding.dart';
 
 class ChatScreen extends StatefulWidget {
   final Map? conversation;
@@ -209,12 +210,12 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: Text(_title ?? context.tr('chat.new_message')),
         actions: _convId == null ? null : [
-          IconButton(
+          TourAnker(id: 'berichten-beheer', child: IconButton(
             tooltip: _bt(beheerUitleg),
             onPressed: _bewaarWissel,
             icon: Icon(_bewaren ? Icons.bookmark : Icons.bookmark_border,
                 color: _bewaren ? AppColors.teal : null),
-          ),
+          )),
           IconButton(tooltip: _bt(beheerWis), onPressed: _wisGesprek, icon: const Icon(Icons.delete_outline)),
         ],
       ),

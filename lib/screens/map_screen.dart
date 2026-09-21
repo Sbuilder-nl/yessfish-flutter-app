@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/water_vissen_info.dart';
+import '../widgets/hulp_knop.dart';
 import '../core/gids_i18n.dart';
 import 'organisatie_screen.dart';
 import 'bite_screen.dart';
@@ -2307,6 +2308,7 @@ class _MapScreenState extends State<MapScreen> {
   PreferredSizeWidget _kop({bool bezig = false}) => AppBar(
     title: Text(context.tr('map.title')),
     actions: [
+      const HulpKnop(hoofdstuk: 'kaart'),
       TourAnker(id: 'kaart-zoeken', child: IconButton(
         icon: const Icon(Icons.search), tooltip: mui(context, 'search_map'),
         onPressed: bezig ? null : _openPlaceSearch)),

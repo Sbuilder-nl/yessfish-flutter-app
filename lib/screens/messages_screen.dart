@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/hulp_knop.dart';
 import '../core/api.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
@@ -68,7 +69,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     final myId = context.read<AuthState>().user?.id;
-    return Scaffold(appBar: AppBar(title: Text(context.tr('messages.title'))),
+    return Scaffold(appBar: AppBar(title: Text(context.tr('messages.title')), actions: const [HulpKnop(hoofdstuk: 'berichten')]),
       floatingActionButton: TourAnker(id: 'berichten-nieuw', child: FloatingActionButton.extended(
         backgroundColor: AppColors.teal,
         onPressed: _nieuwBericht,

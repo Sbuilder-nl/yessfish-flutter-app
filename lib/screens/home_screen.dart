@@ -41,6 +41,7 @@ import 'leaderboard_screen.dart';
 import 'toplist_screen.dart';
 import 'parental_screen.dart';
 import 'new_catch_screen.dart';
+import '../widgets/hulp_knop.dart';
 import '../widgets/yf_logo.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'quick_catch_screen.dart';
@@ -308,6 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: _i == 3 ? null : AppBar(
         title: const YfLogo(size: 30, light: true),
         actions: [
+          // Vraagteken: uitleg over het scherm waar je nu bent, net als op de site.
+          HulpKnop(hoofdstuk: const ['feed', 'vangst', 'weer', 'kaart', 'start'][_i]),
           TourAnker(id: 'vangst-snel', child: IconButton(
             tooltip: _qt(const {'nl': 'Snelvangst', 'en': 'Quick catch', 'de': 'Schnellfang', 'fr': 'Prise rapide', 'es': 'Captura rapida', 'pl': 'Szybki polow'}),
             icon: const Icon(Icons.set_meal, color: AppColors.mint),

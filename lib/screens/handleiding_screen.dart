@@ -22,7 +22,10 @@ import '../widgets/rondleiding_overlay.dart';
 /// het over gaat opgelicht. Dat is meteen, overal hetzelfde, en laat óók zien hoe iets eruitziet
 /// als het wél gevuld is. Wie het in zijn eigen app wil zien drukt op "Laat het me zien".
 class HandleidingScreen extends StatefulWidget {
-  const HandleidingScreen({super.key});
+  /// [startHoofdstuk] opent meteen dat hoofdstuk. Zo kan het vraagteken in de balk je naar de
+  /// uitleg van het scherm brengen waar je op dat moment bent (Richard 21-09-2026).
+  const HandleidingScreen({super.key, this.startHoofdstuk});
+  final String? startHoofdstuk;
 
   @override
   State<HandleidingScreen> createState() => _HandleidingScreenState();
@@ -85,6 +88,20 @@ class _HandleidingScreenState extends State<HandleidingScreen> {
   @override
   void initState() {
     super.initState();
+    // Kwam je hier via het vraagteken in de balk, dan slaan we het overzicht over en openen we
+    // meteen het hoofdstuk van het scherm waar je vandaan komt (Richard 21-09-2026).
+    final start = widget.startHoofdstuk;
+    if (start != null) {
+      final h = hoofdstukken.where((x) => x.id == start).toList();
+      if (h.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => _HoofdstukScherm(hoofdstuk: h.first)));
+          }
+        });
+      }
+    }
     Api.get('/tour').then((r) {
       if (!mounted) return;
       final c = r is Map ? r['chapters'] : null;
