@@ -70,6 +70,15 @@ const handleidingVersie = '20260921';
 String beeldVan(String stapId) =>
     '${Config.origin}/uploads/handleiding/app/$stapId.webp?v=$handleidingVersie';
 
+/// Stappen die in de app niets kunnen aanwijzen: ze gaan over de kaart zelf, over een blad dat
+/// pas opengaat als je een dobber aantikt, of over een scherm dat er alleen is bij een lopende
+/// wedstrijd. Gemeten met de zelftest op 21-09-2026. Bij deze stappen laten we de knop weg in
+/// plaats van het lid naar een leeg scherm te sturen.
+const _wijstNietsAan = {
+  'kaart-betaalwater', 'kaart-intro', 'kaart-omtrek', 'kaart-stek-doen', 'kaart-tik',
+  'kaart-waterblad', 'start-hulp', 'start-welkom', 'ver-regels', 'wedstrijd-prijs',
+};
+
 class _HandleidingScreenState extends State<HandleidingScreen> {
   Set<String> _gelezen = {};
 
@@ -183,7 +192,7 @@ class _HoofdstukSchermState extends State<_HoofdstukScherm> {
         SafeArea(child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
           child: Row(children: [
-            TextButton.icon(
+            if (!_wijstNietsAan.contains(stappen[_i].id)) TextButton.icon(
               onPressed: _toonInApp,
               icon: const Icon(Icons.open_in_new, size: 17),
               label: Text(_tt(context, 'toon'), style: const TextStyle(fontSize: 12.5)),
