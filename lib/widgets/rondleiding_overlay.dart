@@ -221,14 +221,25 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       _wachtTellen = 0;
       if (_gemeld == _i) return;
       _gemeld = _i;
-      final v = _vlak;
-      final waar = v == null
-          ? 'GEEN'
-          : '${v.left.round()},${v.top.round()},${v.right.round()},${v.bottom.round()}';
-      debugPrint('YFTOUR ${_i + 1}/${_stappen.length} id=${s.id} zoek=${s.zoek ?? '-'} '
-          'scherm=${s.scherm ?? '-'} tab=${s.tab ?? '-'} vlak=$waar');
-      Future.delayed(const Duration(milliseconds: _testPauze), () {
-        if (mounted && _gemeld == _i) _volgende();
+      final ditIs = _i;
+      // In de fotostand eerst het beeld laten uitrollen en dán pas meten. Een blad dat nog
+      // schuift geeft anders een vlak dat bij de afdruk ergens anders ligt: bij "Foto's en
+      // video's" wees de rondleiding zo naar een leeg stuk kaart (gemeten 21-09-2026).
+      Future.delayed(Duration(milliseconds: _fotoStand ? 1400 : 0), () {
+        if (!mounted || _gemeld != ditIs) return;
+        if (_fotoStand && s.zoek != null) {
+          final vers = TourAnkers.vlak(s.zoek!);
+          if (vers != null) setState(() => _vlak = vers);
+        }
+        final v = _vlak;
+        final waar = v == null
+            ? 'GEEN'
+            : '${v.left.round()},${v.top.round()},${v.right.round()},${v.bottom.round()}';
+        debugPrint('YFTOUR ${ditIs + 1}/${_stappen.length} id=${s.id} zoek=${s.zoek ?? '-'} '
+            'scherm=${s.scherm ?? '-'} tab=${s.tab ?? '-'} vlak=$waar');
+        Future.delayed(const Duration(milliseconds: _testPauze), () {
+          if (mounted && _gemeld == ditIs) _volgende();
+        });
       });
     });
   }
