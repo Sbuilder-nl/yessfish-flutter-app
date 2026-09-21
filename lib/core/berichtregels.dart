@@ -107,4 +107,5 @@ const beheerUitleg = {
   'es': 'Las conversaciones inactivas se limpian pasado un tiempo. Activa Conservar y esta se queda; siempre avisamos antes.',
   'pl': 'Ciche rozmowy po jakimś czasie sprzątamy. Włącz Zachowaj, a ta zostanie; zawsze najpierw ostrzegamy.',
 };
-const beheerVerwijderd = {'nl': 'Verwijderd', 'en': 'Deleted', 'de': 'Gelöscht', 'fr': 'Supprimé', 'es': 'Eliminado', 'pl': 'Usunięto'};
+/// Knoptekst: een opdracht, geen mededeling — 'Verwijderd' op een knop leest als een melding.
+const beheerVerwijderKnop = {'nl': 'Verwijderen', 'en': 'Delete', 'de': 'Löschen', 'fr': 'Supprimer', 'es': 'Eliminar', 'pl': 'Usuń'};

@@ -191,7 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
         TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
         FilledButton(onPressed: () => Navigator.pop(c, true),
           style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
-          child: Text(_bt(beheerVerwijderd))),
+          child: Text(_bt(beheerVerwijderKnop))),
       ],
     ));
     if (ok != true) return;
