@@ -227,7 +227,12 @@ class _HoofdstukSchermState extends State<_HoofdstukScherm> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // De schermafbeelding. Ontbreekt er eentje, dan tonen we gewoon de tekst — nooit een
         // kapot plaatje of een lege plek.
-        ClipRRect(
+        // Hoogte begrenzen: een schermafbeelding van een telefoon is zo hoog dat de titel en de
+        // uitleg eronder buiten beeld vallen. Je kon er wel naartoe scrollen, maar je zag niet
+        // dát daar nog iets stond — en juist die uitleg is het hele punt (21-09-2026).
+        ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.46),
+          child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: CachedNetworkImage(
             imageUrl: beeldVan(s.id),
@@ -238,6 +243,7 @@ class _HoofdstukSchermState extends State<_HoofdstukScherm> {
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)))),
             errorWidget: (_, __, ___) => const SizedBox.shrink(),
           ),
+        ),
         ),
         const SizedBox(height: 12),
         Row(children: [
