@@ -27,6 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _title;
   bool _onderToezicht = false;   // gesprekspartner staat onder ouderlijk toezicht
   bool _zelfToezicht = false;    // ik sta zelf onder ouderlijk toezicht
+  bool _bewaren = false;         // dit gesprek niet automatisch opruimen
   bool _loading = true;
 
   @override
@@ -43,6 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _otherId = other['id'];
         _title = other['username'];
         _onderToezicht = other['onder_toezicht'] == true;
+        _bewaren = widget.conversation!['bewaren'] == true;
       }
       _load();
       _subscribe();
@@ -148,11 +150,74 @@ class _ChatScreenState extends State<ChatScreen> {
     return ok == true;
   }
 
+  String _bt(Map<String, String> m) => br(m, Localizations.localeOf(context).languageCode);
+
+  Future<void> _bewaarWissel() async {
+    final aan = !_bewaren;
+    setState(() => _bewaren = aan);
+    try {
+      await Api.post('/conversations//bewaren', {'bewaren': aan});
+    } catch (_) {
+      if (mounted) setState(() => _bewaren = !aan);
+    }
+  }
+
+  Future<void> _wisGesprek() async {
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
+      content: Text(_bt(beheerWisVraag)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
+        FilledButton(onPressed: () => Navigator.pop(c, true),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
+          child: Text(_bt(beheerWis))),
+      ],
+    ));
+    if (ok != true || _convId == null) return;
+    try {
+      await Api.delete('/conversations/');
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.error'))));
+    }
+  }
+
+  Future<void> _wisBericht(int id) async {
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
+      content: Text(_bt(beheerWisBericht)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(MaterialLocalizations.of(c).cancelButtonLabel)),
+        FilledButton(onPressed: () => Navigator.pop(c, true),
+          style: FilledButton.styleFrom(backgroundColor: Colors.red.shade400),
+          child: Text(_bt(beheerVerwijderd))),
+      ],
+    ));
+    if (ok != true) return;
+    try {
+      await Api.delete('/messages/');
+      if (mounted) setState(() => _messages.removeWhere((m) => (m as Map)['id'] == id));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('common.error'))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final me = context.read<AuthState>().user?.id;
     return Scaffold(
-      appBar: AppBar(title: Text(_title ?? context.tr('chat.new_message'))),
+      appBar: AppBar(
+        title: Text(_title ?? context.tr('chat.new_message')),
+        actions: _convId == null ? null : [
+          IconButton(
+            tooltip: _bt(beheerUitleg),
+            onPressed: _bewaarWissel,
+            icon: Icon(_bewaren ? Icons.bookmark : Icons.bookmark_border,
+                color: _bewaren ? AppColors.teal : null),
+          ),
+          IconButton(tooltip: _bt(beheerWis), onPressed: _wisGesprek, icon: const Icon(Icons.delete_outline)),
+        ],
+      ),
       body: Column(children: [
         // Eerlijk zijn over wat we wel en niet doen: meelezen mag niet, melden werkt wel.
         Container(
@@ -188,7 +253,9 @@ class _ChatScreenState extends State<ChatScreen> {
             final mine = m['sender_id'] == me;
             return Align(alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
               child: GestureDetector(
-                onLongPress: (!mine && m['id'] != null) ? () => showReportSheet(context, type: 'message', targetId: m['id']) : null,
+                onLongPress: m['id'] == null ? null : (mine
+                    ? () => _wisBericht(m['id'] as int)
+                    : () => showReportSheet(context, type: 'message', targetId: m['id'])),
                 child: Container(margin: const EdgeInsets.symmetric(vertical: 3), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
                   decoration: BoxDecoration(color: mine ? AppColors.teal : Colors.white, borderRadius: BorderRadius.circular(16)),

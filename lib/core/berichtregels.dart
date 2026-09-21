@@ -78,3 +78,33 @@ const eigenToezichtRegel = {
   'es': 'Tu madre o padre puede leer tus conversaciones (el control parental está activado).',
   'pl': 'Twój rodzic może czytać twoje rozmowy (kontrola rodzicielska jest włączona).',
 };
+
+/// Zelf je berichten beheren: bewaren, downloaden, weggooien.
+const beheerBewaren = {'nl': 'Bewaren', 'en': 'Keep', 'de': 'Behalten', 'fr': 'Conserver', 'es': 'Conservar', 'pl': 'Zachowaj'};
+const beheerBewaard = {'nl': 'Wordt bewaard', 'en': 'Kept', 'de': 'Wird behalten', 'fr': 'Conservé', 'es': 'Conservada', 'pl': 'Zachowana'};
+const beheerWis = {'nl': 'Gesprek verwijderen', 'en': 'Delete conversation', 'de': 'Gespräch löschen', 'fr': 'Supprimer la conversation', 'es': 'Eliminar conversación', 'pl': 'Usuń rozmowę'};
+const beheerWisVraag = {
+  'nl': 'Dit gesprek uit jouw lijst verwijderen? Bij de ander blijft het staan.',
+  'en': 'Remove this conversation from your list? It stays with the other person.',
+  'de': 'Dieses Gespräch aus deiner Liste entfernen? Beim anderen bleibt es stehen.',
+  'fr': 'Retirer cette conversation de ta liste ? Elle reste chez l’autre personne.',
+  'es': '¿Quitar esta conversación de tu lista? A la otra persona le sigue apareciendo.',
+  'pl': 'Usunąć tę rozmowę z twojej listy? U drugiej osoby zostanie.',
+};
+const beheerWisBericht = {
+  'nl': 'Dit bericht verwijderen? Het verdwijnt ook bij de ander.',
+  'en': 'Delete this message? It disappears for the other person too.',
+  'de': 'Diese Nachricht löschen? Sie verschwindet auch beim anderen.',
+  'fr': 'Supprimer ce message ? Il disparaît aussi chez l’autre.',
+  'es': '¿Eliminar este mensaje? También desaparece para la otra persona.',
+  'pl': 'Usunąć tę wiadomość? Zniknie także u drugiej osoby.',
+};
+const beheerUitleg = {
+  'nl': 'Stille gesprekken ruimen we na verloop van tijd op. Zet Bewaren aan en dit gesprek blijft staan; je krijgt altijd eerst een melding.',
+  'en': 'Quiet conversations get cleaned up after a while. Switch Keep on and this one stays; you always get a warning first.',
+  'de': 'Stille Gespräche räumen wir nach einiger Zeit auf. Schalte Behalten ein und dieses bleibt; du wirst immer vorher gewarnt.',
+  'fr': 'Les conversations silencieuses sont nettoyées au bout d’un temps. Active Conserver et celle-ci reste ; tu es toujours prévenu avant.',
+  'es': 'Las conversaciones inactivas se limpian pasado un tiempo. Activa Conservar y esta se queda; siempre avisamos antes.',
+  'pl': 'Ciche rozmowy po jakimś czasie sprzątamy. Włącz Zachowaj, a ta zostanie; zawsze najpierw ostrzegamy.',
+};
+const beheerVerwijderd = {'nl': 'Verwijderd', 'en': 'Deleted', 'de': 'Gelöscht', 'fr': 'Supprimé', 'es': 'Eliminado', 'pl': 'Usunięto'};
