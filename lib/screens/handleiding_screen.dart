@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/api.dart';
+import '../core/push.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../core/rondleiding.dart';
@@ -52,8 +53,16 @@ const _t = {
   'vorige': {'nl': 'Vorige', 'en': 'Back', 'de': 'Zurück', 'fr': 'Retour', 'es': 'Atrás', 'pl': 'Wstecz'},
   'klaar': {'nl': 'Klaar', 'en': 'Done', 'de': 'Fertig', 'fr': 'Terminé', 'es': 'Listo', 'pl': 'Gotowe'},
   'alles': {
-    'nl': 'Alle hoofdstukken achter elkaar', 'en': 'All chapters in a row', 'de': 'Alle Kapitel nacheinander',
-    'fr': 'Tous les chapitres à la suite', 'es': 'Todos los capítulos seguidos', 'pl': 'Wszystkie rozdziały po kolei',
+    'nl': 'Neem me mee langs de basis', 'en': 'Walk me through the basics', 'de': 'Zeig mir die Grundlagen',
+    'fr': 'Fais-moi découvrir les bases', 'es': 'Enséñame lo básico', 'pl': 'Pokaż mi podstawy',
+  },
+  'alles_uitleg': {
+    'nl': 'Je loopt zelf door de app langs de eerste knoppen. De rest van de handleiding lees je hier, met een afbeelding bij elke stap.',
+    'en': 'You walk through the app yourself along the first buttons. The rest of the guide you read here, with a picture at every step.',
+    'de': 'Du gehst selbst durch die App an den ersten Schaltflächen entlang. Den Rest der Anleitung liest du hier, mit einem Bild zu jedem Schritt.',
+    'fr': 'Tu parcours toi-même l’appli le long des premiers boutons. Le reste du guide se lit ici, avec une image à chaque étape.',
+    'es': 'Recorres tú mismo la app por los primeros botones. El resto de la guía lo lees aquí, con una imagen en cada paso.',
+    'pl': 'Sam przechodzisz przez aplikację przy pierwszych przyciskach. Resztę przewodnika czytasz tutaj, z obrazkiem przy każdym kroku.',
   },
 };
 
@@ -70,8 +79,11 @@ String _tt(BuildContext c, String sleutel) {
 /// (gemeten 21-09-2026: nieuwe afdruk stond er, app toonde de oude).
 const handleidingVersie = '20260921';
 
-String beeldVan(String stapId) =>
-    '${Config.origin}/uploads/handleiding/app/$stapId.webp?v=$handleidingVersie';
+/// De afdrukken staan per taal: een Nederlands lid hoort geen Engels scherm te zien
+/// (Richard 21-09-2026). Is een taal er nog niet, dan valt hij terug op de oude map.
+String beeldVan(String stapId, [String taal = '']) => taal.isEmpty
+    ? '${Config.origin}/uploads/handleiding/app/$stapId.webp?v=$handleidingVersie'
+    : '${Config.origin}/uploads/handleiding/app/$taal/$stapId.webp?v=$handleidingVersie';
 
 /// Stappen die in de app niets kunnen aanwijzen: ze gaan over de kaart zelf, over een blad dat
 /// pas opengaat als je een dobber aantikt, of over een scherm dat er alleen is bij een lopende
@@ -121,9 +133,24 @@ class _HandleidingScreenState extends State<HandleidingScreen> {
           const SizedBox(height: 12),
           // Wie liever door zijn eigen app loopt kan dat nog steeds.
           OutlinedButton.icon(
-            onPressed: () { Navigator.pop(context); Rondleiding.start(context); },
+            // De overlay moet aan de hoofdnavigatie hangen, niet aan dit scherm: dat is net
+            // gesloten als de rondleiding start, en dan komt de laag nergens terecht.
+            onPressed: () {
+              Navigator.pop(context);
+              // Via de vaste navigatiesleutel van de app: die blijft bestaan als dit scherm weg
+              // is. Met de context van dit scherm kwam de laag nergens terecht.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final c = Push.navKey.currentContext;
+                if (c != null) Rondleiding.start(c, totHoofdstuk: 'start');
+              });
+            },
             icon: const Icon(Icons.play_circle_outline, size: 18),
             label: Text(_tt(context, 'alles')),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(_tt(context, 'alles_uitleg'),
+                style: const TextStyle(fontSize: 11.5, height: 1.35, color: Colors.black45)),
           ),
           const SizedBox(height: 14),
           for (var i = 0; i < hoofdstukken.length; i++) _hoofdstukTegel(context, taal, i),
@@ -252,13 +279,18 @@ class _HoofdstukSchermState extends State<_HoofdstukScherm> {
           child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: CachedNetworkImage(
-            imageUrl: beeldVan(s.id),
+            imageUrl: beeldVan(s.id, taal),
             fit: BoxFit.contain,
             placeholder: (_, __) => const AspectRatio(
                 aspectRatio: 0.62,
                 child: ColoredBox(color: Color(0xFFECF1F4),
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)))),
-            errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            // Nog geen afdruk in deze taal? Neem die van de oude, taalloze map.
+            errorWidget: (_, __, ___) => CachedNetworkImage(
+              imageUrl: beeldVan(s.id),
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            ),
           ),
         ),
         ),

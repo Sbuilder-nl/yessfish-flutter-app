@@ -51,7 +51,10 @@ void main() {
     }
     runApp(const YessFishApp());
   }, (error, stack) {
-    debugPrint('Onafgevangen fout (opgevangen, geen crash): \$error');
+    // Het dollarteken stond hier met een backslash ervoor, dus in het logboek verscheen letterlijk
+    // \ en kon je nooit zien wát er misging (21-09-2026).
+    debugPrint('Onafgevangen fout (opgevangen, geen crash): $error');
+    debugPrintStack(stackTrace: stack, maxFrames: 12);
   });
 }
 

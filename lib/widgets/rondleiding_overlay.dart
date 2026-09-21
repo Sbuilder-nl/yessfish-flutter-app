@@ -47,7 +47,12 @@ class Rondleiding {
   static bool get loopt => _entry != null;
 
   /// Start bij het begin, of hervat bij [vanafStap].
-  static Future<void> start(BuildContext context, {String? vanafStap}) async {
+  ///
+  /// Met [totHoofdstuk] stopt hij aan het eind van dat hoofdstuk. Zo kun je een lid door de
+  /// basis meenemen zonder hem daarna door 89 stappen te slepen: de rest staat met plaatjes in
+  /// de handleiding (Richard 21-09-2026).
+  static Future<void> start(BuildContext context,
+      {String? vanafStap, String? totHoofdstuk}) async {
     if (_entry != null) return;
     final stappen = alleStappen();
     var index = 0;
@@ -55,8 +60,23 @@ class Rondleiding {
       final i = stappen.indexWhere((s) => s.id == vanafStap);
       if (i >= 0) index = i;
     }
-    final overlay = Overlay.of(context, rootOverlay: true);
-    _entry = OverlayEntry(builder: (_) => _RondleidingLaag(startIndex: index));
+    int? eind;
+    // In de fotostand lopen we bewust álle stappen door: die build is er om van elk
+    // scherm een afdruk te maken, niet om een lid rond te leiden.
+    if (totHoofdstuk != null && !const bool.fromEnvironment('TOUR_SHOTS')) {
+      final h = hoofdstukken.where((x) => x.id == totHoofdstuk).toList();
+      if (h.isNotEmpty && h.first.stappen.isNotEmpty) {
+        final laatste = h.first.stappen.last.id;
+        final i = stappen.indexWhere((s) => s.id == laatste);
+        if (i >= 0) eind = i;
+      }
+    }
+    // Let op: vanaf de navigatiesleutel van de app heeft de context zélf geen Overlay boven
+    // zich — de Overlay zit eronder, in de Navigator. Dan geeft Overlay.of een lege
+    // verwijzing en klapt de null-check (gemeten 21-09-2026). Daarom eerst de navigator.
+    final overlay = Navigator.maybeOf(context, rootNavigator: true)?.overlay
+        ?? Overlay.of(context, rootOverlay: true);
+    _entry = OverlayEntry(builder: (_) => _RondleidingLaag(startIndex: index, eindIndex: eind));
     overlay.insert(_entry!);
     unawaited(_meld('start', stap: stappen[index].id));
   }
@@ -72,7 +92,11 @@ class Rondleiding {
     final stappen = alleStappen();
     final i = stappen.indexWhere((s) => s.id == stapId);
     if (i < 0) return;
-    final overlay = Overlay.of(context, rootOverlay: true);
+    // Let op: vanaf de navigatiesleutel van de app heeft de context zélf geen Overlay boven
+    // zich — de Overlay zit eronder, in de Navigator. Dan geeft Overlay.of een lege
+    // verwijzing en klapt de null-check (gemeten 21-09-2026). Daarom eerst de navigator.
+    final overlay = Navigator.maybeOf(context, rootNavigator: true)?.overlay
+        ?? Overlay.of(context, rootOverlay: true);
     _entry = OverlayEntry(builder: (_) => _RondleidingLaag(startIndex: i, alleenDezeStap: true));
     overlay.insert(_entry!);
   }
@@ -115,8 +139,10 @@ class Rondleiding {
 }
 
 class _RondleidingLaag extends StatefulWidget {
-  const _RondleidingLaag({required this.startIndex, this.alleenDezeStap = false});
+  const _RondleidingLaag({required this.startIndex, this.alleenDezeStap = false, this.eindIndex});
   final int startIndex;
+  /// Laatste stap die we tonen; daarna is het klaar. null = tot het einde.
+  final int? eindIndex;
 
   /// Eén stap laten doen en dan stoppen (vanuit de handleiding), in plaats van doorlopen.
   final bool alleenDezeStap;
@@ -327,7 +353,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
 
   void _volgende() {
     _richting = 1;
-    if (_i + 1 >= _stappen.length) {
+    if (_i + 1 >= _stappen.length || (widget.eindIndex != null && _i >= widget.eindIndex!)) {
       Rondleiding._meld('done');
       if (_openScherm != null) Rondleiding.naarScherm?.call(null);
       Rondleiding.stop();
