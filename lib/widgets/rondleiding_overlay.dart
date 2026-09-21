@@ -234,14 +234,37 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
           // Daarom in de fotostand altijd eerst écht in beeld scrollen en dan pas meten.
           try {
             TourAnkers.inBeeld(s.zoek!, uitlijning: 0.35);
-            await Future.delayed(const Duration(milliseconds: 1200));
-            if (!mounted || _gemeld != ditIs) return;
-            final vers = TourAnkers.vlak(s.zoek!);
-            if (vers != null) setState(() => _vlak = vers);
+            // Wachten tot het beeld écht stilstaat: een blad dat nog uitschuift gaf een vlak
+            // dat bij de afdruk al ergens anders lag. Pas als twee metingen achter elkaar
+            // hetzelfde zeggen, is het stil (gemeten 21-09-2026).
+            Rect? vorige;
+            for (var poging = 0; poging < 10; poging++) {
+              await Future.delayed(const Duration(milliseconds: 400));
+              if (!mounted || _gemeld != ditIs) return;
+              final nu = TourAnkers.vlak(s.zoek!);
+              if (nu != null && vorige != null &&
+                  (nu.top - vorige.top).abs() < 1.5 && (nu.left - vorige.left).abs() < 1.5) {
+                setState(() => _vlak = nu);
+                break;
+              }
+              vorige = nu;
+              if (nu != null) setState(() => _vlak = nu);
+            }
           } catch (_) {
             // Niet elk anker zit in iets dat kan scrollen. Gaat dat mis, dan meten we gewoon
             // wat er al stond — zonder deze vangst bleef de hele opname hangen (21-09-2026).
           }
+        }
+        // Ligt het vlak (bijna) buiten beeld, dan wijst het naar iets wat op de afdruk niet
+        // te zien is. Liever geen kader dan een kader om het verkeerde (21-09-2026).
+        if (_fotoStand && _vlak != null && mounted) {
+          final r = _vlak!;
+          final scherm = MediaQuery.of(context).size;
+          final zicht = Rect.fromLTRB(
+              r.left.clamp(0.0, scherm.width), r.top.clamp(0.0, scherm.height),
+              r.right.clamp(0.0, scherm.width), r.bottom.clamp(0.0, scherm.height));
+          final opp = r.width * r.height;
+          if (opp <= 0 || (zicht.width * zicht.height) / opp < 0.9) _vlak = null;
         }
         final v = _vlak;
         // Een anker kan een vlak zonder eindige maten opleveren (een lege lijst die nog moet
