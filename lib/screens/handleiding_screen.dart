@@ -77,7 +77,7 @@ String _tt(BuildContext c, String sleutel) {
 /// Versie van de afbeeldingen. Bijwerken we de plaatjes, dan moet dit mee omhoog: anders blijft
 /// de app zijn eigen buffer tonen en ziet een lid maanden later nog het oude scherm
 /// (gemeten 21-09-2026: nieuwe afdruk stond er, app toonde de oude).
-const handleidingVersie = '20260921';
+const handleidingVersie = '20260921c';
 
 /// De afdrukken staan per taal: een Nederlands lid hoort geen Engels scherm te zien
 /// (Richard 21-09-2026). Is een taal er nog niet, dan valt hij terug op de oude map.
