@@ -62,7 +62,13 @@ String _tt(BuildContext c, String sleutel) {
 
 /// Waar de schermafbeelding van een stap staat. Op de server, zodat we hem kunnen bijwerken
 /// zonder een nieuwe app-versie; de app bewaart hem daarna in zijn eigen buffer.
-String beeldVan(String stapId) => '${Config.origin}/uploads/handleiding/app/$stapId.webp';
+/// Versie van de afbeeldingen. Bijwerken we de plaatjes, dan moet dit mee omhoog: anders blijft
+/// de app zijn eigen buffer tonen en ziet een lid maanden later nog het oude scherm
+/// (gemeten 21-09-2026: nieuwe afdruk stond er, app toonde de oude).
+const handleidingVersie = '20260921';
+
+String beeldVan(String stapId) =>
+    '${Config.origin}/uploads/handleiding/app/$stapId.webp?v=$handleidingVersie';
 
 class _HandleidingScreenState extends State<HandleidingScreen> {
   Set<String> _gelezen = {};
