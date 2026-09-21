@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/api.dart';
+import '../core/berichtregels.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
@@ -24,6 +25,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _convId;
   int? _otherId;
   String? _title;
+  bool _onderToezicht = false;   // gesprekspartner staat onder ouderlijk toezicht
+  bool _zelfToezicht = false;    // ik sta zelf onder ouderlijk toezicht
   bool _loading = true;
 
   @override
@@ -34,8 +37,13 @@ class _ChatScreenState extends State<ChatScreen> {
       final myId = context.read<AuthState>().user?.id;
       final users = (widget.conversation!['users'] ?? []) as List;
       final others = users.where((u) => (u as Map)['id'] != myId).toList();
+      _zelfToezicht = users.any((u) => (u as Map)['id'] == myId && u['onder_toezicht'] == true);
       final other = (others.isNotEmpty ? others.first : (users.isNotEmpty ? users.first : null)) as Map?;
-      if (other != null) { _otherId = other['id']; _title = other['username']; }
+      if (other != null) {
+        _otherId = other['id'];
+        _title = other['username'];
+        _onderToezicht = other['onder_toezicht'] == true;
+      }
       _load();
       _subscribe();
     } else {
@@ -107,6 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _send() async {
     final body = _input.text.trim();
     if (body.isEmpty || _otherId == null) return;
+    if (lijktOpHandel(body) && !await _bevestigVerzenden()) return;
     _input.clear();
     try {
       final m = await Api.post('/messages', {'recipient_id': _otherId, 'body': body});
@@ -123,12 +132,55 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Duwtje vooraf bij een bericht dat op verboden handel lijkt. Draait hier op het toestel:
+  /// de tekst gaat niet naar ons toe, want privéberichten mogen we niet meelezen.
+  Future<bool> _bevestigVerzenden() async {
+    final taal = Localizations.localeOf(context).languageCode;
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(
+      scrollable: true,
+      title: Text(br(waarschuwingTitel, taal)),
+      content: Text(br(waarschuwingTekst, taal)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(br(waarschuwingTerug, taal))),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(br(waarschuwingDoor, taal))),
+      ],
+    ));
+    return ok == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final me = context.read<AuthState>().user?.id;
     return Scaffold(
       appBar: AppBar(title: Text(_title ?? context.tr('chat.new_message'))),
       body: Column(children: [
+        // Eerlijk zijn over wat we wel en niet doen: meelezen mag niet, melden werkt wel.
+        Container(
+          width: double.infinity,
+          color: const Color(0xFFEFF4F6),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.lock_outline, size: 15, color: AppColors.teal),
+            const SizedBox(width: 6),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(br(privacyRegel, Localizations.localeOf(context).languageCode),
+                  style: const TextStyle(fontSize: 11.5, height: 1.35, color: Colors.black54)),
+              // Praat je met een kind, dan kan een ouder dit gesprek lezen. Dat hoor je te weten.
+              if (_zelfToezicht) Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(br(eigenToezichtRegel, Localizations.localeOf(context).languageCode),
+                    style: const TextStyle(fontSize: 11.5, height: 1.35, color: Colors.black87,
+                        fontWeight: FontWeight.w600)),
+              ),
+              if (_onderToezicht) Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(br(toezichtRegel, Localizations.localeOf(context).languageCode),
+                    style: const TextStyle(fontSize: 11.5, height: 1.35, color: Colors.black87,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ])),
+          ]),
+        ),
         Expanded(child: _loading ? const Center(child: CircularProgressIndicator()) : ListView.builder(
           controller: _scroll, padding: const EdgeInsets.all(12) + EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom), itemCount: _messages.length,
           itemBuilder: (_, i) {
