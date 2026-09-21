@@ -244,9 +244,15 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
           }
         }
         final v = _vlak;
-        final waar = v == null
+        // Een anker kan een vlak zonder eindige maten opleveren (een lege lijst die nog moet
+        // opbouwen). round() gooit daar "Infinity or NaN toInt" op, en die fout brak de hele
+        // opname af bij stap 39 (gemeten 21-09-2026). Zo'n vlak tellen we als 'geen vlak'.
+        final eindig = v != null &&
+            v.left.isFinite && v.top.isFinite && v.right.isFinite && v.bottom.isFinite;
+        final waar = !eindig
             ? 'GEEN'
             : '${v.left.round()},${v.top.round()},${v.right.round()},${v.bottom.round()}';
+        if (v != null && !eindig) _vlak = null;
         debugPrint('YFTOUR ${ditIs + 1}/${_stappen.length} id=${s.id} zoek=${s.zoek ?? '-'} '
             'scherm=${s.scherm ?? '-'} tab=${s.tab ?? '-'} vlak=$waar');
         Future.delayed(const Duration(milliseconds: _testPauze), () {
