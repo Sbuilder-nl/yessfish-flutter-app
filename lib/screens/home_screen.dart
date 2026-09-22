@@ -319,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const YfLogo(size: 30, light: true),
         actions: [
           // Vraagteken: uitleg over het scherm waar je nu bent, net als op de site.
-          HulpKnop(hoofdstuk: const ['feed', 'vangst', 'weer', 'kaart', 'start'][_i]),
+          TourAnker(id: 'hulp-knop', child: HulpKnop(hoofdstuk: const ['feed', 'vangst', 'weer', 'kaart', 'start'][_i])),
           TourAnker(id: 'vangst-snel', child: IconButton(
             tooltip: _qt(const {'nl': 'Snelvangst', 'en': 'Quick catch', 'de': 'Schnellfang', 'fr': 'Prise rapide', 'es': 'Captura rapida', 'pl': 'Szybki polow'}),
             icon: const Icon(Icons.set_meal, color: AppColors.mint),

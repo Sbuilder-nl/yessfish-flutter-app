@@ -205,6 +205,16 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   int _gemeld = -1;
   int _wachtTellen = 0;
 
+  /// Hoelang de fotostand wacht voor hij een stap klaar meldt.
+  ///
+  /// Een stap mét anker meet zelf tot het beeld stilstaat; daar is 300 ms genoeg. Een stap
+  /// zónder anker meet niets en zou anders een scherm vastleggen dat nog aan het laden is. De
+  /// kaart is de traagste: die had ±13 seconden nodig voor haar tegels (gemeten 21-09-2026).
+  static int _fotoWachten(Stap s) {
+    if (s.zoek != null) return 300;
+    return s.tab == 3 ? 14000 : 3000;   // 3 = het kaarttabblad
+  }
+
   void _startZelfTest() {
     _testLus = Timer.periodic(const Duration(milliseconds: 250), (_) {
       if (!mounted) return;
@@ -225,7 +235,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // In de fotostand eerst het beeld laten uitrollen en dán pas meten. Een blad dat nog
       // schuift geeft anders een vlak dat bij de afdruk ergens anders ligt: bij "Foto's en
       // video's" wees de rondleiding zo naar een leeg stuk kaart (gemeten 21-09-2026).
-      Future.delayed(Duration(milliseconds: _fotoStand ? 300 : 0), () async {
+      Future.delayed(Duration(milliseconds: _fotoStand ? _fotoWachten(s) : 0), () async {
         if (!mounted || _gemeld != ditIs) return;
         if (_fotoStand && s.zoek != null) {
           // Door de ruime cacheExtent bestaat een anker ook als het bóven het zichtbare deel
@@ -558,7 +568,8 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
             Row(children: [
               Expanded(child: Text(tl(_stap.titel, taal),
                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0a3d62)))),
-              Text('${_i + 1}/${_stappen.length}', style: const TextStyle(fontSize: 12, color: Colors.black45)),
+              if (!widget.alleenDezeStap) Text('${_i - widget.startIndex + 1}/${(widget.eindIndex ?? _stappen.length - 1) - widget.startIndex + 1}',
+                  style: const TextStyle(fontSize: 12, color: Colors.black45)),
             ]),
             const SizedBox(height: 8),
             Text(tl(_stap.tekst, taal), style: const TextStyle(fontSize: 14.5, height: 1.4, color: Colors.black87)),

@@ -164,7 +164,7 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
           onChanged: (v) { if (v != null) widget.onLand(v); },
         ),
         const SizedBox(width: 10),
-        Expanded(child: TourAnker(id: 'gids-zoek', child: TextField(
+        Expanded(child: TourAnker(id: widget.type == 'clubs' ? 'gids-zoek' : 'gids-zoek-${widget.type}', child: TextField(
           controller: widget.q, onChanged: (v) => setState(() => _zoek = v.trim()),
           decoration: InputDecoration(isDense: true, prefixIcon: const Icon(Icons.search, size: 18), hintText: gt(context, 'search'), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
         ))),
@@ -173,7 +173,7 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
           ? Center(child: TextButton(onPressed: _laad, child: Text(gt(context, 'error'))))
           : _items == null
               ? Center(child: Text(gt(context, 'loading')))
-              : RefreshIndicator(onRefresh: _laad, child: TourAnker(id: 'gids-lijst', child: _body(context, taal, items, zoek)))),
+              : RefreshIndicator(onRefresh: _laad, child: TourAnker(id: widget.type == 'clubs' ? 'gids-lijst' : 'gids-lijst-${widget.type}', child: _body(context, taal, items, zoek)))),
     ]);
   }
 
