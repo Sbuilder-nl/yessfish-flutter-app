@@ -192,7 +192,7 @@ const Map<String, Map<String, String>> kAppExtra = {
     "forgot.back": "Zurück zur Anmeldung",
     "forgot.error": "Etwas ist schiefgelaufen. Bitte versuche es später erneut.",
 
-    'nav.bite': 'Beißprognose', 'nav.clubs': 'Vereine', 'nav.profile': 'Profil',
+    'nav.bite': 'Beißchance', 'nav.clubs': 'Vereine', 'nav.profile': 'Profil',
     'nav.map': 'Karte',
     'nav.menu': 'Menü', 'stats.catches': 'Fänge', 'stats.this_month': 'Diesen Monat', 'stats.species': 'Arten', 'stats.biggest': 'Größter',
     'sec.social': 'Sozial', 'sec.fishing': 'Mein Angeln', 'sec.tools': 'Werkzeuge', 'sec.account': 'Konto',

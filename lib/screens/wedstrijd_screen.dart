@@ -319,7 +319,10 @@ class _WedstrijdScreenState extends State<WedstrijdScreen> {
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(children: [
           Expanded(child: Text(_t(context, _puntNamen[sleutel]!), style: const TextStyle(fontSize: 13))),
-          Text('+$punten', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
+          // Schoon achterlaten: 1, of 2 als je aangetroffen vuil meeneemt (PlekService). Net als op
+          // het web en de dobberpagina (22-09-2026).
+          Text(sleutel == 'contest_schoon' ? '+$punten / +${punten * 2}' : '+$punten',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
         ]),
       ));
     }

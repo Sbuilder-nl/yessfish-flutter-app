@@ -45,7 +45,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Future<void> _toggleLike() async {
     final p = _post!; final liked = p['liked_by_me'] == true;
     setState(() { p['liked_by_me'] = !liked; p['likes_count'] = (p['likes_count'] ?? 0) + (liked ? -1 : 1); });
-    try { await (liked ? Api.delete('/posts/${p['id']}/like') : Api.post('/posts/${p['id']}/like')); } catch (_) {}
+    // Eén plek houdt de telling bij: dezelfde route als de feed. Via het oude /like kwam er
+    // geen reactie-regel bij en telde de feed jouw duim niet mee (gemeten 22-09-2026).
+    try {
+      final r = await Api.post('/posts/${p['id']}/reactions', {'emoji': '👍'});
+      if (r is Map && mounted) {
+        setState(() {
+          if (r['likes_count'] != null) p['likes_count'] = r['likes_count'];
+          if (r['mine'] != null || r.containsKey('mine')) p['liked_by_me'] = r['mine'] == '👍';
+          p['reactions'] = {'counts': r['counts'] ?? {}, 'total': r['total'] ?? 0, 'mine': r['mine']};
+        });
+      }
+    } catch (_) {}
   }
 
   void _openComments() {

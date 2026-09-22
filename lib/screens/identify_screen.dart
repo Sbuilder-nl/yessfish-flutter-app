@@ -6,6 +6,8 @@ import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import 'species_detail_screen.dart';
+import '../core/species_l10n.dart';
+import '../widgets/rondleiding_overlay.dart';
 
 /// Losse AI-visherkenning uit een foto (zoals op de website) — los van vangstregistratie.
 class IdentifyScreen extends StatefulWidget {
@@ -19,6 +21,52 @@ class _IdentifyScreenState extends State<IdentifyScreen> {
   bool _busy = false;
   Map? _result;
   String? _error;
+
+  // Alleen in de fotoversie van de handleiding (zie _voorbeeld).
+  static const _fotoStand = bool.fromEnvironment('TOUR_SHOTS');
+
+  @override
+  void initState() {
+    super.initState();
+    if (_fotoStand) {
+      Rondleiding.luister('herkennen', _rondleidingVraag);
+      if (Rondleiding.laatsteVraag == 'herken-voorbeeld') {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _voorbeeld());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_fotoStand) Rondleiding.stopLuisteren('herkennen', _rondleidingVraag);
+    super.dispose();
+  }
+
+  void _rondleidingVraag(String vraag) {
+    if (vraag == 'herken-voorbeeld') _voorbeeld();
+    if (vraag == 'sluit' && mounted) setState(() { _result = null; _photoUrl = null; });
+  }
+
+  /// Voorbeeldresultaat voor de handleidingfoto: de snoek uit de soortengids, zonder AI-aanroep.
+  /// De herkenning zelf kost geld en is voor eigen werk niet toegestaan; zonder dit had de stap
+  /// "Naar de soortengids" in geen taal een plaatje (22-09-2026).
+  Future<void> _voorbeeld() async {
+    try {
+      final r = await Api.get('/species/1');
+      final s = r is Map ? (r['data'] ?? r) as Map : null;
+      if (s == null || !mounted) return;
+      setState(() {
+        _photoUrl = s['image_path']?.toString();
+        _result = {
+          'is_fish': true,
+          'species_nl': speciesName(context, s),
+          'species_scientific': s['scientific_name'],
+          'confidence': 92,
+          'species_id': 1,
+        };
+      });
+    } catch (_) {}
+  }
 
   Future<void> _pickAndIdentify(ImageSource src) async {
     XFile? x;

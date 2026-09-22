@@ -392,8 +392,10 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
           Expanded(child: OutlinedButton.icon(onPressed: _uploading ? null : () => _pick(ImageSource.gallery), icon: const Icon(Icons.photo), label: Text(context.tr('newcatch.gallery')))),
         ])),
         if (_uploading) const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator()),
-        if (_photos.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8),
-          child: TourAnker(id: 'vangst-ai', child: FilledButton.icon(onPressed: _identifying ? null : _identify,
+        // Altijd zichtbaar, grijs zolang er geen foto is: zo weet je dat de herkenning bestaat, en
+        // kan de handleiding hem aanwijzen (die had hier in geen taal een plaatje, 22-09-2026).
+        Padding(padding: const EdgeInsets.only(top: 8),
+          child: TourAnker(id: 'vangst-ai', child: FilledButton.icon(onPressed: (_identifying || _photos.isEmpty) ? null : _identify,
             icon: _identifying ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome),
             label: Text(context.tr('newcatch.identify'))))),
         if (_aiTip != null) Padding(padding: const EdgeInsets.only(top: 8),

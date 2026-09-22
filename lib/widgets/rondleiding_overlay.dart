@@ -32,8 +32,13 @@ class Rondleiding {
     if (identical(_luisteraars[sleutel], bij)) _luisteraars.remove(sleutel);
   }
 
+  /// Het laatste verzoek. Een scherm dat pas ná het verzoek opengaat (de rondleiding stuurt het
+  /// meteen na het openen) kan hier alsnog zien wat er van hem gevraagd werd.
+  static String? laatsteVraag;
+
   /// Stuur een verzoek naar alle schermen die nu luisteren; wie het niet kent doet niets.
   static void vraagAan(String vraag) {
+    laatsteVraag = vraag;
     for (final f in List.of(_luisteraars.values)) {
       f(vraag);
     }
@@ -394,7 +399,9 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
       // stappen die eerst iets moeten openen — het waterblad, het herkenresultaat, het
       // AI-knopje bij een vangst — en juist die acht stappen kregen dan geen afdruk
       // (gemeten 21-09-2026). Voor een lid blijft het zes seconden: die wil niet wachten.
-      if (++_pogingen >= (_fotoStand ? 250 : 60)) {
+      // Een losse stap ("Laat het me zien") krijgt 15 s: die opent vaak eerst de kaart en het
+      // waterblad, en op productie duurde dat langer dan 6 s (gemeten 22-09-2026).
+      if (++_pogingen >= (_fotoStand ? 250 : (widget.alleenDezeStap ? 150 : 60))) {
         t.cancel();
         _zoekAfgerond = true;
         // Optionele stap zonder knop slaan we over — die gaat over iets dat er nu niet is
@@ -402,7 +409,9 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
         // loopt, anders kun je met Vorige nooit langs zo'n stap terug: hij duwt je meteen
         // weer vooruit.
         if (!mounted) return;
-        if (_stap.optioneel) {
+        // Bij een losse stap nooit doorschuiven: dan las je de uitleg van een andere stap dan
+        // waar je op drukte (Busyness → Ratings, gezien 22-09-2026). Uitleg dan in het midden.
+        if (_stap.optioneel && !widget.alleenDezeStap) {
           // Nooit getoond, dus ook niets zichtbaars om over te slaan.
           if (_richting < 0) {
             _vorige();

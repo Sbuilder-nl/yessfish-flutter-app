@@ -4,6 +4,7 @@ import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import 'album_detail_screen.dart';
+import '../widgets/rondleiding_overlay.dart';
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -14,12 +15,47 @@ class AlbumsScreen extends StatefulWidget {
 class _AlbumsScreenState extends State<AlbumsScreen> {
   List _items = [];
   bool _loading = true;
+  // De handleiding vraagt om een album te openen (stap "Foto's bekijken"). Komt dat verzoek
+  // voordat de lijst er is, dan wachten we tot hij geladen is.
+  bool _openGevraagd = false;
+  bool _detailOpen = false;
+
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    Rondleiding.luister('albums', _rondleidingVraag);
+    // Alleen zolang de rondleiding loopt: anders ging het eerste album ook open als een lid
+    // na de rondleiding zelf naar Albums ging (laatsteVraag blijft staan).
+    _openGevraagd = Rondleiding.loopt && Rondleiding.laatsteVraag == 'album-open';
+    _load();
+  }
+
+  @override
+  void dispose() {
+    Rondleiding.stopLuisteren('albums', _rondleidingVraag);
+    super.dispose();
+  }
+
+  void _rondleidingVraag(String vraag) {
+    if (!mounted) return;
+    if (vraag == 'album-open') { _openGevraagd = true; _eersteOpenen(); }
+    if (vraag == 'sluit' && _detailOpen) { _detailOpen = false; Navigator.of(context).pop(); }
+  }
+
+  void _eersteOpenen() {
+    if (!_openGevraagd || _loading || _items.isEmpty || _detailOpen) return;
+    _openGevraagd = false;
+    final a = _items.first as Map;
+    _detailOpen = true;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AlbumDetailScreen(albumId: a['id'], title: a['title'])))
+        .then((_) { _detailOpen = false; });
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try { final r = await Api.get('/albums'); setState(() { _items = r is List ? r : (r['data'] ?? []); _loading = false; }); }
     catch (_) { setState(() => _loading = false); }
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _eersteOpenen(); });
   }
 
   Future<void> _create() async {

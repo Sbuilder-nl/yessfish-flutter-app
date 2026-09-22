@@ -325,8 +325,9 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
           Icon(Icons.thumb_up, size: 18, color: p['liked_by_me'] == true ? AppColors.teal : Colors.black38),
         const SizedBox(width: 5),
         Text('$totaal', style: TextStyle(color: mijn != null ? AppColors.teal : null, fontWeight: mijn != null ? FontWeight.w700 : null)),
-        // De andere emoji's die er al staan, klein ernaast.
-        ...tellers.entries.where((e) => e.key != mijn && ((e.value as num?)?.toInt() ?? 0) > 0).take(3).map(
+        // De andere emoji's die er al staan, klein ernaast. Wat links al als icoon staat slaan we
+        // over: zonder eigen reactie is dat de duim, en die kwam er anders twee keer te staan.
+        ...tellers.entries.where((e) => e.key != (mijn ?? '👍') && ((e.value as num?)?.toInt() ?? 0) > 0).take(3).map(
           (e) => Padding(padding: const EdgeInsets.only(left: 6), child: Text(e.key, style: const TextStyle(fontSize: 13)))),
       ]),
     );

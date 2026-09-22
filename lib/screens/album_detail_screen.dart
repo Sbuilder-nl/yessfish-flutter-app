@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/rondleiding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/api.dart';
@@ -101,7 +102,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
       appBar: AppBar(
         title: Text(_album?['title'] ?? widget.title ?? _t(_titleL)),
         actions: [
-          if (_photos.isNotEmpty) IconButton(tooltip: _t(_slideL), icon: const Icon(Icons.slideshow), onPressed: () => _openViewer(0, play: true)),
+          if (_photos.isNotEmpty) TourAnker(id: 'albums-dia', child: IconButton(tooltip: _t(_slideL), icon: const Icon(Icons.slideshow), onPressed: () => _openViewer(0, play: true))),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

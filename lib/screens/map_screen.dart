@@ -106,7 +106,16 @@ class _MapScreenState extends State<MapScreen> {
     // De rondleiding kan zelf een blad openzetten, zodat hij ook kan uitleggen wat er ín het
     // waterblad of het lagenmenu staat. Zonder dit waren die stappen niet te tonen (20-09-2026).
     Rondleiding.luister('kaart', _rondleidingVraag);
+    // Kwam het verzoek al binnen vóór dit scherm bestond (eerste keer naar het kaarttabblad),
+    // dan alsnog uitvoeren. Alleen tijdens de rondleiding: laatsteVraag blijft daarna staan.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final v = Rondleiding.laatsteVraag;
+      if (mounted && Rondleiding.loopt && v != null && v != 'sluit') _rondleidingVraag(v);
+    });
   }
+
+  /// Een waterblad- of regelsverzoek dat kwam voordat er wateren geladen waren.
+  String? _wachtendVerzoek;
 
   /// Wat de rondleiding wil laten zien: 'lagen' = lagenmenu open, 'waterblad' = eerste water open.
   /// Welk blad de rondleiding heeft opengezet ('lagen' of 'waterblad'), of null.
@@ -146,11 +155,27 @@ class _MapScreenState extends State<MapScreen> {
       case 'waterblad':
         final w = _waters.cast<Map?>().firstWhere(
             (x) => x != null && x['latitude'] != null, orElse: () => null);
-        if (w == null) { _rondleidingBlad = null; return; }
+        if (w == null) { _rondleidingBlad = null; _wachtendVerzoek = 'waterblad'; return; }
         _rondleidingBlad = 'waterblad';
         _showWater(w);
         break;
+      case 'legenda':
+        // De stap over betaalwater: in beeld staat er zelden een, in de legenda altijd (22-09-2026).
+        _rondleidingBlad = 'legenda';
+        _showLegend();
+        break;
+      case 'regels':
+        // Waterblad met daarop het regelsvenster: daar staan de zeven merkjes waar de stap
+        // "Regels bij het water" over gaat (22-09-2026).
+        final wr = _waters.cast<Map?>().firstWhere(
+            (x) => x != null && x['latitude'] != null, orElse: () => null);
+        if (wr == null) { _rondleidingBlad = null; _wachtendVerzoek = 'regels'; return; }
+        _rondleidingBlad = 'regels';
+        _showWater(wr);
+        Future.delayed(const Duration(milliseconds: 700), () { if (mounted) _showRules(wr); });
+        break;
       case 'sluit':
+        _wachtendVerzoek = null;
         _rondleidingBlad = null;
         Navigator.of(context).popUntil((r) => r.isFirst);
         break;
@@ -168,6 +193,11 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _init() async {
     final p = await loc.currentLocation();
     if (_inKaart(p.lat, p.lng)) _center = LatLng(p.lat, p.lng); // buiten Europa → standaard-middelpunt
+    // Kom je hier vanaf een vereniging of een water, dan is dát het middelpunt. Dit moet vóór de
+    // eerste opbouw van de kaart gebeuren: een move erna kwam nergens aan (gemeten 22-09-2026).
+    if (widget.focusLat != null && widget.focusLng != null && _inKaart(widget.focusLat!, widget.focusLng!)) {
+      _center = LatLng(widget.focusLat!, widget.focusLng!);
+    }
     if (p.isReal && _inKaart(p.lat, p.lng)) _userPos = LatLng(p.lat, p.lng);
     try { final st = await Api.get('/profile/settings'); _autoOn = !(st is Map && st['auto_checkin'] == false); } catch (_) {}
     await _load();
@@ -515,6 +545,12 @@ class _MapScreenState extends State<MapScreen> {
       final w = await Api.get('/waters?lang=$loc8&cluster=1&minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}');
       _waters = w is List ? w : (w['data'] ?? []);
       if (mounted) setState(() {});
+      // Stond er een waterbladverzoek van de rondleiding te wachten? Nu kan het.
+      final wacht = _wachtendVerzoek;
+      if (wacht != null && mounted && Rondleiding.loopt && _waters.isNotEmpty) {
+        _wachtendVerzoek = null;
+        _rondleidingVraag(wacht);
+      }
     } catch (_) {}
   }
 
@@ -681,7 +717,7 @@ class _MapScreenState extends State<MapScreen> {
     final level = '${w['busyness']?['level'] ?? 'none'}';
     final count = w['busyness']?['count'] ?? 0;
     final species = (w['species'] is List) ? (w['species'] as List) : [];
-    final sub = [w['region'], w['country']].where((x) => x != null && '$x'.isNotEmpty).join(' · ');
+    final sub = [w['region'], landNaam(context, w['country']?.toString())].where((x) => x != null && '$x'.isNotEmpty).join(' · ');
     // Stek-pins van dit water tonen + METEEN het info-venster openen (niet wachten op netwerk).
     final near = _spotsForWater(w['id']);
     setState(() { _activeWaterId = w['id']; _activeSpots = near; _shapeWaterId = w['id']; _selWaterPoly = []; _editShape = false; });
@@ -805,11 +841,14 @@ class _MapScreenState extends State<MapScreen> {
           builder: (_, snap) {
             final lijst = snap.data ?? const [];
             if (snap.connectionState != ConnectionState.done) return const SizedBox(height: 4);
-            if (lijst.isEmpty) return const SizedBox.shrink();
+            // Ook zonder vangsten tonen, net als op het web: anders weet je niet dat het bestaat
+            // en kan de handleiding het niet aanwijzen (22-09-2026).
             return Padding(padding: const EdgeInsets.only(top: 12), child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(mui(context, 'catches_here'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54)),
                 const SizedBox(height: 6),
+                if (lijst.isEmpty)
+                  Text(mui(context, 'catches_none'), style: const TextStyle(fontSize: 13, color: Colors.black45)),
                 for (final c in lijst.take(5))
                   Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(children: [
                     const Icon(Icons.set_meal, size: 15, color: AppColors.teal),
@@ -840,10 +879,11 @@ class _MapScreenState extends State<MapScreen> {
             onTap: () { Navigator.pop(context); _flyToSpot(s as Map); },
           )),
         const SizedBox(height: 8),
+        // Twee regels mogen: "Visregels & vergunning" werd op één regel "Visregels & ver…" (22-09-2026).
         Row(children: [
-          Expanded(child: TourAnker(id: 'blad-regels', child: OutlinedButton.icon(onPressed: () => _showRules(w), icon: const Icon(Icons.gavel, size: 18), label: Text(mui(context, 'rules_and_permit'), maxLines: 1, overflow: TextOverflow.ellipsis)))),
+          Expanded(child: TourAnker(id: 'blad-regels', child: OutlinedButton.icon(onPressed: () => _showRules(w), icon: const Icon(Icons.gavel, size: 18), label: Text(mui(context, 'rules_and_permit'), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis)))),
           const SizedBox(width: 8),
-          Expanded(child: TourAnker(id: 'blad-media', child: OutlinedButton.icon(onPressed: () => _showMedia(w), icon: const Icon(Icons.photo_library_outlined, size: 18), label: Text(mui(context, 'media_view'), maxLines: 1, overflow: TextOverflow.ellipsis)))),
+          Expanded(child: TourAnker(id: 'blad-media', child: OutlinedButton.icon(onPressed: () => _showMedia(w), icon: const Icon(Icons.photo_library_outlined, size: 18), label: Text(mui(context, 'media_view'), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis)))),
         ]),
         // 4. Meer: beoordeling, dieptelaag + AI-analyse, vorm (moderator) — onderaan, niets weggehaald.
         const Divider(height: 28),
@@ -954,9 +994,11 @@ class _MapScreenState extends State<MapScreen> {
           }
           return ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).padding.bottom), children: [
             Row(children: [const Icon(Icons.gavel, color: AppColors.teal), const SizedBox(width: 8),
-              Expanded(child: Text('${mui(context, 'rules_title')}${w['country'] != null ? ' — ${w['country']}' : ''}',
+              Expanded(child: Text('${mui(context, 'rules_title')}${w['country'] != null ? ' — ${landNaam(context, w['country']?.toString())}' : ''}',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
             const SizedBox(height: 14),
+            // De zeven merkjes; de handleiding wijst ze samen aan.
+            TourAnker(id: 'regels-merkjes', child: Column(children: [
             statusRow(Icons.badge_outlined, mui(context, 'rules_license'), '${r['license_required'] ?? 'unknown'}', true),
             statusRow(Icons.nightlight_round, mui(context, 'rules_night'), '${r['night_fishing'] ?? 'unknown'}', false),
             statusRow(Icons.event_busy, mui(context, 'rules_season'), '${r['closed_season'] ?? 'unknown'}', false),
@@ -965,6 +1007,7 @@ class _MapScreenState extends State<MapScreen> {
             statusRow(Icons.sailing_outlined, mui(context, 'rules_boat'), '${r['from_boat'] ?? 'unknown'}', false),
             statusRow(Icons.replay, mui(context, 'rules_release'), '${r['catch_release'] ?? 'unknown'}', false),
             statusRow(Icons.umbrella_outlined, mui(context, 'rules_shelter'), '${r['shelter'] ?? 'unknown'}', false),
+            ])),
             if (w['permit_type'] == null || '${w['permit_type']}' == 'onbekend') Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Container(padding: const EdgeInsets.all(12),
@@ -1442,44 +1485,21 @@ class _MapScreenState extends State<MapScreen> {
         Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 4), child: Text(mui(ctx, 'layers_title'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
         SwitchListTile(secondary: const Icon(Icons.water, color: Color(0xFF2563EB)), title: Text(mui(ctx, 'depth_layer')), subtitle: Text(mui(ctx, 'depth_hint'), style: const TextStyle(fontSize: 12)),
           value: _depthOn, onChanged: (v) { _setDepth(v); setS(() {}); }),
-        // Welke wateren hebben hier diepte? Zelfde twee groepen als op het web: wat je al hebt,
-        // en wat je kunt ontgrendelen. Zonder dit zag een lid alleen een lege blauwe laag en
-        // wist hij niet wáár hij moest kijken (Richard 19-09-2026).
-        TourAnker(id: 'kaart-dieptemenu', child: ListTile(
-          leading: const Icon(Icons.layers_outlined, color: Color(0xFF2563EB)),
-          title: Text(_mt(ctx, const {
-            'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
-            'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'})),
-          subtitle: Text(_mt(ctx, const {
-            'nl': 'Wat je al hebt, en wat je kunt ontgrendelen',
-            'en': 'What you already have, and what you can unlock',
-            'de': 'Was du schon hast, und was du freischalten kannst',
-            'fr': 'Ce que tu as déjà, et ce que tu peux débloquer',
-            'es': 'Lo que ya tienes y lo que puedes desbloquear',
-            'pl': 'Co już masz i co możesz odblokować'}), style: const TextStyle(fontSize: 12)),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () { Navigator.pop(ctx); _toonDiepteWateren(); },
-        )),
-        TourAnker(id: 'kaart-stroming', child: SwitchListTile(secondary: const Icon(Icons.waves, color: Color(0xFF0EA5E9)), title: Text(mui(ctx, 'flow_layer')), subtitle: Text(mui(ctx, 'flow_hint'), style: const TextStyle(fontSize: 12)),
-          value: _flowOn, onChanged: (v) { _setFlow(v); setS(() {}); })),
-        TourAnker(id: 'kaart-partners', child: SwitchListTile(
-          secondary: const Icon(Icons.storefront_outlined, color: Color(0xFFE8590C)),
-          title: Text(gt(ctx, 'map_layer')),
-          value: _partnersOn, onChanged: (v) { _setPartners(v); setS(() {}); })),
         // Je eigen stekken op een rij. In de app kon je ze alleen vinden via de dobber van hun
         // water of als pin bij ver inzoomen; op het web stond er al een lijst (20-09-2026).
-        TourAnker(id: 'kaart-filters', child: ListTile(
+        ListTile(
           leading: const Icon(Icons.place_outlined, color: AppColors.teal),
           title: Text(mui(ctx, 'my_spots')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () { Navigator.pop(ctx); _toonMijnStekken(); },
-        )),
+        ),
         const Divider(height: 8),
         Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 4), child: Text(mui(ctx, 'layers_spots'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
+        // Hetzelfde anker als op het web: de handleiding wijst de filterknoppen aan.
+        TourAnker(id: 'kaart-filters', child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: SegmentedButton<String>(
           segments: [for (final f in const ['all', 'public', 'friends']) ButtonSegment(value: f, label: Text(mui(ctx, 'filter_$f')))],
           selected: {_spotFilter}, showSelectedIcon: false,
-          onSelectionChanged: (v) { setState(() { _spotFilter = v.first; if (_activeWaterId != null) _activeSpots = _spotsForWater(_activeWaterId); }); setS(() {}); })),
+          onSelectionChanged: (v) { setState(() { _spotFilter = v.first; if (_activeWaterId != null) _activeSpots = _spotsForWater(_activeWaterId); }); setS(() {}); }))),
         const SizedBox(height: 6),
         SwitchListTile(secondary: Icon(_autoOn ? Icons.location_on : Icons.location_off, color: AppColors.teal), title: Text(mui(ctx, 'auto_title')), subtitle: Text(mui(ctx, 'auto_hint'), style: const TextStyle(fontSize: 12)),
           value: _autoOn, onChanged: (v) async { await _toggleAuto(); setS(() {}); }),
@@ -1546,7 +1566,7 @@ class _MapScreenState extends State<MapScreen> {
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         row(pin(_clusterBubble(5)), mui(ctx, 'legend_cluster')),
         row(pin(_waterPin('none')), mui(ctx, 'legend_water')),
-        row(pin(_paidPin('none')), mui(ctx, 'legend_paid')),
+        TourAnker(id: 'legenda-betaalwater', child: row(pin(_paidPin('none')), mui(ctx, 'legend_paid'))),
         row(Container(width: 22, height: 16, decoration: BoxDecoration(
           color: const Color(0xFF2563EB).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(3),
           border: Border.all(color: const Color(0xFF2563EB), width: 2))), mui(ctx, 'legend_shape')),
@@ -2311,7 +2331,10 @@ class _MapScreenState extends State<MapScreen> {
   /// De kopbalk van de kaart. Staat ook al op het laadscherm, zodat de balk niet ineens
   /// binnenspringt en de rondleiding de zoek- en lagenknop meteen kan aanwijzen (20-09-2026).
   PreferredSizeWidget _kop({bool bezig = false}) => AppBar(
-    title: Text(context.tr('map.title')),
+    // Kleiner zetten als het niet past: in het Pools viel "Mapa wędkarska" weg achter de knoppen
+    // en stond er "Mapa wędkar…" (gezien 22-09-2026).
+    title: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+        child: Text(context.tr('map.title'))),
     actions: [
       const HulpKnop(hoofdstuk: 'kaart'),
       TourAnker(id: 'kaart-zoeken', child: IconButton(
@@ -2375,6 +2398,34 @@ class _MapScreenState extends State<MapScreen> {
       appBar: _kop(),
       // Knoppen alleen tonen als je niet in plaats-/teken-modus zit.
       floatingActionButton: (_placing != null || _editShape) ? null : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+        // Dezelfde drie lagen als op de site, en in dezelfde volgorde. Een knop die aan staat
+        // krijgt een gekleurde achtergrond, zodat je in één oogopslag ziet wat er aan is.
+        TourAnker(id: 'kaart-stroming', child: FloatingActionButton.small(
+          heroTag: 'laag-stroming',
+          backgroundColor: _flowOn ? const Color(0xFF0EA5E9) : Colors.white,
+          onPressed: () => setState(() => _setFlow(!_flowOn)),
+          tooltip: mui(context, 'flow_layer'),
+          child: Icon(Icons.waves, color: _flowOn ? Colors.white : const Color(0xFF0EA5E9)),
+        )),
+        const SizedBox(height: 10),
+        TourAnker(id: 'kaart-dieptemenu', child: FloatingActionButton.small(
+          heroTag: 'laag-diepte',
+          backgroundColor: _depthOn ? const Color(0xFF2563EB) : Colors.white,
+          onPressed: _toonDiepteWateren,
+          tooltip: _mt(context, const {
+            'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
+            'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'}),
+          child: Icon(Icons.layers_outlined, color: _depthOn ? Colors.white : const Color(0xFF2563EB)),
+        )),
+        const SizedBox(height: 10),
+        TourAnker(id: 'kaart-partners', child: FloatingActionButton.small(
+          heroTag: 'laag-partners',
+          backgroundColor: _partnersOn ? const Color(0xFFE8590C) : Colors.white,
+          onPressed: () => setState(() => _setPartners(!_partnersOn)),
+          tooltip: gt(context, 'map_layer'),
+          child: Icon(Icons.storefront_outlined, color: _partnersOn ? Colors.white : const Color(0xFFE8590C)),
+        )),
+        const SizedBox(height: 10),
         TourAnker(id: 'kaart-gps', child: FloatingActionButton.small(
           heroTag: 'locateme', backgroundColor: Colors.white,
           onPressed: _centerOnUser,
@@ -2402,7 +2453,9 @@ class _MapScreenState extends State<MapScreen> {
           FlutterMap(
           mapController: _map,
           options: MapOptions(
-            initialCenter: _center, initialZoom: 14, // bij openen ingezoomd op de locatie van de gebruiker
+            initialCenter: _center,
+            // Kom je van een vereniging of water, dan meteen dichter erop; anders de gewone stand.
+            initialZoom: (widget.focusLat != null && widget.focusLng != null) ? 15 : 14,
             minZoom: _kMinZoom, maxZoom: 18, // niet verder uitzoomen dan ~regio-niveau (anti-hapering + niet wegglijden naar ander land)
             // Begrens de kaart tot Europa → je kunt niet meer "over de rand" de lege ruimte in sliden/uitzoomen.
             cameraConstraint: CameraConstraint.contain(
