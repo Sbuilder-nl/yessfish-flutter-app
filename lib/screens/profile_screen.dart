@@ -40,7 +40,6 @@ import 'wedstrijd_screen.dart';
 import 'winacties_screen.dart';
 import 'schone_stek_screen.dart';
 import '../core/rondleiding.dart';
-import '../widgets/rondleiding_overlay.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

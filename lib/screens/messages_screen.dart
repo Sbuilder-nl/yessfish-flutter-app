@@ -9,6 +9,7 @@ import '../core/realtime_service.dart';
 import '../widgets/avatar.dart';
 import 'chat_screen.dart';
 import '../core/rondleiding.dart';
+import '../widgets/rondleiding_overlay.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -19,10 +20,42 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   List _convs = [];
   bool _loading = true;
+
+  // De handleiding kan vragen om een gesprek te openen (stap "Privé, en jij beslist"): de
+  // beheerknoppen staan pas ín een gesprek. Komt het verzoek voor de lijst er is, dan wachten we.
+  bool _openGevraagd = false;
+  bool _chatOpen = false;
+
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    Rondleiding.luister('berichten', _rondleidingVraag);
+    _openGevraagd = Rondleiding.loopt && Rondleiding.laatsteVraag == 'gesprek-open';
+    _load();
+  }
+
+  @override
+  void dispose() {
+    Rondleiding.stopLuisteren('berichten', _rondleidingVraag);
+    super.dispose();
+  }
+
+  void _rondleidingVraag(String vraag) {
+    if (!mounted) return;
+    if (vraag == 'gesprek-open') { _openGevraagd = true; _eersteOpenen(); }
+    if (vraag == 'sluit' && _chatOpen) { _chatOpen = false; Navigator.of(context).pop(); }
+  }
+
+  void _eersteOpenen() {
+    if (!_openGevraagd || _loading || _convs.isEmpty || _chatOpen) return;
+    _openGevraagd = false;
+    _chatOpen = true;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(conversation: _convs.first as Map)))
+        .then((_) { _chatOpen = false; _load(); });
+  }
   Future<void> _load() async {
-    try { final r = await Api.get('/conversations'); setState(() { _convs = r is List ? r : (r['data'] ?? []); _loading = false; }); }
+    try { final r = await Api.get('/conversations'); setState(() { _convs = r is List ? r : (r['data'] ?? []); _loading = false; });
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _eersteOpenen(); }); }
     catch (_) { setState(() => _loading = false); }
   }
 

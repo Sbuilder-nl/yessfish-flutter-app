@@ -372,7 +372,9 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
         // 'Beoordelingen' en 'Foto's en video's' onder de schermrand bleven staan en de
         // rondleiding een cirkel tekende die niemand zag (gemeten 20-09-2026).
         if (midden < bovenGrens || midden > onderGrens) {
-          if (_scrolPogingen < 4) {
+          // In de fotostand ruimer: bij een lange lijst (het dobberscherm) haalde hij het in
+          // drie van de zes talen niet binnen vier pogingen (22-09-2026).
+          if (_scrolPogingen < (_fotoStand ? 10 : 4)) {
             _scrolPogingen++;
             _naScroll = 10;
             TourAnkers.inBeeld(_stap.zoek!, uitlijning: _scrolPogingen > 2 ? 0.5 : 0.32);

@@ -20,12 +20,23 @@ const Map<String, Map<String, String>> _stL = {
   'bought': {'nl': 'Gelukt — je dobbers zijn bijgeschreven! ⭐', 'en': 'Done — your bobbers have been added! ⭐', 'de': 'Geschafft — deine Posen sind gutgeschrieben! ⭐', 'fr': 'C’est fait — flotteurs ajoutées ! ⭐', 'es': '¡Listo — boyas añadidas! ⭐', 'pl': 'Gotowe — spławiki dodane! ⭐'},
   'store_na': {'nl': 'De app store is hier niet beschikbaar. Kopen kan ook op yessfish.com bij ⭐ Dobbers.', 'en': 'The app store isn’t available here. You can also buy on yessfish.com under ⭐ Bobbers.', 'de': 'Der App-Store ist hier nicht verfügbar. Kaufen geht auch auf yessfish.com unter ⭐ Posen.', 'fr': 'Le store n’est pas disponible ici. Tu peux aussi acheter sur yessfish.com (⭐).', 'es': 'La tienda no está disponible aquí. También puedes comprar en yessfish.com (⭐).', 'pl': 'Sklep jest tu niedostępny. Możesz też kupić na yessfish.com (⭐).'},
   'verify_fail': {'nl': 'De aankoop kon niet worden gecontroleerd. Neem contact op als je wel betaald hebt.', 'en': 'The purchase could not be verified. Contact us if you were charged.', 'de': 'Der Kauf konnte nicht geprüft werden. Melde dich, falls abgebucht wurde.', 'fr': 'Achat non vérifié. Contacte-nous si tu as été débité.', 'es': 'No se pudo verificar la compra. Contáctanos si se te cobró.', 'pl': 'Nie udało się zweryfikować zakupu. Skontaktuj się z nami.'},
-  'don_t': {'nl': 'Dobbers doneren aan YessFish', 'en': 'Donate bobbers to YessFish', 'de': 'Posen an YessFish spenden', 'fr': 'Donner des \u00e9toiles \u00e0 YessFish', 'es': 'Donar boyas a YessFish', 'pl': 'Przeka\u017c spławiki YessFish'},
-  'don_hint': {'nl': 'YessFish wat gunnen? Doneer dobbers uit je saldo!', 'en': 'Want to support YessFish? Donate bobbers from your balance!', 'de': 'YessFish unterst\u00fctzen? Spende Posen aus deinem Guthaben!', 'fr': 'Envie de soutenir YessFish ? Donne des \u00e9toiles !', 'es': 'Apoya YessFish: dona boyas de tu saldo.', 'pl': 'Wesprzyj YessFish \u2014 przeka\u017c spławiki!'},
+  'don_t': {'nl': 'Dobbers doneren aan YessFish', 'en': 'Donate bobbers to YessFish', 'de': 'Posen an YessFish spenden', 'fr': 'Donner des flotteurs \u00e0 YessFish', 'es': 'Donar boyas a YessFish', 'pl': 'Przeka\u017c spławiki YessFish'},
+  'don_hint': {'nl': 'YessFish wat gunnen? Doneer dobbers uit je saldo!', 'en': 'Want to support YessFish? Donate bobbers from your balance!', 'de': 'YessFish unterst\u00fctzen? Spende Posen aus deinem Guthaben!', 'fr': 'Envie de soutenir YessFish ? Donne des flotteurs de ton solde !', 'es': 'Apoya YessFish: dona boyas de tu saldo.', 'pl': 'Wesprzyj YessFish \u2014 przeka\u017c spławiki!'},
   'don_ok': {'nl': 'Bedankt voor je donatie! \ud83d\udc9a', 'en': 'Thanks for your donation! \ud83d\udc9a', 'de': 'Danke f\u00fcr deine Spende! \ud83d\udc9a', 'fr': 'Merci pour ton don ! \ud83d\udc9a', 'es': '\u00a1Gracias por tu donaci\u00f3n! \ud83d\udc9a', 'pl': 'Dzi\u0119kujemy za wsparcie! \ud83d\udc9a'},
   'don_total': {'nl': 'door de community gedoneerd', 'en': 'donated by the community', 'de': 'von der Community gespendet', 'fr': 'donn\u00e9 par la communaut\u00e9', 'es': 'donado por la comunidad', 'pl': 'przekazane przez spo\u0142eczno\u015b\u0107'},
   'earn_t': {'nl': 'Gratis dobbers verdienen', 'en': 'Earn bobbers for free', 'de': 'Gratis Posen verdienen', 'fr': 'Gagner des flotteurs gratuitement', 'es': 'Gana boyas gratis', 'pl': 'Zdobywaj spławiki za darmo'},
   'earn_hint': {'nl': 'Vangsten openbaar delen, dieptedata doorgeven en compleet loggen levert elke dag dobbers op.', 'en': 'Sharing catches publicly, reporting depth data and complete logs earn bobbers every day.', 'de': 'Öffentliche Fänge, Tiefendaten und vollständige Logs bringen täglich Posen.', 'fr': 'Prises publiques, données de profondeur et logs complets rapportent chaque jour.', 'es': 'Capturas públicas, datos de profundidad y registros completos dan boyas a diario.', 'pl': 'Publiczne połowy, dane głębokości i pełne wpisy dają spławiki codziennie.'},
+  'r_water': {'nl': 'Openbare vangst gekoppeld aan een water', 'en': 'Public catch linked to a water', 'de': 'Öffentlicher Fang mit Gewässer verknüpft', 'fr': 'Prise publique liée à une eau', 'es': 'Captura pública vinculada a un agua', 'pl': 'Publiczny połów powiązany z wodą'},
+  'r_feed': {'nl': 'Ook op de feed gezet', 'en': 'Also shared on the feed', 'de': 'Auch im Feed geteilt', 'fr': 'Aussi partagée sur le fil', 'es': 'También compartida en el feed', 'pl': 'Udostępniony też na feedzie'},
+  'r_photo': {'nl': 'Bonus: foto bij je vangst', 'en': 'Bonus: photo with your catch', 'de': 'Bonus: Foto beim Fang', 'fr': 'Bonus : photo avec ta prise', 'es': 'Bonus: foto con tu captura', 'pl': 'Bonus: zdjęcie przy połowie'},
+  'r_fresh': {'nl': 'Bonus: op de vangdag zelf gelogd', 'en': 'Bonus: logged on the day itself', 'de': 'Bonus: am Fangtag selbst geloggt', 'fr': 'Bonus : enregistrée le jour même', 'es': 'Bonus: registrada el mismo día', 'pl': 'Bonus: dodane w dniu połowu'},
+  'r_complete': {'nl': 'Bonus: compleet — openbaar + water + stek', 'en': 'Bonus: complete — public + water + spot', 'de': 'Bonus: komplett — öffentlich + Gewässer + Stelle', 'fr': 'Bonus : complet — public + eau + spot', 'es': 'Bonus: completa — pública + agua + spot', 'pl': 'Bonus: komplet — publiczny + woda + miejsce'},
+  'r_streak': {'nl': 'Dagelijkse reeks: elke dag iets doen', 'en': 'Daily streak: do something every day', 'de': 'Tägliche Serie: jeden Tag etwas tun', 'fr': 'Série quotidienne : faire quelque chose chaque jour', 'es': 'Racha diaria: haz algo cada día', 'pl': 'Codzienna seria: zrób coś każdego dnia'},
+  'r_streak_week': {'nl': 'Dag 7 van de reeks: weekbonus', 'en': 'Day 7 of the streak: weekly bonus', 'de': 'Tag 7 der Serie: Wochenbonus', 'fr': 'Jour 7 de la série : bonus hebdomadaire', 'es': 'Día 7 de la racha: bonus semanal', 'pl': 'Dzień 7 serii: bonus tygodniowy'},
+  'r_schoon': {'nl': 'Visplek schoon achtergelaten (foto voor en na)', 'en': 'Left your swim clean (photo before and after)', 'de': 'Angelplatz sauber hinterlassen (Foto davor und danach)', 'fr': 'Poste laissé propre (photo avant et après)', 'es': 'Puesto dejado limpio (foto antes y después)', 'pl': 'Stanowisko zostawione czyste (zdjęcie przed i po)'},
+  'r_vismaat': {'nl': 'Vismaat uitgenodigd die zijn eerste vangst logt', 'en': 'Invited buddy logs their first catch', 'de': 'Eingeladener Angelkumpel loggt seinen ersten Fang', 'fr': 'Un copain invité enregistre sa première prise', 'es': 'Un compañero invitado registra su primera captura', 'pl': 'Zaproszony kompan dodaje swój pierwszy połów'},
+  'r_depth': {'nl': 'Dieptedata van een water aanleveren', 'en': 'Contribute depth data for a water', 'de': 'Tiefendaten für ein Gewässer liefern', 'fr': 'Fournir des données de profondeur pour une eau', 'es': 'Aportar datos de profundidad de un agua', 'pl': 'Przekaż dane o głębokości dla wody'},
+  'caps': {'nl': 'Dagmaximum: vangsten 9 🎣 + bonussen 6 🎣 per dag. Dieptedata en de reeks tellen los.', 'en': 'Daily max: catches 9 🎣 + bonuses 6 🎣 per day. Depth data and the streak are separate.', 'de': 'Tagesmax: Fänge 9 🎣 + Boni 6 🎣 pro Tag. Tiefendaten und Serie zählen separat.', 'fr': 'Max/jour : prises 9 🎣 + bonus 6 🎣. La profondeur et la série comptent à part.', 'es': 'Máx/día: capturas 9 🎣 + bonus 6 🎣. La profundidad y la racha cuentan aparte.', 'pl': 'Dziennie max: połowy 9 🎣 + bonusy 6 🎣. Głębokość i seria liczą się osobno.'},
   'spend_t': {'nl': 'Dit kun je ermee doen', 'en': 'What you can spend them on', 'de': 'Dafür kannst du sie ausgeben', 'fr': 'À quoi les dépenser', 'es': 'En qué gastarlas', 'pl': 'Na co je wydać'},
   'spend_update': {'nl': 'Dieptelaag-update (nieuwe metingen)', 'en': 'Depth layer update (new soundings)', 'de': 'Tiefenkarten-Update (neue Messungen)', 'fr': 'Mise à jour de la profondeur', 'es': 'Actualización de profundidad', 'pl': 'Aktualizacja głębokości'},
   'spend_ai': {'nl': 'Extra AI-vraag (1 per dag gratis)', 'en': 'Extra AI question (1 free per day)', 'de': 'Extra KI-Frage (1 pro Tag gratis)', 'fr': 'Question IA en plus (1 gratuite/jour)', 'es': 'Pregunta IA extra (1 gratis/día)', 'pl': 'Dodatkowe pytanie AI (1 dziennie gratis)'},
@@ -48,6 +59,11 @@ class SterrenScreen extends StatefulWidget {
 
 class _SterrenScreenState extends State<SterrenScreen> {
   int _saldo = 0;
+  /// Wat elke actie oplevert — net als op de site uit /coins, zodat we het maar op één plek
+  /// bijhouden. Ontbreekt het, dan tonen we de waarde die de server standaard hanteert.
+  Map _beloningen = const {};
+  String _beloning(String sleutel, int standaard) =>
+      '${(_beloningen[sleutel] as num?)?.toInt() ?? standaard}';
   Map<String, dynamic>? _streak;
   int _donTotaal = 0;
   List<dynamic> _bundles = [];
@@ -71,7 +87,7 @@ class _SterrenScreenState extends State<SterrenScreen> {
   Future<void> _load() async {
     try {
       final r = await Api.get('/store/bundles');
-      if (mounted && r is Map) setState(() { _bundles = r['bundles'] ?? []; _saldo = (r['ai_points'] as num?)?.toInt() ?? 0; _donTotaal = (r['donated_total'] as num?)?.toInt() ?? 0; });
+      if (mounted && r is Map) setState(() { _bundles = r['bundles'] ?? []; _beloningen = r['rewards'] is Map ? r['rewards'] as Map : const {}; _saldo = (r['ai_points'] as num?)?.toInt() ?? 0; _donTotaal = (r['donated_total'] as num?)?.toInt() ?? 0; });
     } catch (_) {}
     final st = await StreakData.load(force: true);
     if (mounted) setState(() => _streak = st);
@@ -193,11 +209,30 @@ class _SterrenScreenState extends State<SterrenScreen> {
           const SizedBox(height: 18),
           // Verdienen + uitgeven (kort)
           Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TourAnker(id: 'dobbers-verdienen', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('🎣 ${stt(context, 'earn_t')}', style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text(stt(context, 'earn_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+              const SizedBox(height: 8),
+              // Het anker om de lijst zelf: mét kop erbij werd het blok zo hoog dat er geen kader
+              // meer omheen paste en de stap zonder aanwijzing op de foto kwam (22-09-2026).
+              TourAnker(id: 'dobbers-verdienen', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Dezelfde lijst als op de site, met de aantallen van de server. De app liet alleen
+              // de samenvatting zien, terwijl de handleiding de bedragen noemde (22-09-2026).
+              _regel('🎣', stt(context, 'r_water'), '+${_beloning('catch_water', 2)}'),
+              _regel('📢', stt(context, 'r_feed'), '+${_beloning('catch_feed', 1)}'),
+              _regel('📸', stt(context, 'r_photo'), '+${_beloning('catch_photo', 1)}'),
+              _regel('⏱️', stt(context, 'r_fresh'), '+${_beloning('catch_fresh', 1)}'),
+              _regel('🧩', stt(context, 'r_complete'), '+${_beloning('catch_complete', 1)}'),
+              _regel('🔥', stt(context, 'r_streak'), '+1'),
+              _regel('🎁', stt(context, 'r_streak_week'), '+10'),
+              _regel('🧹', stt(context, 'r_schoon'), '+1 / +2'),
+              _regel('🤝', stt(context, 'r_vismaat'), '+5'),
+              _regel('🌊', stt(context, 'r_depth'), '+${_beloning('depth_share', 10)}'),
+              const SizedBox(height: 4),
+              Text(stt(context, 'caps'), style: const TextStyle(fontSize: 11, color: Colors.black38)),
             ])),
+            ]),
             const Divider(height: 20),
             TourAnker(id: 'dobbers-uitgeven', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(stt(context, 'spend_t'), style: const TextStyle(fontWeight: FontWeight.w700)),
