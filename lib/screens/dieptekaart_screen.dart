@@ -22,6 +22,7 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
   Uint8List? _png;
   LatLngBounds? _bounds;
   double _min = 0, _max = 0;
+  double _schaal = 0;   // tot hier lopen de kleuren (97e percentiel); dieper = donkerst
   String _naam = '';
   String _fout = '';
   final List<Map> _stekken = [];
@@ -54,6 +55,7 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
         _bounds = bounds;
         _min = (r['min_depth'] as num).toDouble();
         _max = (r['max_depth'] as num).toDouble();
+        _schaal = ((r['scale_max'] as num?) ?? (r['max_depth'] as num)).toDouble();
       });
     } on ApiException catch (e) {
       if (mounted) setState(() => _fout = e.message);
@@ -149,7 +151,10 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
                         Text('${_min.toStringAsFixed(1)} m', style: const TextStyle(fontSize: 11, color: Colors.black54)),
                         Container(margin: const EdgeInsets.symmetric(horizontal: 8), width: 140, height: 10,
                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), gradient: const LinearGradient(colors: [Color(0xFFBAE6FD), Color(0xFF60A5FA), Color(0xFF2563EB), Color(0xFF1E40AF), Color(0xFF0F1946)]))),
-                        Text('${_max.toStringAsFixed(1)} m', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                        Text(_schaal < _max - 0.5
+                            ? '${_schaal.toStringAsFixed(0)} m+'
+                            : '${_max.toStringAsFixed(1)} m',
+                          style: const TextStyle(fontSize: 11, color: Colors.black54)),
                       ]),
                     ]),
                   ))),

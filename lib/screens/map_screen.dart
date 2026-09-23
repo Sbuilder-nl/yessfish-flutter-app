@@ -36,6 +36,7 @@ import '../widgets/feed_video.dart';
 import '../widgets/water_depth_panel.dart';
 import 'quick_catch_screen.dart';
 import 'sterren_screen.dart';
+import 'dieptekaart_screen.dart';
 
 /// Fotostand: bouw ook wat onder de vouw staat, zodat de rondleiding élk anker vindt.
 /// Een ListView bouwt normaal alleen het zichtbare deel; dan blijven ankers verderop leeg en
@@ -1437,6 +1438,8 @@ class _MapScreenState extends State<MapScreen> {
         if (bezig && lijst.isEmpty) haal(setS);
 
         Future<void> ontgrendel(Map<String, dynamic> w) async {
+          // Navigator vóór de wachttijd pakken: daarna is de context mogelijk al weg.
+          final nav = Navigator.of(context);
           setS(() { melding = ''; tekort = false; });
           try {
             await Api.post('/waters/${w['id']}/depth-unlock', {});
@@ -1445,6 +1448,11 @@ class _MapScreenState extends State<MapScreen> {
               w['ontgrendelbaar'] = false;
               melding = '${w['name']}: ${_mt(ctx, const {'nl': 'ontgrendeld', 'en': 'unlocked', 'de': 'freigeschaltet', 'fr': 'débloqué', 'es': 'desbloqueado', 'pl': 'odblokowano'})} ✓';
             });
+            // Net als op de site: na het ontgrendelen gaat de dieptekaart meteen open.
+            if (mounted) {
+              Navigator.pop(bladCtx);
+              await nav.push(MaterialPageRoute(builder: (_) => DieptekaartScreen(waterId: w['id'])));
+            }
           } on ApiException catch (e) {
             setS(() { melding = e.message; tekort = e.data is Map && e.data['code'] == 'insufficient_bobbers'; });
           } catch (_) {
@@ -1454,12 +1462,19 @@ class _MapScreenState extends State<MapScreen> {
           }
         }
 
+        /// Ontgrendeld? Dan de dieptekaart van dít water openen — een eigen scherm met het
+        /// gerenderde plaatje, niet de laag op de viskaart (Richard 23-09-2026).
+        void bekijk(Map<String, dynamic> w) {
+          Navigator.pop(bladCtx);
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => DieptekaartScreen(waterId: w['id'])));
+        }
+
+        /// Nog vergrendeld: laat op de viskaart zien waar het water ligt.
         void naarKaart(Map<String, dynamic> w) {
           Navigator.pop(bladCtx);
           final lat = (w['latitude'] as num?)?.toDouble();
           final lng = (w['longitude'] as num?)?.toDouble();
           if (lat == null || lng == null) return;
-          if (!_depthOn) _setDepth(true);
           _map.move(LatLng(lat, lng), 12);
         }
 
@@ -1493,7 +1508,7 @@ class _MapScreenState extends State<MapScreen> {
               else if (afstand != null) '${afstand.round()} km',
             ].join(' · '), style: const TextStyle(fontSize: 12)),
             trailing: vanMij
-              ? TextButton(onPressed: () => naarKaart(w), child: Text(_mt(ctx, const {'nl': 'Bekijken', 'en': 'View', 'de': 'Ansehen', 'fr': 'Voir', 'es': 'Ver', 'pl': 'Zobacz'}), style: const TextStyle(fontSize: 13)))
+              ? TextButton(onPressed: () => bekijk(w), child: Text(_mt(ctx, const {'nl': 'Bekijken', 'en': 'View', 'de': 'Ansehen', 'fr': 'Voir', 'es': 'Ver', 'pl': 'Zobacz'}), style: const TextStyle(fontSize: 13)))
               // Oudere API's sturen dit veld niet mee; dan gewoon de knop tonen.
               : (w['ontgrendelbaar'] != false
                   ? FilledButton(
@@ -1501,7 +1516,7 @@ class _MapScreenState extends State<MapScreen> {
                       style: FilledButton.styleFrom(backgroundColor: AppColors.teal, visualDensity: VisualDensity.compact),
                       child: DobberText('${_mt(ctx, const {'nl': 'Ontgrendel', 'en': 'Unlock', 'de': 'Freischalten', 'fr': 'Débloquer', 'es': 'Desbloquear', 'pl': 'Odblokuj'})} ($kosten ⭐)', style: const TextStyle(fontSize: 12.5)))
                   : null),
-            onTap: () => naarKaart(w),
+            onTap: () => vanMij ? bekijk(w) : naarKaart(w),
           );
         }
 
