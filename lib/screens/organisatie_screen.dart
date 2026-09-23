@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import 'dart:math' as wisk;
+import '../core/location.dart' as loc;
 import '../core/rondleiding.dart';
 import 'federatie_screen.dart';
 import 'map_screen.dart';
@@ -50,9 +52,29 @@ class _OrganisatieScreenState extends State<OrganisatieScreen> {
   bool _alleEigenWateren = false;
   bool _alleOrgWateren = false;
 
+  /// Waar staat het lid? Voor de afstand achter elk water (23-09-2026).
+  loc.LatLng? _ikSta;
+
+  Future<void> _haalMijnPlek() async {
+    try {
+      final p = await loc.currentLocation();
+      if (mounted && p.isReal) setState(() => _ikSta = p);
+    } catch (_) {}
+  }
+
+  /// Hemelsbrede afstand in kilometers.
+  double _kmTussen(double la1, double lo1, double la2, double lo2) {
+    const r = 6371.0;
+    final dLa = (la2 - la1) * wisk.pi / 180, dLo = (lo2 - lo1) * wisk.pi / 180;
+    final a = wisk.sin(dLa / 2) * wisk.sin(dLa / 2) +
+        wisk.cos(la1 * wisk.pi / 180) * wisk.cos(la2 * wisk.pi / 180) * wisk.sin(dLo / 2) * wisk.sin(dLo / 2);
+    return r * 2 * wisk.atan2(wisk.sqrt(a), wisk.sqrt(1 - a));
+  }
+
   @override
   void initState() {
     super.initState();
+    _haalMijnPlek();
     _haalOp();
   }
 
@@ -473,7 +495,7 @@ class _OrganisatieScreenState extends State<OrganisatieScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                _t(c, _lOrgWateren)
+                _t(c, _ikSta != null ? _lOrgWateren : _lOrgWaterenZonderGps)
                     .replaceAll('{pas}', _tekst(orgWateren['pas']))
                     .replaceAll('{km}', '${orgWateren['radius_km'] ?? ''}'),
                 style: const TextStyle(fontSize: 12, color: Colors.black54),
@@ -657,7 +679,12 @@ class _OrganisatieScreenState extends State<OrganisatieScreen> {
     if (naam.isEmpty) return const SizedBox.shrink();
     final id = _id(w['id']);
     final vergunning = _vergunning(c, _tekst(w['permit_type']));
-    final km = w['distance_km'];
+    // Vanaf het lid als we weten waar hij staat; anders wat de server gaf (vanaf de vereniging).
+    final ik = _ikSta;
+    final wLa = _getal6(w['latitude']), wLo = _getal6(w['longitude']);
+    final km = (ik != null && wLa != null && wLo != null)
+        ? double.parse(_kmTussen(ik.lat, ik.lng, wLa, wLo).toStringAsFixed(1))
+        : w['distance_km'];
     return InkWell(
       onTap: id == null ? null : () => _openKaart(waterId: id),
       child: Container(
@@ -882,12 +909,21 @@ const _lWateren = {'nl': 'Wateren', 'en': 'Waters', 'de': 'Gewässer', 'fr': 'Ea
 // De afstand achter elk water is de afstand tot DEZE vereniging, niet tot waar jij staat.
 // Zonder dat erbij las het als "zo ver is het voor mij" en klopte het niet (Richard 23-09-2026).
 const _lOrgWateren = {
-  'nl': 'Hier mag je ook vissen met de {pas}. Binnen {km} km van deze vereniging; de afstand staat achter elk water.',
-  'en': 'You may also fish here with the {pas}. Within {km} km of this club; the distance is shown after each water.',
-  'de': 'Hier darfst du auch mit dem {pas} angeln. Im Umkreis von {km} km um diesen Verein; die Entfernung steht hinter jedem Gewässer.',
-  'fr': 'Vous pouvez aussi pêcher ici avec la {pas}. Dans un rayon de {km} km autour de cette association ; la distance figure après chaque plan d’eau.',
-  'es': 'Aquí también puedes pescar con el {pas}. A menos de {km} km de este club; la distancia aparece tras cada agua.',
-  'pl': 'Tutaj też możesz łowić z {pas}. W promieniu {km} km od tego koła; odległość podana jest przy każdej wodzie.',
+  'nl': 'Hier mag je ook vissen met de {pas}. Binnen {km} km van deze vereniging; de afstand achter elk water is vanaf jou.',
+  'en': 'You may also fish here with the {pas}. Within {km} km of this club; the distance after each water is from where you are.',
+  'de': 'Hier darfst du auch mit dem {pas} angeln. Im Umkreis von {km} km um diesen Verein; die Entfernung hinter jedem Gewässer gilt ab deinem Standort.',
+  'fr': 'Vous pouvez aussi pêcher ici avec la {pas}. Dans un rayon de {km} km autour de cette association ; la distance après chaque plan d’eau est calculée depuis votre position.',
+  'es': 'Aquí también puedes pescar con el {pas}. A menos de {km} km de este club; la distancia tras cada agua es desde donde estás.',
+  'pl': 'Tutaj też możesz łowić z {pas}. W promieniu {km} km od tego koła; odległość przy każdej wodzie liczona jest od twojego miejsca.',
+};
+/// Zonder locatie kunnen we niet vanaf het lid rekenen; dan is het de afstand tot de vereniging.
+const _lOrgWaterenZonderGps = {
+  'nl': 'Hier mag je ook vissen met de {pas}. Binnen {km} km van deze vereniging; de afstand achter elk water is vanaf de vereniging (zet je locatie aan voor de afstand vanaf jou).',
+  'en': 'You may also fish here with the {pas}. Within {km} km of this club; the distance after each water is from the club (turn on your location for the distance from you).',
+  'de': 'Hier darfst du auch mit dem {pas} angeln. Im Umkreis von {km} km um diesen Verein; die Entfernung gilt ab dem Verein (Standort einschalten für die Entfernung ab dir).',
+  'fr': 'Vous pouvez aussi pêcher ici avec la {pas}. Dans un rayon de {km} km autour de cette association ; la distance est calculée depuis l’association (activez votre position pour la distance depuis vous).',
+  'es': 'Aquí también puedes pescar con el {pas}. A menos de {km} km de este club; la distancia es desde el club (activa tu ubicación para la distancia desde ti).',
+  'pl': 'Tutaj też możesz łowić z {pas}. W promieniu {km} km od tego koła; odległość liczona jest od koła (włącz lokalizację, aby liczyć od siebie).',
 };
 const _lToonAlles = {
   'nl': 'Alle {n} tonen',
