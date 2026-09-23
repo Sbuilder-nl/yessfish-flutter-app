@@ -78,20 +78,27 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
+    // Net als op de site: zodra er een foto is, kijkt de herkenning mee. Hij vult alleen een leeg
+    // soortveld — wat jij zelf typte blijft staan.
+    if (mounted && _photos.isNotEmpty) await _identify();
   }
 
-  Future<void> _identify() async {
-    if (_photos.isEmpty) return;
+  /// Herkenning op de foto. `forceer` = jij drukte op de knop: dan mag hij je eigen soort
+  /// overschrijven. Vanzelf (na het toevoegen van een foto) laat hij ingevulde tekst staan —
+  /// precies zoals op de site (23-09-2026).
+  Future<void> _identify({bool forceer = false}) async {
+    if (_photos.isEmpty || _identifying) return;
     setState(() { _identifying = true; _aiTip = null; });
     try {
       final r = await Api.post('/catches/identify', {'path': _photos.first['path']});
       Analytics.log('ai_identify');
       if (r['is_fish'] == true && r['species_nl'] != null) {
+        final zelfIngevuld = _species.text.trim().isNotEmpty;
         setState(() {
-          _species.text = r['species_nl'];
+          if (forceer || !zelfIngevuld) _species.text = r['species_nl'];
           // De herkenning geeft de soort er al bij; die koppelen we meteen, anders blijft het
           // alsnog vrije tekst en telt de vangst niet mee in de statistieken.
-          _speciesId = (r['species_id'] as num?)?.toInt();
+          if (forceer || !zelfIngevuld) _speciesId = (r['species_id'] as num?)?.toInt();
           final conf = ((r['confidence'] ?? 0) as num).round();
           _aiTip = '${r['species_nl']} ($conf% ${context.tr('newcatch.sure')})${r['tip'] != null ? '\n${r['tip']}' : ''}';
         });
@@ -395,7 +402,7 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
         // Altijd zichtbaar, grijs zolang er geen foto is: zo weet je dat de herkenning bestaat, en
         // kan de handleiding hem aanwijzen (die had hier in geen taal een plaatje, 22-09-2026).
         Padding(padding: const EdgeInsets.only(top: 8),
-          child: TourAnker(id: 'vangst-ai', child: FilledButton.icon(onPressed: (_identifying || _photos.isEmpty) ? null : _identify,
+          child: TourAnker(id: 'vangst-ai', child: FilledButton.icon(onPressed: (_identifying || _photos.isEmpty) ? null : () => _identify(forceer: true),
             icon: _identifying ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome),
             label: Text(context.tr('newcatch.identify'))))),
         if (_aiTip != null) Padding(padding: const EdgeInsets.only(top: 8),
