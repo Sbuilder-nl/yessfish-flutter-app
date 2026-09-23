@@ -82,6 +82,12 @@ class YessFishApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         home: const RootGate(),
+        // De app tekent achter de systeembalken (edge-to-edge, zie hierboven). Zonder deze
+        // ruimte valt de onderkant van elk scherm onder de navigatiebalk van de telefoon: het
+        // laatste item van een lijst, een balkje onderin — je kon er niet bij en scrollen hielp
+        // niet (Richard 23-09-2026, dieptekaart én gids). Eén keer hier geregeld geldt het voor
+        // alle schermen, ook voor bladen en dialogen.
+        builder: (ctx, child) => SafeArea(top: false, child: child ?? const SizedBox.shrink()),
       )),
     );
   }

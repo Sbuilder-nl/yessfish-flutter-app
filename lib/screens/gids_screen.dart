@@ -10,9 +10,24 @@ import 'organisatie_screen.dart';
 import 'federatie_screen.dart';
 
 /// Pagina op de website openen in de app-browser (partner worden, adverteren).
+///
+/// Die pagina's zitten achter de weblogin, en de browser weet niets van de app-login. Daarom
+/// halen we eerst een kort geldig kaartje op en openen we /app-login, dat de browser inlogt en
+/// meteen doorstuurt (Richard 23-09-2026: "stuurt me naar inlog terwijl ik ingelogd ben").
 Future<void> openWebPagina(String pad) async {
   final lang = I18n.instance?.locale ?? 'nl';
-  final url = Uri.parse('${Config.webOrigin}$pad${pad.contains('?') ? '&' : '?'}lang=$lang');
+  var adres = '${Config.webOrigin}$pad${pad.contains('?') ? '&' : '?'}lang=$lang';
+  try {
+    final r = await Api.post('/auth/web-ticket', {});
+    final kaartje = r is Map ? r['ticket'] : null;
+    if (kaartje is String && kaartje.isNotEmpty) {
+      adres = '${Config.webOrigin}/app-login?ticket=${Uri.encodeComponent(kaartje)}'
+          '&next=${Uri.encodeComponent(pad)}&lang=$lang';
+    }
+  } catch (_) {
+    // Geen kaartje (geen net of oudere server): gewoon de pagina openen.
+  }
+  final url = Uri.parse(adres);
   try { await launchUrl(url, mode: LaunchMode.inAppBrowserView); } catch (_) { await launchUrl(url, mode: LaunchMode.externalApplication); }
 }
 

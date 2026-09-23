@@ -141,7 +141,9 @@ class _DieptekaartScreenState extends State<DieptekaartScreen> {
                       ]),
                     ],
                   ),
-                  Positioned(left: 0, right: 0, bottom: 14, child: Center(child: Container(
+                  // De app tekent achter de systeembalken (edge-to-edge). Zonder deze ruimte
+                  // valt het balkje onder de navigatiebalk van de telefoon (Richard 23-09-2026).
+                  Positioned(left: 0, right: 0, bottom: 14 + MediaQuery.of(context).padding.bottom, child: Center(child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(color: Colors.white.withValues(alpha: .95), borderRadius: BorderRadius.circular(12)),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [

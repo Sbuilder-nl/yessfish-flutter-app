@@ -174,6 +174,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
   /// je een stap en sprong hij na een seconde uit zichzelf door (Richard 20-09-2026: "gaat soms
   /// extra stappen zelf vooruit"). Daarom: eerst zoeken, dan pas tonen.
   bool _stilZoeken = false;
+  Rect? _vorigeMeting;   // stond de knop na een scrolpoging nog op dezelfde plek?
 
   /// Hoe vaak we al naar de knop hebben gescrold, en hoeveel tikken we nog op de
   /// scrol? Zonder dat wachten meten we het vlak midden in de beweging en wijst de cirkel mis.
@@ -354,6 +355,14 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
     _naScroll = 0;
     _scrolPogingen = 0;
     _zoekAfgerond = false;
+    _vorigeMeting = null;
+    // Zoekt hij langer dan een halve seconde, dan tonen we de laag toch: anders lijkt het of de
+    // app niets doet. Alleen in de fotostand blijft alles onzichtbaar.
+    if (_stilZoeken && ! _fotoStand) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _stilZoeken && ! _zoekAfgerond) setState(() => _stilZoeken = false);
+      });
+    }
     _zoeker = Timer.periodic(const Duration(milliseconds: 100), (t) {
       final r = TourAnkers.vlak(_stap.zoek!);
       if (r != null) {
@@ -372,11 +381,15 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
         // 'Beoordelingen' en 'Foto's en video's' onder de schermrand bleven staan en de
         // rondleiding een cirkel tekende die niemand zag (gemeten 20-09-2026).
         if (midden < bovenGrens || midden > onderGrens) {
+          // Knop die niet meebeweegt (titelbalk, vaste balk onderin): niet blijven proberen.
+          // Dat kostte vier seconden waarin het scherm er doodstil bij lag (23-09-2026).
+          final blijftStaan = _vorigeMeting != null && (r.top - _vorigeMeting!.top).abs() < 2;
+          _vorigeMeting = r;
           // In de fotostand ruimer: bij een lange lijst (het dobberscherm) haalde hij het in
           // drie van de zes talen niet binnen vier pogingen (22-09-2026).
-          if (_scrolPogingen < (_fotoStand ? 10 : 4)) {
+          if (! blijftStaan && _scrolPogingen < (_fotoStand ? 10 : 4)) {
             _scrolPogingen++;
-            _naScroll = 10;
+            _naScroll = _fotoStand ? 10 : 4;
             TourAnkers.inBeeld(_stap.zoek!, uitlijning: _scrolPogingen > 2 ? 0.5 : 0.32);
             return;
           }
