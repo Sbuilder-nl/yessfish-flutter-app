@@ -349,6 +349,13 @@ class _NewCatchScreenState extends State<NewCatchScreen> {
       }
       final r = await Api.post('/catches', body);
       Analytics.log('catch_created');
+      // Geen vis op de foto? Dan is het geen vangst: wel geplaatst, maar zonder dobbers en punten.
+      // De server bepaalt dat; wij vertellen het alleen (23-09-2026).
+      final gegevens = (r is Map) ? ((r['data'] is Map ? r['data'] : r) as Map) : const {};
+      if (gegevens['telt_als_vangst'] == false && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('newcatch.geenVisTelt')), duration: const Duration(seconds: 7)));
+      }
       // Vriendelijke reminder: niet op de feed gedeeld → +1 dobber als je het alsnog doet.
       final gedeeld = _privacy == 'public' && _showInFeed;
       final catchId = (r is Map) ? ((r['data'] is Map ? r['data']['id'] : r['id'])) : null;
