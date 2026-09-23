@@ -879,13 +879,15 @@ const _lRegelsExtra = {
   'pl': 'Zasady koła obowiązują dodatkowo do zasad ogólnych i mogą być surowsze.',
 };
 const _lWateren = {'nl': 'Wateren', 'en': 'Waters', 'de': 'Gewässer', 'fr': 'Eaux', 'es': 'Aguas', 'pl': 'Wody'};
+// De afstand achter elk water is de afstand tot DEZE vereniging, niet tot waar jij staat.
+// Zonder dat erbij las het als "zo ver is het voor mij" en klopte het niet (Richard 23-09-2026).
 const _lOrgWateren = {
-  'nl': 'Hier mag je ook vissen met de {pas}, binnen {km} km.',
-  'en': 'You may also fish here with the {pas}, within {km} km.',
-  'de': 'Hier darfst du auch mit dem {pas} angeln, im Umkreis von {km} km.',
-  'fr': 'Vous pouvez aussi pêcher ici avec la {pas}, dans un rayon de {km} km.',
-  'es': 'Aquí también puedes pescar con el {pas}, dentro de {km} km.',
-  'pl': 'Tutaj też możesz łowić z {pas}, w promieniu {km} km.',
+  'nl': 'Hier mag je ook vissen met de {pas}. Binnen {km} km van deze vereniging; de afstand staat achter elk water.',
+  'en': 'You may also fish here with the {pas}. Within {km} km of this club; the distance is shown after each water.',
+  'de': 'Hier darfst du auch mit dem {pas} angeln. Im Umkreis von {km} km um diesen Verein; die Entfernung steht hinter jedem Gewässer.',
+  'fr': 'Vous pouvez aussi pêcher ici avec la {pas}. Dans un rayon de {km} km autour de cette association ; la distance figure après chaque plan d’eau.',
+  'es': 'Aquí también puedes pescar con el {pas}. A menos de {km} km de este club; la distancia aparece tras cada agua.',
+  'pl': 'Tutaj też możesz łowić z {pas}. W promieniu {km} km od tego koła; odległość podana jest przy każdej wodzie.',
 };
 const _lToonAlles = {
   'nl': 'Alle {n} tonen',

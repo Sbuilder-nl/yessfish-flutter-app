@@ -134,6 +134,24 @@ class _MapScreenState extends State<MapScreen> {
   /// De laatste openbare vangsten bij dit water. Eén keer ophalen per water.
   final Map<int, Future<List>> _vangstCache = {};
 
+  /// "2026-09-02T17:32:00.000000Z" of "2026-09-02 17:32" → "02-09-2026".
+  String _korteDatum(dynamic v) {
+    final s = '${v ?? ''}';
+    if (s.length < 10) return s;
+    final d = s.substring(0, 10).split('-');
+    return d.length == 3 ? '${d[2]}-${d[1]}-${d[0]}' : s.substring(0, 10);
+  }
+
+  /// Soortnaam van een vangst. De server stuurt `species` soms als tekst ("Brasem") en soms als
+  /// object met een naam; lees allebei, anders klapt het waterblad eruit (23-09-2026).
+  String _soortNaam(Map c) {
+    final tekst = c['species_text'];
+    if (tekst != null && '$tekst'.trim().isNotEmpty) return '$tekst'.trim();
+    final soort = c['species'];
+    if (soort is Map) return '${soort['name'] ?? ''}'.trim();
+    return soort == null ? '' : '$soort'.trim();
+  }
+
   Future<List> _vangstenBij(Map w) {
     final id = (w['id'] as num?)?.toInt() ?? -1;
     return _vangstCache.putIfAbsent(id, () async {
@@ -858,12 +876,12 @@ class _MapScreenState extends State<MapScreen> {
                     const Icon(Icons.set_meal, size: 15, color: AppColors.teal),
                     const SizedBox(width: 6),
                     Expanded(child: Text(
-                        '${(c as Map)['species_text'] ?? c['species']?['name'] ?? ''}'.trim().isEmpty
+                        _soortNaam(c as Map).isEmpty
                             ? mui(context, 'catches_here')
-                            : '${c['species_text'] ?? c['species']?['name']}',
+                            : _soortNaam(c),
                         maxLines: 1, overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 13))),
-                    Text('${c['caught_at'] ?? ''}'.split(' ').first,
+                    Text(_korteDatum(c['caught_at']),
                         style: const TextStyle(fontSize: 11, color: Colors.black38)),
                   ])),
               ]));
