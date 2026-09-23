@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:intl/intl.dart';
 import '../core/api.dart';
 import '../core/units.dart';
 import '../core/analytics.dart';
@@ -30,9 +31,11 @@ import '../widgets/photo_viewer.dart';
 import '../widgets/fish_rating.dart';
 import 'package:video_compress/video_compress.dart';
 import '../widgets/dobber_loader.dart';
+import '../widgets/dobber_text.dart';
 import '../widgets/feed_video.dart';
 import '../widgets/water_depth_panel.dart';
 import 'quick_catch_screen.dart';
+import 'sterren_screen.dart';
 
 /// Fotostand: bouw ook wat onder de vouw staat, zodat de rondleiding élk anker vindt.
 /// Een ListView bouwt normaal alleen het zichtbare deel; dan blijven ankers verderop leeg en
@@ -1404,76 +1407,156 @@ class _MapScreenState extends State<MapScreen> {
     return m[l] ?? m['en'] ?? m['nl'] ?? '';
   }
 
-  /// Lijst met wateren waar diepte beschikbaar is, in twee groepen.
+  /// Alle wateren waar een dieptekaart van is — van jou bovenaan, de rest eronder.
   ///
-  /// De server bepaalt welke dat zijn (wat in beeld is, plus wat je zelf hebt ontgrendeld of
-  /// waar je zelf deelt). Tik op een water en de kaart vliegt ernaartoe met de dieptelaag aan.
+  /// De server stuurt de hele lijst mee (het zijn er enkele tientallen) en zet op volgorde: wat
+  /// in beeld ligt eerst, daarna op afstand. Ontgrendelen kan hier meteen, zodat je niet eerst
+  /// naar het water hoeft te varen (Richard 23-09-2026).
   Future<void> _toonDiepteWateren() async {
     final b = _map.camera.visibleBounds;
-    showModalBottomSheet(context: context, isScrollControlled: true, builder: (bladCtx) => FutureBuilder(
-      future: Api.get('/depth/wateren?minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}'),
-      builder: (ctx, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+    List<Map<String, dynamic>> lijst = [];
+    int kosten = 0;
+    bool bezig = true;
+    String zoek = '';
+    String melding = '';
+    bool tekort = false;
+
+    Future<void> haal(void Function(void Function()) setS) async {
+      try {
+        final r = await Api.get('/depth/wateren?minLat=${b.south}&minLng=${b.west}&maxLat=${b.north}&maxLng=${b.east}');
+        if (r is Map && r['data'] is List) {
+          lijst = List<Map<String, dynamic>>.from((r['data'] as List).map((e) => Map<String, dynamic>.from(e)));
+          kosten = (r['kosten'] as num?)?.toInt() ?? 0;
         }
-        final r = snap.data;
-        final lijst = (r is Map && r['data'] is List) ? List<Map<String, dynamic>>.from((r['data'] as List).map((e) => Map<String, dynamic>.from(e))) : <Map<String, dynamic>>[];
-        final kosten = (r is Map ? (r['kosten'] as num?)?.toInt() : null) ?? 0;
-        final mijne = lijst.where((w) => w['ontgrendeld'] == true).toList();
-        final rest = lijst.where((w) => w['ontgrendeld'] != true).toList();
+      } catch (_) {}
+      setS(() => bezig = false);
+    }
 
-        Widget regel(Map<String, dynamic> w, {required bool vanMij}) => ListTile(
-          leading: Icon(vanMij ? Icons.check_circle : Icons.lock_outline,
-            color: vanMij ? const Color(0xFF16A34A) : Colors.black38, size: 20),
-          title: Text('${w['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text([
-            '${w['vakken'] ?? 0} ${_mt(ctx, const {'nl': 'vakken', 'en': 'cells', 'de': 'Felder', 'fr': 'cases', 'es': 'celdas', 'pl': 'pól'})}',
-            if ((w['vissers'] as num?) != null && (w['vissers'] as num) > 0)
-              '${w['vissers']} ${_mt(ctx, const {'nl': 'vissers', 'en': 'anglers', 'de': 'Angler', 'fr': 'pêcheurs', 'es': 'pescadores', 'pl': 'wędkarzy'})}',
-            if (w['officieel'] == true) _mt(ctx, const {'nl': 'officiële meting', 'en': 'official survey', 'de': 'amtliche Messung', 'fr': 'relevé officiel', 'es': 'medición oficial', 'pl': 'pomiar urzędowy'}),
-            if (w['deel_ik'] == true) _mt(ctx, const {'nl': 'jij deelt hier', 'en': 'you share here', 'de': 'du teilst hier', 'fr': 'tu partages ici', 'es': 'compartes aquí', 'pl': 'tu udostępniasz'}),
-          ].join(' · '), style: const TextStyle(fontSize: 12)),
-          trailing: vanMij ? null : Text('$kosten ⭐', style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFD4A017))),
-          onTap: () {
-            Navigator.pop(bladCtx);
-            final lat = (w['latitude'] as num?)?.toDouble();
-            final lng = (w['longitude'] as num?)?.toDouble();
-            if (lat == null || lng == null) return;
-            if (!_depthOn) _setDepth(true);
-            _map.move(LatLng(lat, lng), 14);
-          },
-        );
+    showModalBottomSheet(context: context, isScrollControlled: true, builder: (bladCtx) => StatefulBuilder(
+      builder: (ctx, setS) {
+        if (bezig && lijst.isEmpty) haal(setS);
 
-        return SafeArea(child: SingleChildScrollView(child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 8), child: Text(
-              _mt(ctx, const {'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
-                'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'}),
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
-            if (lijst.isEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 20), child: Text(
-              _mt(ctx, const {
-                'nl': 'Hier is nog geen dieptedata. Vaar je met een fishfinder? Dan kun je die zelf delen.',
-                'en': 'No depth data here yet. Using a fishfinder? You can share yours.',
-                'de': 'Hier gibt es noch keine Tiefendaten. Mit Echolot unterwegs? Du kannst deine teilen.',
-                'fr': 'Pas encore de données de profondeur ici. Tu as un sondeur ? Tu peux partager les tiennes.',
-                'es': 'Aún no hay datos de profundidad aquí. ¿Usas sonda? Puedes compartir los tuyos.',
-                'pl': 'Tu nie ma jeszcze danych o głębokości. Masz echosondę? Możesz udostępnić swoje.'}),
-              style: const TextStyle(color: Colors.black54))),
-            if (mijne.isNotEmpty) ...[
-              Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 2), child: Text(
-                _mt(ctx, const {'nl': 'Van jou', 'en': 'Yours', 'de': 'Von dir', 'fr': 'À toi', 'es': 'Tuyas', 'pl': 'Twoje'}),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
-              ...mijne.map((w) => regel(w, vanMij: true)),
-            ],
-            if (rest.isNotEmpty) ...[
-              Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 2), child: Text(
-                _mt(ctx, const {'nl': 'Te ontgrendelen', 'en': 'To unlock', 'de': 'Freischaltbar', 'fr': 'À débloquer', 'es': 'Para desbloquear', 'pl': 'Do odblokowania'}),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
-              ...rest.map((w) => regel(w, vanMij: false)),
-            ],
-          ]),
-        )));
+        Future<void> ontgrendel(Map<String, dynamic> w) async {
+          setS(() { melding = ''; tekort = false; });
+          try {
+            await Api.post('/waters/${w['id']}/depth-unlock', {});
+            setS(() {
+              w['ontgrendeld'] = true;
+              w['ontgrendelbaar'] = false;
+              melding = '${w['name']}: ${_mt(ctx, const {'nl': 'ontgrendeld', 'en': 'unlocked', 'de': 'freigeschaltet', 'fr': 'débloqué', 'es': 'desbloqueado', 'pl': 'odblokowano'})} ✓';
+            });
+          } on ApiException catch (e) {
+            setS(() { melding = e.message; tekort = e.data is Map && e.data['code'] == 'insufficient_bobbers'; });
+          } catch (_) {
+            setS(() => melding = _mt(ctx, const {'nl': 'Even niet gelukt — probeer opnieuw.', 'en': 'That didn’t work — try again.',
+              'de': 'Hat nicht geklappt — versuch es erneut.', 'fr': 'Échec — réessaie.', 'es': 'No funcionó — inténtalo de nuevo.',
+              'pl': 'Nie udało się — spróbuj ponownie.'}));
+          }
+        }
+
+        void naarKaart(Map<String, dynamic> w) {
+          Navigator.pop(bladCtx);
+          final lat = (w['latitude'] as num?)?.toDouble();
+          final lng = (w['longitude'] as num?)?.toDouble();
+          if (lat == null || lng == null) return;
+          if (!_depthOn) _setDepth(true);
+          _map.move(LatLng(lat, lng), 12);
+        }
+
+        final term = zoek.trim().toLowerCase();
+        final gefilterd = term.isEmpty ? lijst
+            : lijst.where((w) => '${w['name'] ?? ''}'.toLowerCase().contains(term)).toList();
+        final mijne = gefilterd.where((w) => w['ontgrendeld'] == true).toList();
+        final rest = gefilterd.where((w) => w['ontgrendeld'] != true).toList();
+
+        // Sommige namen komen vaker voor ("Oude Maasje" is een meer, een rivier en een kanaal).
+        // Dan zetten we het soort water erbij, anders lijken het dubbele regels.
+        final aantalPerNaam = <String, int>{};
+        for (final x in lijst) {
+          final n = '${x['name'] ?? ''}';
+          aantalPerNaam[n] = (aantalPerNaam[n] ?? 0) + 1;
+        }
+
+        Widget regel(Map<String, dynamic> w, {required bool vanMij}) {
+          final afstand = (w['afstand_km'] as num?)?.toDouble();
+          final soort = (aantalPerNaam['${w['name'] ?? ''}'] ?? 0) > 1 ? mui(ctx, 'type_${w['type'] ?? ''}') : '';
+          return ListTile(
+            leading: Icon(vanMij ? Icons.check_circle : Icons.lock_outline,
+              color: vanMij ? const Color(0xFF16A34A) : Colors.black38, size: 20),
+            title: Text('${w['name'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text([
+              if (soort.isNotEmpty) soort,
+              '${NumberFormat.decimalPattern(Localizations.localeOf(ctx).languageCode).format((w['vakken'] as num?)?.toInt() ?? 0)} ${_mt(ctx, const {'nl': 'vakken', 'en': 'cells', 'de': 'Felder', 'fr': 'cases', 'es': 'celdas', 'pl': 'pól'})}',
+              if (w['officieel'] == true) _mt(ctx, const {'nl': 'officiële meting', 'en': 'official survey', 'de': 'amtliche Messung', 'fr': 'relevé officiel', 'es': 'medición oficial', 'pl': 'pomiar urzędowy'}),
+              if (w['deel_ik'] == true) _mt(ctx, const {'nl': 'jij deelt hier', 'en': 'you share here', 'de': 'du teilst hier', 'fr': 'tu partages ici', 'es': 'compartes aquí', 'pl': 'tu udostępniasz'}),
+              if (w['in_beeld'] == true) _mt(ctx, const {'nl': 'in beeld', 'en': 'in view', 'de': 'im Bild', 'fr': 'à l’écran', 'es': 'en pantalla', 'pl': 'w widoku'})
+              else if (afstand != null) '${afstand.round()} km',
+            ].join(' · '), style: const TextStyle(fontSize: 12)),
+            trailing: vanMij
+              ? TextButton(onPressed: () => naarKaart(w), child: Text(_mt(ctx, const {'nl': 'Bekijken', 'en': 'View', 'de': 'Ansehen', 'fr': 'Voir', 'es': 'Ver', 'pl': 'Zobacz'}), style: const TextStyle(fontSize: 13)))
+              // Oudere API's sturen dit veld niet mee; dan gewoon de knop tonen.
+              : (w['ontgrendelbaar'] != false
+                  ? FilledButton(
+                      onPressed: () => ontgrendel(w),
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.teal, visualDensity: VisualDensity.compact),
+                      child: DobberText('${_mt(ctx, const {'nl': 'Ontgrendel', 'en': 'Unlock', 'de': 'Freischalten', 'fr': 'Débloquer', 'es': 'Desbloquear', 'pl': 'Odblokuj'})} ($kosten ⭐)', style: const TextStyle(fontSize: 12.5)))
+                  : null),
+            onTap: () => naarKaart(w),
+          );
+        }
+
+        return SafeArea(child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.75,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 4), child: Text(
+                _mt(ctx, const {'nl': 'Wateren met diepte', 'en': 'Waters with depth', 'de': 'Gewässer mit Tiefendaten',
+                  'fr': 'Eaux avec profondeur', 'es': 'Aguas con profundidad', 'pl': 'Wody z głębokością'}),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
+              if (lijst.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 6), child: Text(
+                '${lijst.length} ${_mt(ctx, const {'nl': 'dieptekaarten beschikbaar', 'en': 'depth maps available', 'de': 'Tiefenkarten verfügbar',
+                  'fr': 'cartes de profondeur disponibles', 'es': 'mapas de profundidad disponibles', 'pl': 'dostępnych map głębokości'})}',
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54))),
+              if (lijst.length > 8) Padding(padding: const EdgeInsets.fromLTRB(16, 2, 16, 6), child: TextField(
+                onChanged: (v) => setS(() => zoek = v),
+                decoration: InputDecoration(isDense: true, prefixIcon: const Icon(Icons.search, size: 18),
+                  hintText: _mt(ctx, const {'nl': 'Zoek water', 'en': 'Search water', 'de': 'Gewässer suchen', 'fr': 'Chercher une eau', 'es': 'Buscar agua', 'pl': 'Szukaj wody'}),
+                  border: const OutlineInputBorder()))),
+              if (melding.isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 2, 16, 4), child: Row(children: [
+                Expanded(child: DobberText(melding, style: const TextStyle(fontSize: 12.5, color: AppColors.teal))),
+                if (tekort) TextButton(
+                  onPressed: () { Navigator.pop(bladCtx); Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SterrenScreen())); },
+                  child: DobberText(_mt(ctx, const {'nl': 'Dobbers kopen', 'en': 'Buy bobbers', 'de': 'Posen kaufen', 'fr': 'Acheter des flotteurs', 'es': 'Comprar boyas', 'pl': 'Kup spławiki'}), style: const TextStyle(fontSize: 12.5))),
+              ])),
+              if (bezig) const Expanded(child: Center(child: CircularProgressIndicator()))
+              else if (lijst.isEmpty) Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 20), child: Text(
+                _mt(ctx, const {
+                  'nl': 'Er is nog geen dieptedata. Vaar je met een fishfinder? Dan kun je die zelf delen.',
+                  'en': 'There is no depth data yet. Using a fishfinder? You can share yours.',
+                  'de': 'Es gibt noch keine Tiefendaten. Mit Echolot unterwegs? Du kannst deine teilen.',
+                  'fr': 'Pas encore de données de profondeur. Tu as un sondeur ? Tu peux partager les tiennes.',
+                  'es': 'Aún no hay datos de profundidad. ¿Usas sonda? Puedes compartir los tuyos.',
+                  'pl': 'Nie ma jeszcze danych o głębokości. Masz echosondę? Możesz udostępnić swoje.'}),
+                style: const TextStyle(color: Colors.black54)))
+              else Expanded(child: ListView(padding: EdgeInsets.zero, children: [
+                if (mijne.isNotEmpty) ...[
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 2), child: Text(
+                    _mt(ctx, const {'nl': 'Van jou', 'en': 'Yours', 'de': 'Von dir', 'fr': 'À toi', 'es': 'Tuyas', 'pl': 'Twoje'}),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
+                  ...mijne.map((w) => regel(w, vanMij: true)),
+                ],
+                if (rest.isNotEmpty) ...[
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 2), child: Text(
+                    _mt(ctx, const {'nl': 'Te ontgrendelen', 'en': 'To unlock', 'de': 'Freischaltbar', 'fr': 'À débloquer', 'es': 'Para desbloquear', 'pl': 'Do odblokowania'}),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54))),
+                  ...rest.map((w) => regel(w, vanMij: false)),
+                ],
+                const SizedBox(height: 12),
+              ])),
+            ]),
+          ),
+        ));
       },
     ));
   }
@@ -2587,8 +2670,8 @@ class _MapScreenState extends State<MapScreen> {
             decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(8),
               boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)]),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(_zoom >= 13 ? '${mui(context, 'depth_layer')}: ' : mui(context, 'depth_zoom_hint'), style: const TextStyle(fontSize: 11, color: Colors.black54)),
-              if (_zoom >= 13) ...[
+              Text(_zoom >= 10 ? '${mui(context, 'depth_layer')}: ' : mui(context, 'depth_zoom_hint'), style: const TextStyle(fontSize: 11, color: Colors.black54)),
+              if (_zoom >= 10) ...[
                 for (final d in const [1.0, 3.0, 5.0, 8.0]) ...[
                   Container(width: 11, height: 11, margin: const EdgeInsets.only(left: 5), decoration: BoxDecoration(color: _depthColor(d), borderRadius: BorderRadius.circular(2))),
                   Text(' ${d.toInt()}m', style: const TextStyle(fontSize: 10, color: Colors.black54)),
