@@ -62,8 +62,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             final Widget? target = screenForLink(link, event: event);
             return Dismissible(
               key: ValueKey(n['id'] ?? i),
-              direction: DismissDirection.endToStart,
+              // Wegvegen naar links én naar rechts: alleen naar links voelde als "werkt niet"
+              // (Richard 24-09-2026: "meldingen onder belletje kunnen wegswipen").
+              direction: DismissDirection.horizontal,
               background: Container(
+                alignment: Alignment.centerLeft, padding: const EdgeInsets.only(left: 20),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(color: AppColors.danger, borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              secondaryBackground: Container(
                 alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(color: AppColors.danger, borderRadius: BorderRadius.circular(12)),

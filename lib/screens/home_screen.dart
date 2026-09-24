@@ -195,12 +195,12 @@ class _HomeScreenState extends State<HomeScreen> {
       scrollable: true,
       title: Text(_qt(const {'nl': 'Zal ik je rondleiden?', 'en': 'Shall I show you around?', 'de': 'Soll ich dir alles zeigen?', 'fr': 'Je te fais visiter ?', 'es': '¿Te doy una vuelta?', 'pl': 'Oprowadzić cię?'})),
       content: Text(_qt(const {
-        'nl': 'We lopen samen door de app: waar je vangsten meldt, hoe de viskaart werkt en wat er allemaal in zit. Duurt een paar minuten en je kunt altijd stoppen.',
-        'en': 'We will walk through the app together: where you log catches, how the map works and what else is in there. Takes a few minutes and you can stop any time.',
-        'de': 'Wir gehen zusammen durch die App: wo du Fänge meldest, wie die Karte funktioniert und was noch drin steckt. Dauert ein paar Minuten, Abbrechen jederzeit.',
-        'fr': 'On parcourt l’app ensemble : où déclarer tes prises, comment marche la carte et tout le reste. Quelques minutes, tu peux arrêter quand tu veux.',
-        'es': 'Recorremos la app juntos: dónde registrar capturas, cómo funciona el mapa y qué más hay. Unos minutos y puedes parar cuando quieras.',
-        'pl': 'Przejdziemy przez aplikację razem: gdzie zgłaszasz połowy, jak działa mapa i co jeszcze tu jest. Kilka minut, możesz przerwać.',
+        'nl': "In vier korte stappen laten we je de basis zien: waar alles zit en waar je hulp vindt. De rest staat stap voor stap in de handleiding met plaatjes.",
+        'en': "In four short steps we show you the basics: where everything is and where to find help. Everything else is explained step by step in the illustrated guide.",
+        'de': "In vier kurzen Schritten zeigen wir dir das Wichtigste: wo alles ist und wo du Hilfe findest. Alles andere steht Schritt für Schritt in der bebilderten Anleitung.",
+        'fr': "En quatre courtes étapes, on te montre l’essentiel : où se trouve tout et où trouver de l’aide. Le reste est expliqué pas à pas dans le guide illustré.",
+        'es': "En cuatro pasos cortos te enseñamos lo básico: dónde está todo y dónde encontrar ayuda. El resto se explica paso a paso en la guía con imágenes.",
+        'pl': "W czterech krótkich krokach pokażemy ci podstawy: gdzie co jest i gdzie znaleźć pomoc. Resztę wyjaśnia krok po kroku przewodnik z obrazkami.",
       })),
       actions: [
         TextButton(onPressed: () => Navigator.pop(c, false),

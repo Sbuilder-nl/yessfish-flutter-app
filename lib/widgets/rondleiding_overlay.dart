@@ -59,6 +59,12 @@ class Rondleiding {
   static Future<void> start(BuildContext context,
       {String? vanafStap, String? totHoofdstuk}) async {
     if (_entry != null) return;
+    // De rondleiding is alleen de basis: het eerste hoofdstuk, vier stappen, net als op het web.
+    // Alle 89 stappen achter elkaar was te veel (appel81 liep erin vast bij stap "ver-federatie");
+    // de rest leggen we uit in de handleiding met plaatjes (Richard 24-09-2026).
+    // Alleen de foto- en zelftestbuilds lopen nog alles door.
+    const bool alles = bool.fromEnvironment('TOUR_SHOTS') || bool.fromEnvironment('TOUR_AUTOTEST');
+    if (!alles) totHoofdstuk ??= 'start';
     final stappen = alleStappen();
     var index = 0;
     if (vanafStap != null) {
@@ -81,6 +87,8 @@ class Rondleiding {
     // verwijzing en klapt de null-check (gemeten 21-09-2026). Daarom eerst de navigator.
     final overlay = Navigator.maybeOf(context, rootNavigator: true)?.overlay
         ?? Overlay.of(context, rootOverlay: true);
+    // Een oude, bewaarde stap van ver na de basis mag hem niet midden in de app laten beginnen.
+    if (eind != null && index > eind) index = 0;
     _entry = OverlayEntry(builder: (_) => _RondleidingLaag(startIndex: index, eindIndex: eind));
     overlay.insert(_entry!);
     unawaited(_meld('start', stap: stappen[index].id));
@@ -608,7 +616,7 @@ class _RondleidingLaagState extends State<_RondleidingLaag> {
               if (!widget.alleenDezeStap) ...[
                 if (_i > 0) TextButton(onPressed: _vorige, child: Text(tl(_vorigeTekst, taal))),
                 const SizedBox(width: 4),
-                FilledButton(onPressed: _volgende, child: Text(tl(_i + 1 >= _stappen.length ? _klaarTekst : _volgendeTekst, taal))),
+                FilledButton(onPressed: _volgende, child: Text(tl(_i + 1 >= _stappen.length || (widget.eindIndex != null && _i >= widget.eindIndex!) ? _klaarTekst : _volgendeTekst, taal))),
               ],
             ]),
           ]),

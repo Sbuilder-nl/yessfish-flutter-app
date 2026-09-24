@@ -228,13 +228,21 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     final text = _composer.text;
     final sel = _composer.selection.baseOffset;
     final tot = sel >= 0 && sel <= text.length ? text.substring(0, sel) : text;
-    final m = RegExp(r'@([\w.]{1,20})\$').firstMatch(tot);
+    // Al na alleen "@" de vrienden tonen; met letters erachter wordt de lijst korter.
+    final m = RegExp(r'@([\w.]{0,20})$').firstMatch(tot);
     if (m == null) {
       if (_mentionSuggesties.isNotEmpty) setState(() => _mentionSuggesties = []);
       return;
     }
     _laadVrienden().then((_) {
-      final q = m.group(1)!.toLowerCase();
+      if (!mounted) return;
+      // Opnieuw kijken wat er nú getypt staat: de vriendenlijst komt soms pas binnen na de
+      // volgende letter, en dan bleef de suggestie van de vorige letter staan (24-09-2026).
+      final nu = _composer.text;
+      final pos = _composer.selection.baseOffset;
+      final m2 = RegExp(r'@([\w.]{0,20})$').firstMatch(pos >= 0 && pos <= nu.length ? nu.substring(0, pos) : nu);
+      if (m2 == null) { setState(() => _mentionSuggesties = []); return; }
+      final q = m2.group(1)!.toLowerCase();
       final sugg = _vrienden.where((f) => '${f['username']}'.toLowerCase().contains(q)).take(6).toList();
       if (mounted) setState(() => _mentionSuggesties = sugg);
     });
@@ -245,7 +253,7 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     final sel = _composer.selection.baseOffset;
     final tot = sel >= 0 && sel <= text.length ? text.substring(0, sel) : text;
     final rest = sel >= 0 && sel <= text.length ? text.substring(sel) : '';
-    final nieuw = tot.replaceFirst(RegExp(r'@[\w.]{1,20}\$'), '@${f['username']} ');
+    final nieuw = tot.replaceFirst(RegExp(r'@[\w.]{0,20}$'), '@${f['username']} ');
     _composer.text = nieuw + rest;
     _composer.selection = TextSelection.collapsed(offset: nieuw.length);
     setState(() => _mentionSuggesties = []);
@@ -266,6 +274,8 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
     if (_videoUploading) return;
     final hadVideo = _media.any((m) => m['type'] == 'video');
     setState(() => _posting = true);
+    // Vriendenlijst zeker geladen, anders gaan getypte @namen zonder tag mee.
+    if (_composer.text.contains('@')) await _laadVrienden();
     try {
       await Api.post('/posts', {
         'content': _composer.text.trim().isEmpty ? ' ' : _composer.text.trim(), 'visibility': _zicht,
@@ -726,10 +736,74 @@ class CommentsSheetState extends State<CommentsSheet> {
       title: Text(u?['username'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
       subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(c['body'] ?? ''),
-        if (!isReply) InkWell(onTap: () => setState(() => _replyTo = c), child: Padding(padding: const EdgeInsets.only(top: 2), child: Text(context.tr('feed.reply'), style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w600)))),
+        Padding(padding: const EdgeInsets.only(top: 3), child: Row(children: [
+          _reactieKnop(c as Map),
+          if (!isReply) ...[
+            const SizedBox(width: 16),
+            InkWell(onTap: () => setState(() => _replyTo = c), child: Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(context.tr('feed.reply'), style: const TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w600)))),
+          ],
+        ])),
       ]),
       trailing: mineC ? IconButton(icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black26), onPressed: () => _del(c)) : null,
     );
+  }
+
+  /// Dezelfde zes emoji's als bij een post; de server kent er niet meer.
+  static const _emojis = ['👍', '❤️', '😂', '😮', '🎣', '🏆'];
+
+  /// Duimpjes ook op reacties en op antwoorden, net als bij een post (Richard 24-09-2026: "bij
+  /// antw op reacties ook duimpjes"). De server had dit al (/comments/{id}/reactions) en stuurt
+  /// de telling per reactie mee; alleen de app liet het nog niet zien.
+  /// Eén tik = duim (of duim weghalen), ingedrukt houden = kiezen uit de zes.
+  Widget _reactieKnop(Map c) {
+    final r = (c['reactions'] is Map) ? Map<String, dynamic>.from(c['reactions']) : null;
+    final mijn = r?['mine'] as String?;
+    final tellers = (r?['counts'] is Map) ? Map<String, dynamic>.from(r!['counts']) : <String, dynamic>{};
+    final totaal = (r?['total'] as num?)?.toInt() ?? 0;
+    return InkWell(
+      onTap: () => _reageer(c, mijn == '👍' ? null : '👍'),
+      onLongPress: () => _kiesEmoji(c, mijn),
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2), child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (mijn != null)
+          Text(mijn, style: const TextStyle(fontSize: 14))
+        else
+          const Icon(Icons.thumb_up_outlined, size: 15, color: Colors.black38),
+        if (totaal > 0) ...[
+          const SizedBox(width: 4),
+          Text('$totaal', style: TextStyle(fontSize: 11.5, color: mijn != null ? AppColors.teal : Colors.black54, fontWeight: mijn != null ? FontWeight.w700 : null)),
+        ],
+        ...tellers.entries.where((e) => e.key != (mijn ?? '👍') && ((e.value as num?)?.toInt() ?? 0) > 0).take(3).map(
+          (e) => Padding(padding: const EdgeInsets.only(left: 4), child: Text(e.key, style: const TextStyle(fontSize: 12)))),
+      ])),
+    );
+  }
+
+  Future<void> _kiesEmoji(Map c, String? huidig) async {
+    final keuze = await showModalBottomSheet<String?>(context: context, builder: (ctx) => SafeArea(
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        child: Wrap(alignment: WrapAlignment.center, spacing: 6, children: [
+          for (final e in _emojis) InkWell(
+            borderRadius: BorderRadius.circular(40),
+            onTap: () => Navigator.pop(ctx, e),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: e == huidig ? BoxDecoration(color: AppColors.teal.withValues(alpha: 0.15), shape: BoxShape.circle) : null,
+              child: Text(e, style: const TextStyle(fontSize: 30)))),
+        ])),
+    ));
+    if (keuze != null) await _reageer(c, keuze == huidig ? null : keuze);
+  }
+
+  /// Stuurt de reactie en neemt de telling van de server over.
+  Future<void> _reageer(Map c, String? emoji) async {
+    try {
+      final r = await Api.post('/posts/${widget.postId}/comments/${c['id']}/reactions', {'emoji': emoji});
+      if (r is Map && mounted) {
+        setState(() => c['reactions'] = {'counts': r['counts'] ?? {}, 'total': r['total'] ?? 0, 'mine': r['mine']});
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {}
   }
 
   Future<void> _del(Map c) async {
