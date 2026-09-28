@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/water_vissen_info.dart';
 import '../widgets/hulp_knop.dart';
+import '../widgets/vergunning_kiezer.dart';
 import '../core/gids_i18n.dart';
 import 'organisatie_screen.dart';
 import 'bite_screen.dart';
@@ -1063,19 +1064,15 @@ class _MapScreenState extends State<MapScreen> {
                       child: InkWell(onTap: () => launchUrl(Uri.parse('https://www.visplanner.nl/'), mode: LaunchMode.externalApplication),
                         child: Text(mui(context, 'permit_visplanner'), style: const TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)))),
                     const SizedBox(height: 8),
-                    Text(mui(context, 'permit_claim_hint'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                    const SizedBox(height: 6),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.check, size: 16),
-                      label: Text(mui(context, 'permit_claim_btn')),
-                      onPressed: () async {
-                        final m = ScaffoldMessenger.of(context);
-                        try {
-                          final r = await Api.post('/waters/${w['id']}/permit-report', {'claim': 'vispas'});
-                          m.showSnackBar(SnackBar(content: Text(r is Map ? '${r['message']}' : 'OK')));
-                          if (r is Map && r['applied'] == true) { w['permit_type'] = 'landelijk'; _loadWaters(); }
-                        } catch (e) { m.showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : '$e'))); }
-                      },
+                    // 28-09-2026 (Richard): niet meer alleen "Ik vis hier met de VISpas" - het lid kiest welke pas
+                    // hier geldt: VISpas, Fiskfergunning, NHO Viskaart of een vereniging (clubwater). Zelfde als het web.
+                    VergunningKiezer(
+                      key: ValueKey('vk-${w['id']}'),
+                      waterId: (w['id'] as num).toInt(),
+                      voorkeur: (w['is_paid'] == true || w['is_paid'] == 1) ? 'betaald'
+                          : RegExp('fisk', caseSensitive: false).hasMatch('${w['permit_pass'] ?? ''}') ? 'fiskfergunning'
+                          : RegExp('viskaart|nho', caseSensitive: false).hasMatch('${w['permit_pass'] ?? ''}') ? 'nho' : null,
+                      onApplied: (pt) { w['permit_type'] = pt; _loadWaters(); },
                     ),
                   ],
                 ]))),

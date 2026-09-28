@@ -8,6 +8,7 @@ import '../core/i18n.dart';
 import '../core/gids_i18n.dart';
 import 'organisatie_screen.dart';
 import 'federatie_screen.dart';
+import '../widgets/bij_mij.dart';
 
 /// Pagina op de website openen in de app-browser (partner worden, adverteren).
 ///
@@ -172,6 +173,8 @@ class _LijstState extends State<_Lijst> with AutomaticKeepAliveClientMixin {
     if (!landen.any((l) => l['code'] == widget.land)) landen.add({'code': widget.land, 'count': 0});
 
     return Column(children: [
+      // 28-09-2026: "Wat geldt er bij mij?" bovenaan verenigingen en winkels
+      if (widget.type == 'clubs' || widget.type == 'shops') const BijMijKnop(),
       Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 4), child: Row(children: [
         DropdownButton<String>(
           value: widget.land, underline: const SizedBox.shrink(),

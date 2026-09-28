@@ -439,6 +439,10 @@ class _ModerationScreenState extends State<ModerationScreen> {
           ),
           Text('${m['username'] ?? ''}', style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
         ]),
+        // Clubwater: de vereniging die het lid koos (uit de gids) - bij Klopt wordt het water eraan gekoppeld.
+        if (claim == 'club' && '${m['vereniging'] ?? ''}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
+          child: Text('${m['vereniging']}${'${m['vereniging_plaats'] ?? ''}'.isNotEmpty ? ' · ${m['vereniging_plaats']}' : ''}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
         if ('${m['note'] ?? ''}'.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
           child: Text('${m['note']}', style: const TextStyle(fontSize: 13))),
         // Wat wij zelf al weten.
@@ -455,7 +459,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
             if ('${bekend['pas'] ?? ''}'.isNotEmpty) Text('${_mlbl(_lPasHier)}: ${bekend['pas']}', style: const TextStyle(fontSize: 12)),
             if (verenigingen.isNotEmpty) Text('${_mlbl(_lVerenigingenHier)}: ${verenigingen.map((v) => (v as Map)['naam']).join(', ')}',
                 style: const TextStyle(fontSize: 12)),
-            if (verenigingen.isEmpty && claim == 'club') Text(_mlbl(_lGeenVerenigingBekend),
+            if (verenigingen.isEmpty && claim == 'club' && '${m['vereniging'] ?? ''}'.isEmpty) Text(_mlbl(_lGeenVerenigingBekend),
                 style: const TextStyle(fontSize: 12, color: Color(0xFFB45309))),
           ]),
         ),
@@ -520,6 +524,8 @@ class _ModerationScreenState extends State<ModerationScreen> {
 
   static const Map<String, Map<String, String>> _claimLabels = {
     'vispas': {'nl': 'Hier geldt de VISpas', 'en': 'VISpas applies here', 'de': 'Hier gilt der VISpas', 'fr': 'La VISpas s’applique', 'es': 'Aquí vale la VISpas', 'pl': 'Tu obowiązuje VISpas'},
+    'fiskfergunning': {'nl': 'Hier geldt de Fiskfergunning', 'en': 'Fiskfergunning applies here', 'de': 'Hier gilt die Fiskfergunning', 'fr': 'La Fiskfergunning s’applique', 'es': 'Aquí vale la Fiskfergunning', 'pl': 'Tu obowiązuje Fiskfergunning'},
+    'nho': {'nl': 'Hier geldt de NHO Viskaart', 'en': 'NHO permit card applies here', 'de': 'Hier gilt die NHO-Karte', 'fr': 'La carte NHO s’applique', 'es': 'Aquí vale la tarjeta NHO', 'pl': 'Tu obowiązuje karta NHO'},
     'club': {'nl': 'Verenigingswater', 'en': 'Club water', 'de': 'Vereinsgewässer', 'fr': 'Eau d’association', 'es': 'Agua de club', 'pl': 'Woda koła'},
     'betaald': {'nl': 'Betaalwater', 'en': 'Paid water', 'de': 'Zahlgewässer', 'fr': 'Eau payante', 'es': 'Agua de pago', 'pl': 'Łowisko płatne'},
     'verboden': {'nl': 'Hier mag je niet vissen', 'en': 'No fishing allowed here', 'de': 'Hier darf nicht geangelt werden', 'fr': 'Pêche interdite ici', 'es': 'Aquí no se puede pescar', 'pl': 'Tu nie wolno łowić'},
@@ -527,6 +533,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
 
   static const Map<String, Color> _claimKleur = {
     'vispas': Color(0xFF16A34A), 'club': Color(0xFF0284C7),
+    'fiskfergunning': Color(0xFFEA580C), 'nho': Color(0xFFEA580C),
     'betaald': Color(0xFFD97706), 'verboden': Color(0xFFDC2626),
   };
 

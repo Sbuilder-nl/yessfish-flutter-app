@@ -9,6 +9,7 @@ import '../core/location.dart' as loc;
 import '../core/rondleiding.dart';
 import 'federatie_screen.dart';
 import 'map_screen.dart';
+import '../widgets/claim_kaart.dart';
 
 /// Organisatiescherm: een vereniging, winkel, jachthaven of betaalwater IN de app.
 ///
@@ -611,6 +612,16 @@ class _OrganisatieScreenState extends State<OrganisatieScreen> {
         if (bron['claim_pending'] == true) ...[
           const SizedBox(height: 10),
           Text(_t(c, _lClaimLoopt), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        ],
+        // "Dit is mijn winkel / onze vereniging": zelf beheren aanvragen; een admin keurt eerst goed (28-09-2026).
+        if (_soort == 'partner' && bron['managed_by'] == 'yessfish' && bron['claim_pending'] != true
+            && '${bron['slug'] ?? ''}'.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ClaimKaart(
+            slug: '${bron['slug']}',
+            type: '${bron['type'] ?? ''}',
+            onDone: () => setState(() => _gegevens!['claim_pending'] = true),
+          ),
         ],
       ],
     );
