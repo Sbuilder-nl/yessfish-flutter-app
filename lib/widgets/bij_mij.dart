@@ -16,7 +16,8 @@ const Map<String, Map<String, String>> _t = {
   'knop_sub': {'nl': 'Het water waar je staat, welke vergunning je nodig hebt en de vereniging en winkel in de buurt.', 'en': 'The water where you are, which permit you need, and the club and shop nearby.', 'de': 'Das Gewässer, an dem du stehst, welche Erlaubnis du brauchst, und Verein und Laden in der Nähe.', 'fr': 'L’eau où vous êtes, le permis nécessaire, et l’association et le magasin à proximité.', 'es': 'El agua donde estás, qué permiso necesitas y el club y la tienda cercanos.', 'pl': 'Łowisko, przy którym jesteś, jakie zezwolenie jest potrzebne, oraz klub i sklep w pobliżu.'},
   'zoekt': {'nl': 'Je locatie bepalen…', 'en': 'Finding your location…', 'de': 'Standort wird bestimmt…', 'fr': 'Localisation…', 'es': 'Buscando tu ubicación…', 'pl': 'Ustalanie lokalizacji…'},
   'geen_locatie': {'nl': 'Je locatie is niet beschikbaar. Zet locatie aan, of zoek het water op de kaart.', 'en': 'Your location is not available. Turn on location, or search the water on the map.', 'de': 'Dein Standort ist nicht verfügbar. Schalte den Standort ein oder suche das Gewässer auf der Karte.', 'fr': 'Votre position n’est pas disponible. Activez la localisation ou cherchez l’eau sur la carte.', 'es': 'Tu ubicación no está disponible. Activa la ubicación o busca el agua en el mapa.', 'pl': 'Lokalizacja niedostępna. Włącz lokalizację albo wyszukaj łowisko na mapie.'},
-  'hier': {'nl': 'Je staat aan', 'en': 'You are at', 'de': 'Du stehst am', 'fr': 'Vous êtes à', 'es': 'Estás en', 'pl': 'Jesteś przy'},
+  'hier': {'nl': 'Je staat hier:', 'en': 'You are here:', 'de': 'Du bist hier:', 'fr': 'Vous êtes ici :', 'es': 'Estás aquí:', 'pl': 'Jesteś tutaj:'},
+  'hier_kort': {'nl': 'je staat hier', 'en': 'you are here', 'de': 'du bist hier', 'fr': 'vous êtes ici', 'es': 'estás aquí', 'pl': 'jesteś tutaj'},
   'kies': {'nl': 'Welk water bedoel je?', 'en': 'Which water do you mean?', 'de': 'Welches Gewässer meinst du?', 'fr': 'De quelle eau s’agit-il ?', 'es': '¿Qué agua quieres decir?', 'pl': 'Które łowisko masz na myśli?'},
   'regels': {'nl': 'Regels en vergunning', 'en': 'Rules and permit', 'de': 'Regeln und Erlaubnis', 'fr': 'Règles et permis', 'es': 'Normas y permiso', 'pl': 'Zasady i zezwolenie'},
   'geen_water': {'nl': 'Geen water in jouw buurt', 'en': 'No water near you', 'de': 'Kein Gewässer in deiner Nähe', 'fr': 'Aucune eau près de vous', 'es': 'No hay agua cerca de ti', 'pl': 'Brak łowiska w pobliżu'},
@@ -222,7 +223,7 @@ class _BijMijBladState extends State<_BijMijBlad> {
                     dense: true,
                     title: Text('${wateren[i]['name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                     subtitle: Padding(padding: const EdgeInsets.only(top: 3), child: Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                      Text(wateren[i]['hier'] == true ? _tr(context, 'hier').toLowerCase() : _afstand(wateren[i]['km'] as num? ?? 0), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      Text(wateren[i]['hier'] == true ? _tr(context, 'hier_kort') : _afstand(wateren[i]['km'] as num? ?? 0), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                       _label(wateren[i]),
                     ])),
                     trailing: const Icon(Icons.chevron_right, color: Colors.black38),
