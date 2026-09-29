@@ -136,8 +136,9 @@ class _BijMijBladState extends State<_BijMijBlad> {
     if (k.isEmpty && pas.isNotEmpty) {
       rand = const Color(0xFF7DD3FC); tekst = const Color(0xFF075985); vlak = const Color(0xFFF0F9FF); woord = pas;
     } else {
-      woord = _tr(context, k.isEmpty ? 'onbekend' : k);
-      if (k == 'landelijk') { rand = const Color(0xFF6EE7B7); tekst = const Color(0xFF047857); vlak = const Color(0xFFECFDF5); }
+      // regio = de pas van het land/de regio (buiten NL): toon die pasnaam, groen.
+      woord = (k == 'regio' && pas.isNotEmpty) ? pas : _tr(context, k.isEmpty ? 'onbekend' : k);
+      if (k == 'landelijk' || k == 'regio') { rand = const Color(0xFF6EE7B7); tekst = const Color(0xFF047857); vlak = const Color(0xFFECFDF5); }
       else if (k == 'verboden') { rand = const Color(0xFFFCA5A5); tekst = const Color(0xFFB91C1C); vlak = const Color(0xFFFEF2F2); }
       else if (['club', 'fiskfergunning', 'nho', 'betaald'].contains(k)) { rand = const Color(0xFFFDBA74); tekst = const Color(0xFFC2410C); vlak = const Color(0xFFFFF7ED); }
       else { rand = const Color(0xFFCBD5E1); tekst = const Color(0xFF475569); vlak = const Color(0xFFF1F5F9); }
@@ -173,7 +174,7 @@ class _BijMijBladState extends State<_BijMijBlad> {
 
     return DraggableScrollableSheet(
       expand: false, initialChildSize: 0.75, minChildSize: 0.4, maxChildSize: 0.95,
-      builder: (_, sc) => ListView(controller: sc, padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
+      builder: (_, sc) => ListView(controller: sc, padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.of(context).padding.bottom + 16), children: [
         Row(children: [
           const Icon(Icons.my_location, color: AppColors.teal, size: 20), const SizedBox(width: 8),
           Expanded(child: Text(_tr(context, 'knop'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.navy))),

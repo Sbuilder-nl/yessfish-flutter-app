@@ -9,16 +9,20 @@ import '../core/i18n.dart';
 /// je nodig hebt: VISpas, Fiskfergunning of een andere vereniging"). VISpas / Fiskfergunning / NHO Viskaart:
 /// 3 gelijke meldingen = automatisch dat label. Clubwater (met vereniging uit de gids), dagkaart en verboden:
 /// een moderator kijkt ernaar. Zelfde keuzes en teksten als op het web (PermitKiezer.tsx).
+/// 29-09-2026 (Richard): buiten Nederland kiest het lid de pas van dát land of die regio (bijv. de Waalse
+/// visvergunning), nooit de VISpas. Die pasnaam komt uit permit_pass van het water.
 class VergunningKiezer extends StatefulWidget {
   final int waterId;
   final String? voorkeur;
   final void Function(String permitType)? onApplied;
-  const VergunningKiezer({super.key, required this.waterId, this.voorkeur, this.onApplied});
+  final bool isNL;
+  final String? regioPas;
+  const VergunningKiezer({super.key, required this.waterId, this.voorkeur, this.onApplied, this.isNL = true, this.regioPas});
   @override
   State<VergunningKiezer> createState() => _VergunningKiezerState();
 }
 
-const _keuzes = ['vispas', 'fiskfergunning', 'nho', 'club', 'betaald', 'verboden'];
+const _keuzesNL = ['vispas', 'fiskfergunning', 'nho', 'club', 'betaald', 'verboden'];
 const Map<String, Map<String, String>> _t = {
   'vraag': {'nl': 'Weet jij welke vergunning hier geldt?', 'en': 'Do you know which permit applies here?', 'de': 'Weißt du, welche Erlaubnis hier gilt?', 'fr': 'Savez-vous quel permis s’applique ici ?', 'es': '¿Sabes qué permiso vale aquí?', 'pl': 'Wiesz, jakie zezwolenie tu obowiązuje?'},
   'uitleg': {'nl': 'Kies de pas die je hier nodig hebt. Bij 3 gelijke meldingen krijgt het water dit label; clubwater, dagkaart en verboden bekijkt een moderator.', 'en': 'Choose the pass you need here. After 3 matching reports the water gets this label; club water, day ticket and no fishing are checked by a moderator.', 'de': 'Wähle den Pass, den du hier brauchst. Nach 3 gleichen Meldungen bekommt das Gewässer dieses Etikett; Vereinsgewässer, Tageskarte und Angelverbot prüft ein Moderator.', 'fr': 'Choisissez le permis nécessaire ici. Après 3 signalements identiques, l’eau reçoit cette étiquette ; eau de club, carte journalière et interdiction sont vérifiées par un modérateur.', 'es': 'Elige el permiso que necesitas aquí. Con 3 avisos iguales el agua recibe esta etiqueta; agua de club, permiso diario y prohibido los revisa un moderador.', 'pl': 'Wybierz zezwolenie, którego tu potrzebujesz. Po 3 takich samych zgłoszeniach woda dostanie tę etykietę; wody klubowe, kartę dzienną i zakaz sprawdza moderator.'},
@@ -34,7 +38,7 @@ const Map<String, Map<String, String>> _t = {
   'stuur': {'nl': 'Melding versturen', 'en': 'Send report', 'de': 'Meldung senden', 'fr': 'Envoyer le signalement', 'es': 'Enviar aviso', 'pl': 'Wyślij zgłoszenie'},
   'wijzig': {'nl': 'Andere keuze', 'en': 'Change', 'de': 'Ändern', 'fr': 'Modifier', 'es': 'Cambiar', 'pl': 'Zmień'},
 };
-const Map<String, String> _label = {'vispas': 'landelijk', 'fiskfergunning': 'fiskfergunning', 'nho': 'nho', 'club': 'club', 'betaald': 'betaald', 'verboden': 'verboden'};
+const Map<String, String> _label = {'vispas': 'landelijk', 'fiskfergunning': 'fiskfergunning', 'nho': 'nho', 'regiopas': 'regio', 'club': 'club', 'betaald': 'betaald', 'verboden': 'verboden'};
 
 class _VergunningKiezerState extends State<VergunningKiezer> {
   String? _keuze;
@@ -49,6 +53,11 @@ class _VergunningKiezerState extends State<VergunningKiezer> {
   void initState() { super.initState(); _keuze = widget.voorkeur; }
   @override
   void dispose() { _zoekTimer?.cancel(); super.dispose(); }
+
+  // Buiten NL: geen Nederlandse passen; wel de pas van dit land/deze regio als die bekend is.
+  List<String> get _keuzes => widget.isNL ? _keuzesNL
+      : [if ((widget.regioPas ?? '').trim().isNotEmpty) 'regiopas', 'club', 'betaald', 'verboden'];
+  String _naam(String k) => k == 'regiopas' ? widget.regioPas!.trim() : t(k);
 
   String t(String k) { final loc = Provider.of<I18n>(context, listen: false).locale; return _t[k]?[loc] ?? _t[k]?['en'] ?? k; }
 
@@ -89,7 +98,7 @@ class _VergunningKiezerState extends State<VergunningKiezer> {
       Text(t('uitleg'), style: const TextStyle(fontSize: 12, color: Colors.black54, height: 1.3)),
       const SizedBox(height: 8),
       Wrap(spacing: 6, runSpacing: 6, children: _keuzes.map((k) => ChoiceChip(
-        label: Text(t(k), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _keuze == k ? Colors.white : Colors.black87)),
+        label: Text(_naam(k), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _keuze == k ? Colors.white : Colors.black87)),
         selected: _keuze == k,
         selectedColor: AppColors.teal,
         showCheckmark: false,

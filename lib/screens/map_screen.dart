@@ -1074,6 +1074,16 @@ class _MapScreenState extends State<MapScreen> {
                           : RegExp('viskaart|nho', caseSensitive: false).hasMatch('${w['permit_pass'] ?? ''}') ? 'nho' : null,
                       onApplied: (pt) { w['permit_type'] = pt; _loadWaters(); },
                     ),
+                  ] else ...[
+                    // 29-09-2026: ook buiten NL kan het lid melden wat hier geldt - met de pas van dát land.
+                    VergunningKiezer(
+                      key: ValueKey('vk-${w['id']}'),
+                      waterId: (w['id'] as num).toInt(),
+                      isNL: false,
+                      regioPas: (w['permit_pass'] ?? '').toString(),
+                      voorkeur: (w['is_paid'] == true || w['is_paid'] == 1) ? 'betaald' : null,
+                      onApplied: (pt) { w['permit_type'] = pt; _loadWaters(); },
+                    ),
                   ],
                 ]))),
             if ((w['permit_type'] != null && '${w['permit_type']}' != 'onbekend')
@@ -1650,7 +1660,7 @@ class _MapScreenState extends State<MapScreen> {
   // Korte vergunning-chip: kleur zegt het al (groen = mag, oranje = extra nodig, rood = niet, grijs = onbekend).
   Widget _permitChip(Map w) {
     final t = '${w['permit_type'] ?? 'onbekend'}';
-    final kleur = (t == 'landelijk' || t == 'vrij') ? const Color(0xFF16A34A) : t == 'verboden' ? const Color(0xFFDC2626)
+    final kleur = (t == 'landelijk' || t == 'vrij' || t == 'regio') ? const Color(0xFF16A34A) : t == 'verboden' ? const Color(0xFFDC2626)
       : (t == 'onbekend' || t == 'onduidelijk') ? Colors.grey.shade600 : const Color(0xFFEA580C);
     // De vergunning volgt het water. Stond hier "VISpas" op een Duits water, dan klopte dat niet:
     // daar heb je een Fischereischein nodig. De server geeft de juiste naam mee in permit_pass
