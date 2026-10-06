@@ -38,6 +38,8 @@ import '../widgets/water_depth_panel.dart';
 import 'quick_catch_screen.dart';
 import 'sterren_screen.dart';
 import 'dieptekaart_screen.dart';
+import 'fotograaf_screen.dart';
+import '../core/fotograaf_i18n.dart';
 
 /// Fotostand: bouw ook wat onder de vouw staat, zodat de rondleiding élk anker vindt.
 /// Een ListView bouwt normaal alleen het zichtbare deel; dan blijven ankers verderop leeg en
@@ -1268,6 +1270,24 @@ class _MapScreenState extends State<MapScreen> {
                   if (thumb != null) Image.network('$thumb', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.black12, child: const Icon(Icons.broken_image, color: Colors.black26)))
                   else Container(color: Colors.black87, child: const Icon(Icons.play_circle_outline, color: Colors.white70, size: 40)),
                   if (isVideo) const Center(child: Icon(Icons.play_circle_fill, color: Colors.white, size: 44)),
+                  // Foto van een fotograaf-partner: 'Foto: naam' (→ fotograafpagina) en/of downloadknop,
+                  // zoals de fotograaf het zelf heeft ingesteld (06-10-2026).
+                  if (m['photographer'] is Map && ((m['photographer'] as Map)['credit'] == true || (m['photographer'] as Map)['download_url'] != null))
+                    Positioned(left: 0, right: 0, bottom: 0, child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), color: Colors.black54,
+                      child: Row(children: [
+                        if ((m['photographer'] as Map)['credit'] == true) Expanded(child: GestureDetector(
+                          onTap: () {
+                            final slug = '${(m['photographer'] as Map)['href'] ?? ''}'.split('/').where((x) => x.isNotEmpty).last;
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => FotograafScreen(slug: slug, naam: '${(m['photographer'] as Map)['name']}')));
+                          },
+                          child: Text(ft(context, 'water_photo_by', {'name': '${(m['photographer'] as Map)['name']}'}), maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600))))
+                        else const Spacer(),
+                        if ((m['photographer'] as Map)['download_url'] != null) GestureDetector(
+                          onTap: () => launchUrl(Uri.parse('${(m['photographer'] as Map)['download_url']}'), mode: LaunchMode.externalApplication),
+                          child: Padding(padding: const EdgeInsets.only(left: 6), child: Icon(Icons.download, size: 17, color: Colors.white, semanticLabel: ft(context, 'water_download')))),
+                      ]))),
                 ])),
               );
             }).toList()),

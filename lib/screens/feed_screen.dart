@@ -19,6 +19,9 @@ import '../widgets/feed_video.dart';
 import '../widgets/media_carousel.dart';
 import '../widgets/sponsored_feed_card.dart';
 import 'user_profile_screen.dart';
+import 'fotograaf_screen.dart';
+import 'organisatie_screen.dart';
+import '../core/fotograaf_i18n.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -616,13 +619,35 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
           if (p['is_sponsored'] == true) return SponsoredFeedCard(p);
           final u = p['user'] as Map?;
           final mine = u?['username'] == me?.username;
+          // Bericht van een partner (winkel, vereniging, fotograaf…): partnernaam tonen en naar de
+          // partnerpagina in plaats van het profiel-account. Fotograaf: label '📷 Fotograaf' + knop
+          // naar de fotograafpagina, net als op de site (06-10-2026; 'Gesponsord' is alleen voor reclame).
+          final partner = u?['partner'] is Map ? u!['partner'] as Map : null;
+          final fotograaf = partner?['type'] == 'photographer';
+          void naarPartner() {
+            if (partner == null) return;
+            final slug = '${partner['slug']}';
+            if (fotograaf) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => FotograafScreen(slug: slug, naam: '${partner['name']}')));
+            } else {
+              final soort = {'club': 'vereniging', 'marina': 'jachthaven', 'betaalwater': 'betaalwater'}[partner['type']] ?? 'winkel';
+              Navigator.push(context, MaterialPageRoute(builder: (_) => OrganisatieScreen(href: '/$soort/$slug', naam: '${partner['name']}')));
+            }
+          }
+          final naarProfiel = partner != null ? naarPartner
+              : (!mine && u?['id'] != null) ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null;
           return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              GestureDetector(onTap: (!mine && u?['id'] != null) ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,
-                child: Avatar(name: u?['username'], src: u?['avatar_path'], size: 38)), const SizedBox(width: 10),
-              Expanded(child: GestureDetector(onTap: (!mine && u?['id'] != null) ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u!['id']))) : null,
+              GestureDetector(onTap: naarProfiel,
+                child: Avatar(name: partner?['name'] ?? u?['username'], src: u?['avatar_path'], size: 38)), const SizedBox(width: 10),
+              Expanded(child: GestureDetector(onTap: naarProfiel,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(u?['username'] ?? context.tr('feed.angler'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+                  Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    Text(partner?['name'] ?? u?['username'] ?? context.tr('feed.angler'), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+                    if (fotograaf) Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+                      child: Text('📷 ${ft(context, 'sponsored_label')}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.teal))),
+                  ]),
                   Text(_postDate(p['created_at']), style: const TextStyle(fontSize: 11, color: Colors.black38)),
                 ]))),
               PopupMenuButton<String>(
@@ -655,6 +680,15 @@ class FeedScreenState extends State<FeedScreen> with WidgetsBindingObserver {
               if (p['video_path'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(videoUrl: p['video_path']?.toString(), poster: p['video_poster']?.toString(), ready: p['video_ready'] != false)),
             ],
             if (p['youtube_id'] != null) Padding(padding: const EdgeInsets.only(top: 10), child: FeedVideo(youtubeId: p['youtube_id']?.toString())),
+            if (fotograaf && p['partner_kind'] == 'photo') Padding(padding: const EdgeInsets.only(top: 10), child: Material(
+              color: AppColors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12),
+              child: InkWell(borderRadius: BorderRadius.circular(12), onTap: naarPartner, child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                child: Row(children: [
+                  Expanded(child: Text('${ft(context, 'feed_cta')} · ${partner!['name']}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.teal))),
+                  const Icon(Icons.arrow_forward, size: 18, color: AppColors.teal),
+                ]))))),
             const Divider(height: 22),
             Row(children: [
               _eersteAnker('feed-reacties', idx == 2, _reactieKnop(p)),

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class Config {
-  static const String apiBase = 'https://api.yessfish.com/api';
-  static const String origin = 'https://api.yessfish.com';
+  // Standaard productie. Alleen een testbuild wijst naar dev:
+  //   flutter build apk --dart-define=YF_API=https://api.dev.yessfish.com
+  // (06-10-2026: fotograafportaal op de emulator testen zonder testgegevens op live.)
+  static const String origin = String.fromEnvironment('YF_API', defaultValue: 'https://api.yessfish.com');
+  static const String apiBase = '$origin/api';
   // Website (gids-profielen, partner worden) — opent in de app-browser.
   static const String webOrigin = 'https://yessfish.com';
   // Realtime (Reverb / Pusher-protocol)

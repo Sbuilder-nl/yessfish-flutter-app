@@ -38,6 +38,8 @@ import '../core/gids_i18n.dart';
 import 'gids_screen.dart';
 import 'wedstrijd_screen.dart';
 import 'winacties_screen.dart';
+import 'fotograaf_portaal_screen.dart';
+import '../core/fotograaf_i18n.dart';
 import 'schone_stek_screen.dart';
 import '../core/rondleiding.dart';
 
@@ -55,10 +57,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Map? _stats;
+  // Partner (winkel/vereniging/fotograaf…) waar dit lid lid van is → menu toont 'Mijn partnerpaneel · naam'
+  // in plaats van 'Partner worden' (06-10-2026, zelfde als het menu op de site).
+  Map? _mijnPartner;
+  Future<void> _loadPartner() async {
+    try {
+      final r = await Api.get('/partner/mine');
+      final l = (r is Map && r['data'] is List) ? r['data'] as List : const [];
+      if (mounted) setState(() => _mijnPartner = l.isEmpty ? null : Map.from(l.first));
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
     _loadBobbers();
+    _loadPartner();
     WidgetsBinding.instance.addPostFrameCallback((_) => context.read<RealtimeService>().refreshCounts());
     _loadStats();
   }
@@ -230,7 +244,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _tile(Icons.card_giftcard_outlined, _rt(const {'nl': 'Winacties', 'en': 'Giveaways', 'de': 'Gewinnspiele', 'fr': 'Jeux-concours', 'es': 'Sorteos', 'pl': 'Konkursy'}), const WinactiesScreen(), anker: 'menu-winacties'),
       ]),
       _section(gt(context, 'sec_partners'), [
-        _webTile(Icons.handshake_outlined, gt(context, 'partner'), '/partner'),
+        if (_mijnPartner == null) _webTile(Icons.handshake_outlined, gt(context, 'partner'), '/partner')
+        else if (_mijnPartner!['type'] == 'photographer') _tile(Icons.photo_camera_outlined, ft(context, 'nav_my_partner'),
+          FotograafPortaalScreen(partnerId: _mijnPartner!['id'] as int, naam: '${_mijnPartner!['name']}', slug: _mijnPartner!['slug']?.toString(), status: '${_mijnPartner!['status']}'))
+        else _webTile(Icons.storefront_outlined, ft(context, 'nav_my_partner'), '/partner'),
         _webTile(Icons.campaign_outlined, gt(context, 'advertise'), '/adverteren'),
       ]),
       _section(context.tr('sec.account'), [

@@ -95,6 +95,22 @@ class Api {
     throw ApiException(res.statusCode, data);
   }
 
+  /// Bestand + extra velden naar een eigen route (fotograafportaal 06-10-2026: grote originelen,
+  /// dus een ruime tijdslimiet).
+  static Future<Map<String, dynamic>> uploadMet(String path, String filePath, Map<String, String> velden,
+      {String veld = 'file', Duration timeout = const Duration(seconds: 60)}) async {
+    final req = http.MultipartRequest('POST', Uri.parse('${Config.apiBase}$path'));
+    req.headers['Accept'] = 'application/json';
+    req.headers['X-App-Lang'] = lang;
+    if (_token != null) req.headers['Authorization'] = 'Bearer $_token';
+    req.fields.addAll(velden);
+    req.files.add(await http.MultipartFile.fromPath(veld, filePath));
+    final res = await http.Response.fromStream(await req.send().timeout(timeout));
+    final data = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+    if (res.statusCode >= 200 && res.statusCode < 300) return Map<String, dynamic>.from(data ?? {});
+    throw ApiException(res.statusCode, data);
+  }
+
   /// Rauwe bytes ophalen mét inlog — voor afbeeldingen die niet openbaar mogen zijn.
   static Future<List<int>> bytes(String path) async {
     final res = await http.get(Uri.parse('${Config.apiBase}$path'), headers: _headers())
