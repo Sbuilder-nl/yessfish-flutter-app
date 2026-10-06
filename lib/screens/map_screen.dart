@@ -778,6 +778,36 @@ class _MapScreenState extends State<MapScreen> {
           Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.local_fire_department, size: 15, color: _waterColor(level)), const SizedBox(width: 4),
             Text('${mui(context, 'busy')}: ${level == 'none' ? mui(context, 'busy_none') : busyLevelLabel(context, level)}${count > 0 ? ' ($count)' : ''}', style: const TextStyle(color: Colors.black54, fontSize: 13))]),
         ])),
+        // 29-09-2026: regels op een water, tijdelijk (vissen verboden t/m een datum; na de einddatum geeft de API
+        // ze niet meer, dus dan vanzelf weg) of vast (overpad/looprecht, let op). Zelfde blok als op het web.
+        ValueListenableBuilder<Map?>(valueListenable: detail, builder: (_, d, __) {
+          final lijst = (d?['notices'] is List) ? List<Map>.from(d!['notices']) : <Map>[];
+          if (lijst.isEmpty) return const SizedBox.shrink();
+          final loc = Provider.of<I18n>(context, listen: false).locale;
+          return Column(children: lijst.map((n) {
+            final verbod = n['soort'] == 'verbod', overpad = n['soort'] == 'overpad';
+            final kleur = verbod ? const Color(0xFFB91C1C) : overpad ? const Color(0xFF075985) : const Color(0xFF92400E);
+            final tot = DateTime.tryParse('${n['tot']}');
+            final totTekst = tot == null ? '' : mui(context, 'notice_tot').replaceAll('{datum}', _datumLang(tot, loc));
+            final bron = '${n['bron'] ?? n['door'] ?? ''}';
+            final url = '${n['bron_url'] ?? ''}';
+            return Container(
+              width: double.infinity, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: verbod ? const Color(0xFFFEF2F2) : overpad ? const Color(0xFFF0F9FF) : const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: verbod ? const Color(0xFFFCA5A5) : overpad ? const Color(0xFF7DD3FC) : const Color(0xFFFCD34D))),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${overpad ? '🚶' : '⚠️'} ${mui(context, verbod ? 'notice_verbod' : overpad ? 'notice_overpad' : tot != null ? 'notice_let_op' : 'notice_vast_let_op')}${totTekst.isEmpty ? '' : ' · $totTekst'}',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: kleur)),
+                const SizedBox(height: 4),
+                Text('${n['tekst'] ?? ''}', style: const TextStyle(fontSize: 13.5, color: Colors.black87, height: 1.3)),
+                if (bron.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4),
+                  child: InkWell(
+                    onTap: url.isEmpty ? null : () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+                    child: Text('${mui(context, 'notice_bron')}: $bron', style: TextStyle(fontSize: 12, color: url.isEmpty ? Colors.black54 : AppColors.teal, fontWeight: url.isEmpty ? FontWeight.normal : FontWeight.w600)))),
+              ]),
+            );
+          }).toList());
+        }),
         // 1. Mag ik hier vissen? + hoe is de bijtkans vandaag? — de twee vragen bovenaan.
         Padding(padding: const EdgeInsets.only(top: 12), child: Wrap(spacing: 8, runSpacing: 6, children: [
           _permitChip(w),
@@ -1655,6 +1685,23 @@ class _MapScreenState extends State<MapScreen> {
       if (i > 3 && s.length > 24) s = s.substring(0, i).trim();
     }
     return s.isEmpty ? null : s;
+  }
+
+  // Datum voluit in de taal van de app (zonder DateFormat-taaldata, die de app niet laadt).
+  static const _maanden = {
+    'nl': ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'],
+    'en': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    'de': ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+    'fr': ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+    'es': ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+    'pl': ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'],
+  };
+  String _datumLang(DateTime d, String loc) {
+    final m = (_maanden[loc] ?? _maanden['en']!)[d.month - 1];
+    if (loc == 'en') return '$m ${d.day}, ${d.year}';
+    if (loc == 'de') return '${d.day}. $m ${d.year}';
+    if (loc == 'es') return '${d.day} de $m de ${d.year}';
+    return '${d.day} $m ${d.year}';
   }
 
   // Korte vergunning-chip: kleur zegt het al (groen = mag, oranje = extra nodig, rood = niet, grijs = onbekend).
