@@ -609,6 +609,8 @@ class _InstellingenTabState extends State<_InstellingenTab> with AutomaticKeepAl
       const SizedBox(height: 14),
       FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(vertical: 14)),
         onPressed: _bezig ? null : _opslaan, child: Text(ft(context, 'save'))),
+      const Divider(height: 36),
+      _LinksEditor(partnerId: widget.partnerId),
       const SizedBox(height: 10),
       OutlinedButton.icon(onPressed: () => openWebPagina('/partner'), icon: const Icon(Icons.open_in_new, size: 18), label: Text(ft(context, 'app_profile_web'))),
     ]);
@@ -681,5 +683,103 @@ class _AanvragenTabState extends State<_AanvragenTab> with AutomaticKeepAliveCli
         Text('${i['email']}', style: const TextStyle(fontSize: 12, color: Colors.black45)),
       ]))),
     ]));
+  }
+}
+
+// ─────────────────────────────── Social media en links (07-10-2026) ───────────────────────────────
+
+const kLinkSoortenFoto = ['instagram', 'facebook', 'tiktok', 'youtube', 'flickr', '500px', 'website', 'other'];
+
+/// Icoon per linksoort (Material heeft geen Instagram/YouTube-merkicoon; dit is het dichtstbij).
+IconData socialIcoon(String? soort) => switch (soort) {
+  'facebook' => Icons.facebook,
+  'tiktok' => Icons.tiktok,
+  'instagram' => Icons.camera_alt_outlined,
+  'youtube' => Icons.smart_display_outlined,
+  'flickr' || '500px' => Icons.photo_library_outlined,
+  'website' => Icons.language,
+  _ => Icons.link,
+};
+
+/// Zelfde lijst als het blok "Social media en links" in het profiel op de website: PUT /partner/{id} met links.
+class _LinksEditor extends StatefulWidget {
+  final int partnerId;
+  const _LinksEditor({required this.partnerId});
+  @override
+  State<_LinksEditor> createState() => _LinksEditorState();
+}
+
+class _LinksEditorState extends State<_LinksEditor> {
+  List<Map<String, dynamic>>? _links;
+  final List<TextEditingController> _urls = [];
+  bool _bezig = false;
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  @override
+  void dispose() { for (final c in _urls) { c.dispose(); } super.dispose(); }
+
+  Future<void> _load() async {
+    try {
+      final r = await Api.get('/partner/mine');
+      final p = ((r['data'] as List?) ?? []).firstWhere((x) => x['id'] == widget.partnerId, orElse: () => null);
+      _links = [for (final l in ((p?['links'] as List?) ?? [])) Map<String, dynamic>.from(l)];
+    } catch (_) { _links = []; }
+    for (final c in _urls) { c.dispose(); }
+    _urls..clear()..addAll(_links!.map((l) => TextEditingController(text: '${l['url'] ?? ''}')));
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _opslaan() async {
+    setState(() => _bezig = true);
+    try {
+      final lijst = <Map<String, dynamic>>[];
+      for (var i = 0; i < _links!.length; i++) {
+        final url = _urls[i].text.trim();
+        if (url.isEmpty) continue;
+        final soort = '${_links![i]['kind'] ?? 'other'}';
+        final oud = '${_links![i]['label'] ?? ''}'.trim();
+        // Eigen naam bewaren; anders de naam van het kanaal (zoals op de site).
+        final standaard = kLinkSoortenFoto.any((k) => ft(context, 'lk_$k') == oud);
+        lijst.add({'kind': soort, 'label': oud.isEmpty || standaard ? ft(context, 'lk_$soort') : oud, 'url': url});
+      }
+      await Api.put('/partner/${widget.partnerId}', {'links': lijst});
+      if (mounted) _melding(context, ft(context, 'saved'));
+      await _load();
+    } catch (e) { if (mounted) _melding(context, _fout(context, e)); }
+    if (mounted) setState(() => _bezig = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final links = _links;
+    if (links == null) return const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator()));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(ft(context, 'links_title'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy)),
+      const SizedBox(height: 4),
+      Text(ft(context, 'links_hint'), style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+      const SizedBox(height: 10),
+      for (var i = 0; i < links.length; i++) Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
+        SizedBox(width: 128, child: DropdownButtonFormField<String>(
+          initialValue: kLinkSoortenFoto.contains(links[i]['kind']) ? links[i]['kind'] as String : 'other', isExpanded: true,
+          decoration: const InputDecoration(isDense: true, border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12)),
+          items: [for (final k in kLinkSoortenFoto) DropdownMenuItem(value: k, child: Row(children: [
+            Icon(socialIcoon(k), size: 16, color: AppColors.teal), const SizedBox(width: 6),
+            Flexible(child: Text(ft(context, 'lk_$k'), overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)))]))],
+          onChanged: (v) => setState(() => links[i]['kind'] = v))),
+        const SizedBox(width: 6),
+        Expanded(child: TextField(controller: _urls[i], keyboardType: TextInputType.url,
+          decoration: InputDecoration(isDense: true, hintText: ft(context, 'link_url'), border: const OutlineInputBorder()))),
+        IconButton(tooltip: ft(context, 'link_remove'), icon: const Icon(Icons.close, size: 20, color: Colors.black45),
+          onPressed: () => setState(() { links.removeAt(i); _urls.removeAt(i).dispose(); })),
+      ])),
+      if (links.length < 12) Align(alignment: Alignment.centerLeft, child: TextButton(
+        onPressed: () => setState(() { links.add({'kind': 'instagram', 'label': '', 'url': ''}); _urls.add(TextEditingController()); }),
+        child: Text(ft(context, 'add_link')))),
+      const SizedBox(height: 6),
+      FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(vertical: 14)),
+        onPressed: _bezig ? null : _opslaan, child: Text(ft(context, 'save'))),
+    ]);
   }
 }

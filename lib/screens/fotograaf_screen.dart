@@ -101,8 +101,9 @@ class _FotograafScreenState extends State<FotograafScreen> {
             onPressed: _contact, icon: const Icon(Icons.mail_outline, size: 18), label: Text(ft(context, 'pub_book'))),
           if ((p['website'] ?? '').toString().isNotEmpty) OutlinedButton.icon(
             onPressed: () => _open('${p['website']}'), icon: const Icon(Icons.language, size: 18), label: const Text('Website')),
-          for (final l in links) if (l is Map && (l['url'] ?? '').toString().isNotEmpty) OutlinedButton(
-            onPressed: () => _open('${l['url']}'), child: Text('${l['label'] ?? l['kind'] ?? 'Link'}')),
+          for (final l in links) if (l is Map && (l['url'] ?? '').toString().isNotEmpty) OutlinedButton.icon(
+            onPressed: () => _open('${l['url']}'), icon: Icon(socialIcoon(l['kind']?.toString()), size: 18),
+            label: Text('${l['label'] ?? l['kind'] ?? 'Link'}')),
           if (p['can_manage'] == true) OutlinedButton.icon(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FotograafPortaalScreen(partnerId: p['id'] as int, naam: '${p['name']}'))),
             icon: const Icon(Icons.edit_outlined, size: 18), label: Text(ft(context, 'pub_manage'))),

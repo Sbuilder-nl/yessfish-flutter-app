@@ -1,11 +1,24 @@
-// GEGENEREERD 06-10-2026 uit web/src/lib/fotograaf-i18n.ts (zelfde teksten als de website) + app-teksten (app_*).
-// Fotograaf-partner: portaal, openbare fotograafpagina, feedlabel. Niet met de hand in de web-sleutels zitten:
-// pas de website aan en genereer opnieuw, dan blijven web en app letterlijk gelijk.
+// GEGENEREERD uit web/src/lib/fotograaf-i18n.ts (zelfde teksten als de website) + app-teksten (app_*).
+// Opnieuw maken: python3 /home/admin/yessfish-release/fotograaf_i18n_naar_dart.py > lib/core/fotograaf_i18n.dart
+// Niet met de hand in de web-sleutels zitten: pas de website aan en genereer opnieuw.
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'i18n.dart';
 
 const Map<String, Map<String, String>> kFotograaf = {
+  'links_title': {'nl': 'Social media en links', 'en': 'Social media and links', 'de': 'Social Media und Links', 'fr': 'Réseaux sociaux et liens', 'es': 'Redes sociales y enlaces', 'pl': 'Media społecznościowe i linki'},
+  'links_hint': {'nl': 'Koppel je Instagram, Facebook, TikTok, YouTube, Flickr, 500px of website. Ze komen als knoppen op je fotograafpagina.', 'en': 'Link your Instagram, Facebook, TikTok, YouTube, Flickr, 500px or website. They appear as buttons on your photographer page.', 'de': 'Verknüpfe Instagram, Facebook, TikTok, YouTube, Flickr, 500px oder deine Website. Sie erscheinen als Knöpfe auf deiner Fotografenseite.', 'fr': 'Ajoute ton Instagram, Facebook, TikTok, YouTube, Flickr, 500px ou site web. Ils apparaissent comme boutons sur ta page de photographe.', 'es': 'Vincula tu Instagram, Facebook, TikTok, YouTube, Flickr, 500px o web. Aparecen como botones en tu página de fotógrafo.', 'pl': 'Dodaj Instagram, Facebook, TikTok, YouTube, Flickr, 500px lub stronę www. Pojawią się jako przyciski na Twojej stronie fotografa.'},
+  'add_link': {'nl': '+ link toevoegen', 'en': '+ add link', 'de': '+ Link hinzufügen', 'fr': '+ ajouter un lien', 'es': '+ añadir enlace', 'pl': '+ dodaj link'},
+  'link_url': {'nl': 'https://…', 'en': 'https://…', 'de': 'https://…', 'fr': 'https://…', 'es': 'https://…', 'pl': 'https://…'},
+  'link_remove': {'nl': 'Link verwijderen', 'en': 'Remove link', 'de': 'Link entfernen', 'fr': 'Supprimer le lien', 'es': 'Quitar enlace', 'pl': 'Usuń link'},
+  'lk_instagram': {'nl': 'Instagram', 'en': 'Instagram', 'de': 'Instagram', 'fr': 'Instagram', 'es': 'Instagram', 'pl': 'Instagram'},
+  'lk_facebook': {'nl': 'Facebook', 'en': 'Facebook', 'de': 'Facebook', 'fr': 'Facebook', 'es': 'Facebook', 'pl': 'Facebook'},
+  'lk_tiktok': {'nl': 'TikTok', 'en': 'TikTok', 'de': 'TikTok', 'fr': 'TikTok', 'es': 'TikTok', 'pl': 'TikTok'},
+  'lk_youtube': {'nl': 'YouTube', 'en': 'YouTube', 'de': 'YouTube', 'fr': 'YouTube', 'es': 'YouTube', 'pl': 'YouTube'},
+  'lk_flickr': {'nl': 'Flickr', 'en': 'Flickr', 'de': 'Flickr', 'fr': 'Flickr', 'es': 'Flickr', 'pl': 'Flickr'},
+  'lk_500px': {'nl': '500px', 'en': '500px', 'de': '500px', 'fr': '500px', 'es': '500px', 'pl': '500px'},
+  'lk_website': {'nl': 'Website', 'en': 'Website', 'de': 'Website', 'fr': 'Site web', 'es': 'Web', 'pl': 'Strona www'},
+  'lk_other': {'nl': 'Overig', 'en': 'Other', 'de': 'Sonstiges', 'fr': 'Autre', 'es': 'Otro', 'pl': 'Inne'},
   'type_photographer': {'nl': 'Fotograaf', 'en': 'Photographer', 'de': 'Fotograf', 'fr': 'Photographe', 'es': 'Fotógrafo', 'pl': 'Fotograf'},
   'intro_photographer': {'nl': 'Natuur-, vogel- of waterfotograaf? Laat je werk zien aan duizenden vissers, deel foto\'s bij wateren en krijg aanvragen.', 'en': 'Nature, bird or water photographer? Show your work to thousands of anglers, share photos of waters and receive requests.', 'de': 'Natur-, Vogel- oder Gewässerfotograf? Zeige deine Arbeit tausenden Anglern, teile Fotos von Gewässern und erhalte Anfragen.', 'fr': 'Photographe de nature, d\'oiseaux ou de plans d\'eau ? Montrez votre travail à des milliers de pêcheurs, partagez des photos de plans d\'eau et recevez des demandes.', 'es': '¿Fotógrafo de naturaleza, aves o aguas? Muestra tu trabajo a miles de pescadores, comparte fotos de aguas y recibe solicitudes.', 'pl': 'Fotografujesz przyrodę, ptaki lub wody? Pokaż swoje prace tysiącom wędkarzy, dziel się zdjęciami łowisk i otrzymuj zapytania.'},
   'name_photographer_ph': {'nl': 'bijv. Kevin Natuurfotografie', 'en': 'e.g. Kevin Nature Photography', 'de': 'z. B. Kevin Naturfotografie', 'fr': 'p. ex. Kevin Photographie Nature', 'es': 'p. ej. Kevin Fotografía de Naturaleza', 'pl': 'np. Kevin Fotografia Przyrodnicza'},
@@ -137,7 +150,7 @@ const Map<String, Map<String, String>> kFotograaf = {
   'app_take_photo': {'nl': 'Foto maken', 'en': 'Take photo', 'de': 'Foto aufnehmen', 'fr': 'Prendre une photo', 'es': 'Hacer foto', 'pl': 'Zrób zdjęcie'},
   'app_upload_where': {'nl': 'Nieuwe foto\'s komen in', 'en': 'New photos go into', 'de': 'Neue Fotos kommen in', 'fr': 'Les nouvelles photos vont dans', 'es': 'Las fotos nuevas van a', 'pl': 'Nowe zdjęcia trafiają do'},
   'app_pending': {'nl': 'Je aanmelding wordt nog bekeken. Zodra hij is goedgekeurd kun je hier foto\'s plaatsen.', 'en': 'Your application is still being reviewed. Once approved you can add photos here.', 'de': 'Deine Anmeldung wird noch geprüft. Nach der Freigabe kannst du hier Fotos hochladen.', 'fr': 'Ta demande est en cours d\'examen. Une fois approuvée, tu pourras ajouter des photos ici.', 'es': 'Tu solicitud todavía se está revisando. Cuando se apruebe podrás añadir fotos aquí.', 'pl': 'Twoje zgłoszenie jest jeszcze sprawdzane. Po zatwierdzeniu dodasz tu zdjęcia.'},
-  'app_profile_web': {'nl': 'Profiel (naam, foto, over mij, links)', 'en': 'Profile (name, picture, about, links)', 'de': 'Profil (Name, Bild, Über mich, Links)', 'fr': 'Profil (nom, photo, à propos, liens)', 'es': 'Perfil (nombre, foto, sobre mí, enlaces)', 'pl': 'Profil (nazwa, zdjęcie, o mnie, linki)'},
+  'app_profile_web': {'nl': 'Profiel (naam, foto, over mij)', 'en': 'Profile (name, picture, about)', 'de': 'Profil (Name, Bild, Über mich)', 'fr': 'Profil (nom, photo, à propos)', 'es': 'Perfil (nombre, foto, sobre mí)', 'pl': 'Profil (nazwa, zdjęcie, o mnie)'},
   'app_error': {'nl': 'Er ging iets mis', 'en': 'Something went wrong', 'de': 'Etwas ist schiefgelaufen', 'fr': 'Une erreur s\'est produite', 'es': 'Algo salió mal', 'pl': 'Coś poszło nie tak'},
   'app_choose_photo_first': {'nl': 'Kies eerst een foto', 'en': 'Choose a photo first', 'de': 'Wähle zuerst ein Foto', 'fr': 'Choisis d\'abord une photo', 'es': 'Elige primero una foto', 'pl': 'Najpierw wybierz zdjęcie'},
   'app_fill_required': {'nl': 'Vul je naam, e-mailadres en bericht (min. 10 tekens) in', 'en': 'Fill in your name, email and message (min. 10 characters)', 'de': 'Gib Name, E-Mail und Nachricht (mind. 10 Zeichen) ein', 'fr': 'Indique ton nom, ton e-mail et ton message (10 caractères min.)', 'es': 'Rellena tu nombre, correo y mensaje (mín. 10 caracteres)', 'pl': 'Podaj imię, e-mail i wiadomość (min. 10 znaków)'},
@@ -150,3 +163,4 @@ String ft(BuildContext c, String k, [Map<String, Object>? v]) {
   v?.forEach((a, b) => s = s.replaceAll('{$a}', '$b'));
   return s;
 }
+
