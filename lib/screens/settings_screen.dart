@@ -11,6 +11,7 @@ import '../core/disciplines_i18n.dart';
 import '../core/parental_i18n.dart';
 import 'disciplines_screen.dart';
 import 'parental_screen.dart';
+import 'wachtwoord_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -143,6 +144,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: Text(context.tr('settings.auto_translate_desc'), style: const TextStyle(fontSize: 12)),
             value: _s['auto_translate'] == true, onChanged: (v) => _set('auto_translate', v)),
         ]))),
+        const SizedBox(height: 12),
+        Card(child: ListTile(
+          key: const Key('instellingen-wachtwoord'),
+          leading: const Icon(Icons.key_outlined, color: AppColors.teal),
+          title: Text(wwT(context, 'titel')),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WachtwoordScreen())),
+        )),
         const SizedBox(height: 12),
         TourAnker(id: 'set-privacy', child: Card(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),

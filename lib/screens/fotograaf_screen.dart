@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/fotograaf_i18n.dart';
+import '../widgets/email_typo_hint.dart';
 import '../widgets/photo_viewer.dart';
 import 'fotograaf_portaal_screen.dart';
 
@@ -200,6 +201,7 @@ class _FotograafScreenState extends State<FotograafScreen> {
           TextField(controller: naam, decoration: dec(ft(context, 'pub_name')), textCapitalization: TextCapitalization.words),
           const SizedBox(height: 10),
           TextField(controller: mail, decoration: dec(ft(context, 'pub_email')), keyboardType: TextInputType.emailAddress),
+          EmailTypoHint(controller: mail),
           const SizedBox(height: 10),
           TextField(controller: tel, decoration: dec(ft(context, 'pub_phone')), keyboardType: TextInputType.phone),
           const SizedBox(height: 10),

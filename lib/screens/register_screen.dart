@@ -4,6 +4,7 @@ import '../core/auth.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
+import '../widgets/email_typo_hint.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -56,6 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           TextField(controller: _username, decoration: InputDecoration(labelText: context.tr('register.username'))),
           const SizedBox(height: 12),
           TextField(controller: _email, keyboardType: TextInputType.emailAddress, decoration: InputDecoration(labelText: context.tr('register.email'))),
+          EmailTypoHint(controller: _email),
           const SizedBox(height: 12),
           TextField(controller: _pw, obscureText: true, decoration: InputDecoration(labelText: context.tr('register.password'))),
           const SizedBox(height: 12),

@@ -610,6 +610,8 @@ class _InstellingenTabState extends State<_InstellingenTab> with AutomaticKeepAl
       FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(vertical: 14)),
         onPressed: _bezig ? null : _opslaan, child: Text(ft(context, 'save'))),
       const Divider(height: 36),
+      _NaamEditor(partnerId: widget.partnerId),
+      const Divider(height: 36),
       _LinksEditor(partnerId: widget.partnerId),
       const SizedBox(height: 10),
       OutlinedButton.icon(onPressed: () => openWebPagina('/partner'), icon: const Icon(Icons.open_in_new, size: 18), label: Text(ft(context, 'app_profile_web'))),
@@ -779,6 +781,65 @@ class _LinksEditorState extends State<_LinksEditor> {
         child: Text(ft(context, 'add_link')))),
       const SizedBox(height: 6),
       FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal, padding: const EdgeInsets.symmetric(vertical: 14)),
+        onPressed: _bezig ? null : _opslaan, child: Text(ft(context, 'save'))),
+    ]);
+  }
+}
+
+// ─────────────────────────────── Naam van je pagina (07-10-2026) ───────────────────────────────
+/// Richard: de fotograaf moet zelf de naam van zijn pagina kunnen wijzigen. Het webadres gaat mee (API), oude links
+/// sturen door. Zelfde als het naamveld onder Profiel op de website: PUT /partner/{id} met name.
+class _NaamEditor extends StatefulWidget {
+  final int partnerId;
+  const _NaamEditor({required this.partnerId});
+  @override
+  State<_NaamEditor> createState() => _NaamEditorState();
+}
+
+class _NaamEditorState extends State<_NaamEditor> {
+  final _naam = TextEditingController();
+  String? _slug, _origineel;
+  bool _bezig = false;
+
+  @override
+  void initState() { super.initState(); _load(); }
+  @override
+  void dispose() { _naam.dispose(); super.dispose(); }
+
+  Future<void> _load() async {
+    try {
+      final r = await Api.get('/partner/mine');
+      final p = ((r['data'] as List?) ?? []).firstWhere((x) => x['id'] == widget.partnerId, orElse: () => null);
+      if (p != null) { _origineel = '${p['name'] ?? ''}'; _naam.text = _origineel!; _slug = '${p['slug'] ?? ''}'; }
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _opslaan() async {
+    final n = _naam.text.trim();
+    if (n.length < 2) { _melding(context, ft(context, 'app_page_name_short')); return; }
+    setState(() => _bezig = true);
+    try {
+      final r = await Api.put('/partner/${widget.partnerId}', {'name': n});
+      final d = (r is Map && r['data'] is Map) ? r['data'] : null;
+      if (d != null) { _origineel = '${d['name']}'; _slug = '${d['slug']}'; }
+      if (mounted) _melding(context, ft(context, 'saved'));
+    } catch (e) { if (mounted) _melding(context, _fout(context, e)); }
+    if (mounted) setState(() => _bezig = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_origineel == null) return const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator()));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text(ft(context, 'app_page_name'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy)),
+      const SizedBox(height: 8),
+      TextField(key: const Key('portaal-naam'), controller: _naam, maxLength: 120, textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, counterText: '')),
+      if ((_slug ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6),
+        child: Text(ft(context, 'name_url_hint', {'url': 'yessfish.com/fotograaf/$_slug'}), style: const TextStyle(fontSize: 12, color: Colors.black54))),
+      const SizedBox(height: 10),
+      FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.teal),
         onPressed: _bezig ? null : _opslaan, child: Text(ft(context, 'save'))),
     ]);
   }
