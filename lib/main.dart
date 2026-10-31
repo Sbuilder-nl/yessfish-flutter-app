@@ -17,6 +17,7 @@ import 'core/theme.dart';
 import 'core/push.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/leeftijd_screens.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -100,7 +101,14 @@ class RootGate extends StatelessWidget {
     final auth = context.watch<AuthState>();
     if (auth.loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (auth.user == null) { context.read<RealtimeService>().stop(); return const LoginScreen(); }
-    if (auth.user!.needsOnboarding) return const OnboardingScreen();
+    final u = auth.user!;
+    // 31-10-2026 minderjarigen: < 13 staat stil; eerst profiel (incl. geboortedatum), dan eenmalig de
+    // geboortedatum voor bestaande leden (o.a. 2001-01-01); 13-15 zonder toestemming: balk boven het startscherm.
+    if (u.ageStatus == 'too_young') return const TeJongScherm();
+    if (u.needsProfile) return const OnboardingScreen();
+    if (u.needsBirthday) return const GeboortedatumScherm();
+    if (u.needsOnboarding) return const OnboardingScreen(); // oudere API zonder de nieuwe velden
+    if (u.ageStatus == 'needs_consent') return const ToestemmingBalk(child: HomeScreen());
     return const HomeScreen();
   }
 }

@@ -5,6 +5,8 @@ import '../core/api.dart';
 import '../core/config.dart';
 import '../core/i18n.dart';
 import '../widgets/email_typo_hint.dart';
+import '../core/leeftijd_i18n.dart';
+import 'leeftijd_screens.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,8 +22,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _pw2 = TextEditingController();
   bool _busy = false;
   String? _err;
+  // 31-10-2026: geboortedatum verplicht; < 13 geen account; 13-15 e-mailadres van een ouder of voogd.
+  DateTime? _bd;
+  bool _bdBevestigd = false;
+  final _ouderMail = TextEditingController();
+
+  @override
+  void dispose() {
+    for (final c in [_username, _email, _first, _pw, _pw2, _ouderMail]) { c.dispose(); }
+    super.dispose();
+  }
 
   Future<void> _submit() async {
+    final lftFout = controleerLeeftijdVelden(context, _bd, _bdBevestigd, _ouderMail.text);
+    if (lftFout != null) { setState(() => _err = lftFout); return; }
     setState(() { _busy = true; _err = null; });
     try {
       await context.read<AuthState>().register({
@@ -30,6 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'first_name': _first.text.trim(),
         'password': _pw.text,
         'password_confirmation': _pw2.text,
+        ...leeftijdPayload(_bd!, _bdBevestigd, _ouderMail.text),
       });
       if (mounted) Navigator.pop(context);
     } on ApiException catch (e) {
@@ -62,6 +77,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           TextField(controller: _pw, obscureText: true, decoration: InputDecoration(labelText: context.tr('register.password'))),
           const SizedBox(height: 12),
           TextField(controller: _pw2, obscureText: true, decoration: InputDecoration(labelText: context.tr('register.password_confirm'))),
+          const SizedBox(height: 16),
+          Align(alignment: Alignment.centerLeft, child: Padding(padding: const EdgeInsets.only(bottom: 6),
+            child: Text('${lft(context, 'birthday')} *', style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)))),
+          LeeftijdVelden(datum: _bd, onDatum: (d) => setState(() { _bd = d; _bdBevestigd = false; _err = null; }),
+            bevestigd: _bdBevestigd, onBevestigd: (v) => setState(() => _bdBevestigd = v), ouderMail: _ouderMail),
           const SizedBox(height: 20),
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit,
             child: _busy ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(context.tr('register.submit')))),

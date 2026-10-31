@@ -6,6 +6,7 @@ import '../core/auth.dart';
 import '../core/api.dart';
 import '../core/units.dart';
 import '../core/config.dart';
+import '../core/leeftijd_i18n.dart';
 import '../core/i18n.dart';
 import '../core/disciplines_i18n.dart';
 import '../core/parental_i18n.dart';
@@ -136,6 +137,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.share_catches')),
             subtitle: Text(context.tr('settings.share_catches_sub')),
             value: _s['share_catches_community'] != false, onChanged: (v) => _set('share_catches_community', v)),
+          // Vangst van de week (21-10-2026): alleen tonen als de API het veld meestuurt, zodat de
+          // schakelaar niet zichtbaar is (en niets opslaat) zolang de server het nog niet kent.
+          // 31-10-2026: wie mag je een privébericht sturen (alleen als de API het veld kent).
+          if (_s.containsKey('allow_messages'))
+            ListTile(
+              title: Text(lft(context, 'dm_title')),
+              trailing: DropdownButton<String>(
+                value: const ['everyone', 'friends', 'none'].contains('${_s['allow_messages']}') ? '${_s['allow_messages']}' : 'everyone',
+                underline: const SizedBox.shrink(),
+                items: [
+                  DropdownMenuItem(value: 'everyone', child: Text(lft(context, 'dm_everyone'))),
+                  DropdownMenuItem(value: 'friends', child: Text(lft(context, 'dm_friends'))),
+                  DropdownMenuItem(value: 'none', child: Text(lft(context, 'dm_none'))),
+                ],
+                onChanged: (v) async {
+                  if (v == null) return;
+                  final vorige = _s['allow_messages'];
+                  setState(() => _s['allow_messages'] = v);
+                  try {
+                    await Api.put('/profile/settings', {'allow_messages': v});
+                    final s = await Api.get('/profile/settings'); // 13-15: server maakt van 'everyone' 'friends'
+                    if (mounted && s is Map) setState(() => _s['allow_messages'] = s['allow_messages']);
+                  } catch (_) {
+                    if (mounted) setState(() => _s['allow_messages'] = vorige);
+                  }
+                },
+              ),
+            ),
+          if (_s.containsKey('allow_catch_of_week'))
+            SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.catch_of_week')),
+              subtitle: Text(context.tr('settings.catch_of_week_sub'), style: const TextStyle(fontSize: 12)),
+              value: _s['allow_catch_of_week'] != false, onChanged: (v) => _set('allow_catch_of_week', v)),
           // Deze drie stonden alleen op het web. Pushmeldingen niet kunnen uitzetten in de app
           // terwijl het op de site wel kan, was de vreemdste van de drie (20-09-2026).
           SwitchListTile(activeThumbColor: AppColors.teal, title: Text(context.tr('settings.push_notif')),

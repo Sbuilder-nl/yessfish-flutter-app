@@ -48,6 +48,9 @@ class Api {
     'X-App-Lang': lang,
     // Versie meesturen zodat de backend weet dat deze app sponsored posts aankan (feed-injectie).
     'X-App-Build': '${Config.buildNumber}',
+    // 31-10-2026: deze app kent de leeftijdsschermen (geboortedatum, ouder-e-mail). Los van het buildnummer,
+    // zodat de API dit ook vóór de versieverhoging herkent.
+    'X-Leeftijd-Flow': '2',
     if (_token != null) 'Authorization': 'Bearer $_token',
   };
 

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../core/api.dart';
 import '../core/config.dart';
 import '../core/parental_i18n.dart';
+import '../core/leeftijd_i18n.dart';
 
 /// Ouderlijk toezicht in de app: ouder koppelt kind (via code), beheert veilige instellingen,
 /// kijkt (alleen-lezen) mee met gesprekken; kind maakt zelf een koppelcode.
@@ -116,10 +117,15 @@ class _ParentalScreenState extends State<ParentalScreen> {
       _toggle(pt(context, 'auto'), s['auto_checkin'] == true, (v) => _save(k, {'auto_checkin': v})),
       _toggle(pt(context, 'share'), s['share_catches_community'] == true, (v) => _save(k, {'share_catches_community': v})),
       Padding(padding: const EdgeInsets.only(top: 4), child: Text(pt(context, 'rec'), style: const TextStyle(color: Colors.black38, fontSize: 11.5))),
-      const SizedBox(height: 8),
-      OutlinedButton.icon(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChildMessagesScreen(childId: k['id'], childUsername: k['username']?.toString() ?? ''))),
-        icon: const Icon(Icons.chat_bubble_outline, size: 18), label: Text(pt(context, 'view_msgs'))),
+      // 31-10-2026: ouders lezen geen privéberichten meer (communicatiegeheim, ook van de gesprekspartner).
+      // Wel kan de ouder privéberichten voor het kind uitzetten.
+      _toggle(lft(context, 'par_dm_off'), (s['allow_messages'] ?? 'friends') == 'none',
+          (v) => _save(k, {'allow_messages': v ? 'none' : 'friends'})),
+      Padding(padding: const EdgeInsets.only(top: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.lock_outline, size: 14, color: Colors.black38),
+        const SizedBox(width: 6),
+        Expanded(child: Text(lft(context, 'par_no_read'), style: const TextStyle(color: Colors.black45, fontSize: 11.5))),
+      ])),
     ])));
   }
 
@@ -169,6 +175,7 @@ class _ParentalScreenState extends State<ParentalScreen> {
 }
 
 /// Alleen-lezen: gesprekken van het kind → berichten.
+/// 31-10-2026: niet meer bereikbaar vanuit de app (knop weg); de API geeft hier ook niets meer terug.
 class ChildMessagesScreen extends StatefulWidget {
   final int childId; final String childUsername;
   const ChildMessagesScreen({super.key, required this.childId, required this.childUsername});

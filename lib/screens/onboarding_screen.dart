@@ -6,6 +6,7 @@ import '../core/config.dart';
 import '../core/auth.dart';
 import '../core/disciplines_i18n.dart';
 import '../core/onboarding_i18n.dart';
+import 'leeftijd_screens.dart';
 
 /// Verplichte eenmalige welkomststap na de eerste login/registratie (ook Google/Apple,
 /// en bestaande leden die de gegevens nog missen). Verzamelt geboortedatum + land +
@@ -30,10 +31,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _saving = false;
   bool _agreed = false;
   String? _err;
+  bool _bdBevestigd = false; // 31-10: alleen nodig bij 1-1-2001
+  final _ouderMail = TextEditingController(); // 31-10: 13-15 jaar
+
+
+  bool _datumVast = false; // 31-10: geboortedatum al bekend (bv. bij registratie ingevuld) → niet opnieuw vragen
 
   @override
   void initState() {
     super.initState();
+    final u = context.read<AuthState>().user;
+    if (u != null && !u.needsBirthday && u.birthday != null) {
+      _birthday = DateTime.tryParse(u.birthday!);
+      _datumVast = _birthday != null;
+    }
     _load();
   }
 
@@ -41,6 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _city.dispose();
     _invite.dispose();
+    _ouderMail.dispose();
     super.dispose();
   }
 
@@ -52,20 +64,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final d = await showDatePicker(
-      context: context,
-      initialDate: DateTime(now.year - 25),
-      firstDate: DateTime(1900),
-      lastDate: now,
-      helpText: oui(context, 'birthday'),
-    );
-    if (d != null) setState(() => _birthday = d);
-  }
-
-  String _fmt(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  // 31-10-2026: de kiezer opende op DateTime(now.year - 25) = 2001-01-01; wie meteen OK tikte kreeg die
+  // datum (18 leden). Nu via kiesGeboortedatum (leeftijd_screens.dart): opent op vandaag, jaarweergave.
 
   Future<void> _submit() async {
     setState(() => _err = null);
@@ -73,6 +73,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       setState(() => _err = oui(context, 'err_required'));
       return;
     }
+    // Al een aanvraag bij registratie gedaan (pending/granted)? Dan geen ouder-e-mail meer nodig.
+    final ag = ouderAlGevraagd(context.read<AuthState>().user?.parentConsent);
+    final lftFout = controleerLeeftijdVelden(context, _birthday, _bdBevestigd || _datumVast, _ouderMail.text,
+        alGevraagd: ag || _datumVast, teJongNaarServer: true);
+    if (lftFout != null) {
+      setState(() => _err = lftFout);
+      return;
+    }
+    if (!_datumVast && !await bevestigTeJong(context, _birthday!)) return;
+    if (!mounted) return;
     if (!_agreed) {
       setState(() => _err = oui(context, 'hr_required'));
       return;
@@ -80,7 +90,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _saving = true);
     try {
       await Api.post('/profile/onboarding', {
-        'birthday': _fmt(_birthday!),
+        ...leeftijdPayload(_birthday!, _bdBevestigd, _ouderMail.text, alGevraagd: ag),
         'country': _country,
         'disciplines': _picked.toList(),
         if (_experience != null) 'fishing_experience': _experience,
@@ -92,6 +102,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       // needsOnboarding wordt false → RootGate toont automatisch het HomeScreen.
       await context.read<AuthState>().refresh();
     } catch (e) {
+      // Onder de 13: de server legt de datum vast en geeft age_too_young → het te-jong-scherm.
+      if (e is ApiException && e.data is Map && e.data['code'] == 'age_too_young' && mounted) {
+        await context.read<AuthState>().refresh();
+        return;
+      }
       if (mounted) {
         setState(() {
           _saving = false;
@@ -142,15 +157,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           // Geboortedatum
                           _label('${oui(context, 'birthday')} *'),
-                          OutlinedButton.icon(
-                            onPressed: _pickDate,
-                            icon: const Icon(Icons.cake_outlined, size: 18),
-                            label: Text(_birthday == null ? oui(context, 'pick_date') : _fmt(_birthday!)),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 48),
-                              alignment: Alignment.centerLeft,
-                              foregroundColor: AppColors.navy,
-                            ),
+                          if (_datumVast)
+                            Padding(padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(fmtDatum(_birthday!), style: const TextStyle(fontSize: 15, color: AppColors.navy)))
+                          else LeeftijdVelden(
+                            datum: _birthday,
+                            onDatum: (d) => setState(() { _birthday = d; _bdBevestigd = false; }),
+                            bevestigd: _bdBevestigd,
+                            onBevestigd: (v) => setState(() => _bdBevestigd = v),
+                            ouderMail: _ouderMail,
+                            alGevraagd: ouderAlGevraagd(context.watch<AuthState>().user?.parentConsent),
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 4),

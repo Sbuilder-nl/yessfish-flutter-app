@@ -13,7 +13,16 @@ class User {
   final bool canModerate;
   final bool emailVerified;
   final bool needsOnboarding;
-  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false, this.emailVerified = true, this.needsOnboarding = false});
+  // 31-10-2026 minderjarigen. Oudere API's sturen deze velden niet: dan gelden veilige standaarden
+  // (needsProfile valt terug op needsOnboarding, de rest op "niets aan de hand").
+  final bool needsProfile;
+  final bool needsBirthday;
+  final String ageStatus; // unknown | too_young | needs_consent | consented | minor | adult
+  final bool ageRestricted;
+  final Map<String, dynamic>? parentConsent;
+  final String? birthday; // alleen van jezelf (YYYY-MM-DD)
+  User({required this.id, required this.username, this.firstName, this.avatarPath, this.isAdmin = false, this.canModerate = false, this.emailVerified = true, this.needsOnboarding = false,
+      this.needsProfile = false, this.needsBirthday = false, this.ageStatus = 'adult', this.ageRestricted = false, this.parentConsent, this.birthday});
   factory User.fromJson(Map<String, dynamic> j) => User(
         id: j['id'] as int,
         username: (j['username'] ?? '') as String,
@@ -23,6 +32,12 @@ class User {
         canModerate: (j['can_moderate'] ?? j['is_admin'] ?? false) as bool,
         emailVerified: (j['email_verified'] ?? true) as bool,
         needsOnboarding: (j['needs_onboarding'] ?? false) as bool,
+        needsProfile: (j['needs_profile'] ?? j['needs_onboarding'] ?? false) == true,
+        needsBirthday: j['needs_birthday'] == true,
+        ageStatus: (j['age_status'] is String) ? j['age_status'] as String : 'adult',
+        ageRestricted: j['age_restricted'] == true,
+        parentConsent: (j['parent_consent'] is Map) ? Map<String, dynamic>.from(j['parent_consent'] as Map) : null,
+        birthday: j['birthday'] is String ? j['birthday'] as String : null,
       );
 }
 
@@ -81,7 +96,7 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> register(Map<String, String> data) async {
+  Future<void> register(Map<String, dynamic> data) async {
     final r = await Api.post('/auth/register', data);
     await Api.setToken(r['token']);
     user = User.fromJson(r['user']);
